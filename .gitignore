@@ -1,0 +1,20 @@
+# Worktrees
+.worktrees/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+target/
+*.class
+*.jar
+*.war
+
+# Logs
+*.log
