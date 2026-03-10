@@ -41,6 +41,9 @@ public class SourceConfig {
      * @return 配置值
      */
     public String getString(String key) {
+        if (config == null) {
+            return null;
+        }
         Object value = config.get(key);
         return value != null ? String.valueOf(value) : null;
     }
@@ -52,6 +55,9 @@ public class SourceConfig {
      * @return 配置值
      */
     public Integer getInteger(String key) {
+        if (config == null) {
+            return null;
+        }
         Object value = config.get(key);
         if (value == null) {
             return null;
@@ -69,6 +75,6 @@ public class SourceConfig {
      * @return 配置值
      */
     public Object get(String key) {
-        return config.get(key);
+        return config != null ? config.get(key) : null;
     }
 }
