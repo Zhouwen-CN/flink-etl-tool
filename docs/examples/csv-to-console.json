@@ -1,0 +1,20 @@
+{
+  "job": {
+    "name": "csv-to-console",
+    "mode": "batch"
+  },
+  "source": {
+    "type": "file",
+    "config": {
+      "path": "/data/input/users.csv",
+      "format": "csv",
+      "fields": ["id", "name", "age", "email"]
+    }
+  },
+  "sink": {
+    "type": "console",
+    "config": {
+      "format": "json"
+    }
+  }
+}

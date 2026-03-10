@@ -1,0 +1,33 @@
+{
+  "job": {
+    "name": "mysql-to-console",
+    "mode": "batch"
+  },
+  "source": {
+    "type": "mysql",
+    "config": {
+      "url": "jdbc:mysql://localhost:3306/test_db",
+      "table": "user_table",
+      "username": "root",
+      "password": "123456",
+      "splitColumn": "id",
+      "splitSize": 10000
+    }
+  },
+  "transform": {
+    "type": "field-mapping",
+    "config": {
+      "mappings": [
+        { "from": "id", "to": "user_id" },
+        { "from": "name", "to": "user_name" }
+      ],
+      "filters": ["age", "email"]
+    }
+  },
+  "sink": {
+    "type": "console",
+    "config": {
+      "format": "json"
+    }
+  }
+}
