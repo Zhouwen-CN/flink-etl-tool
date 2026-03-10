@@ -73,6 +73,13 @@
                 <version>${mysql.connector.version}</version>
             </dependency>
 
+            <!-- Apache Commons Lang -->
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>3.12.0</version>
+            </dependency>
+
             <!-- 测试 -->
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
