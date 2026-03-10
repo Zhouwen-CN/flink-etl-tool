@@ -1,0 +1,25 @@
+{
+  "job": {
+    "name": "mysql-custom-sql-to-console",
+    "mode": "batch"
+  },
+  "source": {
+    "type": "mysql",
+    "config": {
+      "url": "jdbc:mysql://localhost:3306/test_db",
+      "sql": "SELECT id, name, email FROM user_table WHERE status = 'active'",
+      "username": "root",
+      "password": "123456",
+      "splitColumn": "id",
+      "splitSize": 10000,
+      "fetchSize": 1000,
+      "queryTimeout": 300
+    }
+  },
+  "sink": {
+    "type": "console",
+    "config": {
+      "format": "json"
+    }
+  }
+}
