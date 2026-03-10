@@ -8,16 +8,14 @@ import java.util.Map;
  */
 public class TransformConfig {
     private String type;
-    private String name;
-    private Map<String, Object> properties;
+    private Map<String, Object> config;
 
     public TransformConfig() {
     }
 
-    public TransformConfig(String type, String name, Map<String, Object> properties) {
+    public TransformConfig(String type, Map<String, Object> config) {
         this.type = type;
-        this.name = name;
-        this.properties = properties;
+        this.config = config;
     }
 
     public String getType() {
@@ -28,19 +26,21 @@ public class TransformConfig {
         this.type = type;
     }
 
-    public String getName() {
-        return name;
+    public Map<String, Object> getConfig() {
+        return config;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setConfig(Map<String, Object> config) {
+        this.config = config;
     }
 
-    public Map<String, Object> getProperties() {
-        return properties;
-    }
-
-    public void setProperties(Map<String, Object> properties) {
-        this.properties = properties;
+    /**
+     * 获取配置值
+     *
+     * @param key 配置键
+     * @return 配置值
+     */
+    public Object get(String key) {
+        return config.get(key);
     }
 }

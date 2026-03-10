@@ -8,16 +8,14 @@ import java.util.Map;
  */
 public class SinkConfig {
     private String type;
-    private String name;
-    private Map<String, Object> properties;
+    private Map<String, Object> config;
 
     public SinkConfig() {
     }
 
-    public SinkConfig(String type, String name, Map<String, Object> properties) {
+    public SinkConfig(String type, Map<String, Object> config) {
         this.type = type;
-        this.name = name;
-        this.properties = properties;
+        this.config = config;
     }
 
     public String getType() {
@@ -28,19 +26,49 @@ public class SinkConfig {
         this.type = type;
     }
 
-    public String getName() {
-        return name;
+    public Map<String, Object> getConfig() {
+        return config;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setConfig(Map<String, Object> config) {
+        this.config = config;
     }
 
-    public Map<String, Object> getProperties() {
-        return properties;
+    /**
+     * 获取字符串类型的配置值
+     *
+     * @param key 配置键
+     * @return 配置值
+     */
+    public String getString(String key) {
+        Object value = config.get(key);
+        return value != null ? String.valueOf(value) : null;
     }
 
-    public void setProperties(Map<String, Object> properties) {
-        this.properties = properties;
+    /**
+     * 获取整数类型的配置值
+     *
+     * @param key 配置键
+     * @return 配置值
+     */
+    public Integer getInteger(String key) {
+        Object value = config.get(key);
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Integer) {
+            return (Integer) value;
+        }
+        return Integer.parseInt(String.valueOf(value));
+    }
+
+    /**
+     * 获取配置值
+     *
+     * @param key 配置键
+     * @return 配置值
+     */
+    public Object get(String key) {
+        return config.get(key);
     }
 }
