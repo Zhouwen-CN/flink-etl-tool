@@ -1,0 +1,26 @@
+package com.etl.core.spi;
+
+import com.etl.core.config.SinkConfig;
+import org.apache.flink.streaming.api.functions.sink.SinkFunction;
+
+/**
+ * Sink 插件接口
+ * 所有数据写入插件必须实现此接口
+ */
+public interface SinkPlugin {
+
+    /**
+     * 获取插件类型标识
+     *
+     * @return 插件类型标识
+     */
+    String getType();
+
+    /**
+     * 创建 Sink 函数
+     *
+     * @param config Sink 配置
+     * @return Flink SinkFunction
+     */
+    SinkFunction<?> createSink(SinkConfig config);
+}
