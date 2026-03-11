@@ -60,16 +60,26 @@ public class JobExecutor {
      */
     private StreamExecutionEnvironment createExecutionEnvironment(JobConfig config) {
         String mode = config.getJob().getMode();
-        logger.info("创建 Flink 执行环境: mode={}", mode);
+        Integer parallelism = config.getJob().getParallelism();
+        logger.info("创建 Flink 执行环境: mode={}, parallelism={}", mode, parallelism);
 
+        StreamExecutionEnvironment env;
         if ("batch".equals(mode)) {
             // 批处理模式
             Configuration configuration = new Configuration();
             configuration.setString("execution.runtime-mode", "BATCH");
-            return StreamExecutionEnvironment.getExecutionEnvironment(configuration);
+            env = StreamExecutionEnvironment.getExecutionEnvironment(configuration);
         } else {
             // 流处理模式
-            return StreamExecutionEnvironment.getExecutionEnvironment();
+            env = StreamExecutionEnvironment.getExecutionEnvironment();
         }
+
+        // 设置并行度（如果配置了）
+        if (parallelism != null) {
+            env.setParallelism(parallelism);
+            logger.info("设置 Job 并行度: {}", parallelism);
+        }
+
+        return env;
     }
 }
