@@ -33,6 +33,11 @@ public class JdbcSplitEnumerator
     }
 
     @Override
+    public void addReader(int subtaskId) {
+        logger.info("添加 Reader: {}", subtaskId);
+    }
+
+    @Override
     public void handleSplitRequest(int subtaskId, String requesterHostname) {
         if (currentSplitIndex < splits.size()) {
             RangeSplit split = splits.get(currentSplitIndex++);

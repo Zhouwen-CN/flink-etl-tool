@@ -106,6 +106,17 @@ public class JdbcSourceReader implements SourceReader<Row, RangeSplit> {
     }
 
     @Override
+    public java.util.concurrent.CompletableFuture<Void> isAvailable() {
+        return java.util.concurrent.CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public List<RangeSplit> snapshotState(long checkpointId) {
+        logger.info("快照状态，检查点ID: {}", checkpointId);
+        return currentSplit != null ? List.of(currentSplit) : List.of();
+    }
+
+    @Override
     public void close() throws Exception {
         logger.info("关闭 JDBC Source Reader");
         closeCurrentSplit();

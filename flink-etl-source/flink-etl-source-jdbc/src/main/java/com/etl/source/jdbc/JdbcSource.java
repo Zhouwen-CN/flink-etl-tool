@@ -5,7 +5,9 @@ import com.etl.core.source.AbstractRangeSplitSource;
 import com.etl.core.source.PendingSplitsCheckpoint;
 import com.etl.core.source.RangeSplit;
 import org.apache.commons.lang3.Range;
+import org.apache.flink.api.connector.source.Boundedness;
 import org.apache.flink.api.connector.source.SplitEnumerator;
+import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 import org.apache.flink.api.connector.source.SourceReader;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
@@ -70,6 +72,11 @@ public class JdbcSource extends AbstractRangeSplitSource<Row> {
         } catch (SQLException e) {
             throw new RuntimeException("获取分片范围失败: " + e.getMessage(), e);
         }
+    }
+
+    @Override
+    public Boundedness getBoundedness() {
+        return Boundedness.BOUNDED;
     }
 
     @Override
