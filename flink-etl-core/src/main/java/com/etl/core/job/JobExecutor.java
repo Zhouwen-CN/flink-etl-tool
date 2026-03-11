@@ -58,7 +58,7 @@ public class JobExecutor {
      * @param config Job 配置
      * @return Flink 执行环境
      */
-    private StreamExecutionEnvironment createExecutionEnvironment(JobConfig config) {
+    StreamExecutionEnvironment createExecutionEnvironment(JobConfig config) {
         String mode = config.getJob().getMode();
         Integer parallelism = config.getJob().getParallelism();
         logger.info("创建 Flink 执行环境: mode={}, parallelism={}", mode, parallelism);
