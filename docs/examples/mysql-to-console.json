@@ -1,7 +1,8 @@
 {
   "job": {
     "name": "mysql-to-console",
-    "mode": "batch"
+    "mode": "batch",
+    "parallelism": 4
   },
   "source": {
     "type": "mysql",
@@ -9,7 +10,7 @@
       "url": "jdbc:mysql://118.145.119.51:3306/test_db",
       "table": "user_table",
       "username": "root",
-      "password": "123456",
+      "password": "Zw$8rb8*",
       "splitColumn": "id",
       "splitSize": 10000
     }
