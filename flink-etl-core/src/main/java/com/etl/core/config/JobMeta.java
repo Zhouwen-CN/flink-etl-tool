@@ -6,6 +6,7 @@ package com.etl.core.config;
 public class JobMeta {
     private String name;
     private String mode;
+    private Integer parallelism;  // 并行度配置，null 表示使用 Flink 默认值
 
     public String getName() {
         return name;
@@ -21,5 +22,13 @@ public class JobMeta {
 
     public void setMode(String mode) {
         this.mode = mode;
+    }
+
+    public Integer getParallelism() {
+        return parallelism;
+    }
+
+    public void setParallelism(Integer parallelism) {
+        this.parallelism = parallelism;
     }
 }
