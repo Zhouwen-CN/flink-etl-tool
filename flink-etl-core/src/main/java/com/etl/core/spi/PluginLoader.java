@@ -21,7 +21,13 @@ public class PluginLoader {
     public SourcePlugin loadSourcePlugin(String type) {
         logger.info("加载 Source 插件: {}", type);
 
-        ServiceLoader<SourcePlugin> loader = ServiceLoader.load(SourcePlugin.class);
+        // 使用当前线程的 ClassLoader 加载插件
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        if (classLoader == null) {
+            classLoader = PluginLoader.class.getClassLoader();
+        }
+
+        ServiceLoader<SourcePlugin> loader = ServiceLoader.load(SourcePlugin.class, classLoader);
         for (SourcePlugin plugin : loader) {
             if (plugin.getType().equals(type)) {
                 logger.info("Source 插件加载成功: {}", plugin.getClass().getName());
@@ -43,7 +49,13 @@ public class PluginLoader {
     public TransformPlugin loadTransformPlugin(String type) {
         logger.info("加载 Transform 插件: {}", type);
 
-        ServiceLoader<TransformPlugin> loader = ServiceLoader.load(TransformPlugin.class);
+        // 使用当前线程的 ClassLoader 加载插件
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        if (classLoader == null) {
+            classLoader = PluginLoader.class.getClassLoader();
+        }
+
+        ServiceLoader<TransformPlugin> loader = ServiceLoader.load(TransformPlugin.class, classLoader);
         for (TransformPlugin plugin : loader) {
             if (plugin.getType().equals(type)) {
                 logger.info("Transform 插件加载成功: {}", plugin.getClass().getName());
@@ -65,7 +77,13 @@ public class PluginLoader {
     public SinkPlugin loadSinkPlugin(String type) {
         logger.info("加载 Sink 插件: {}", type);
 
-        ServiceLoader<SinkPlugin> loader = ServiceLoader.load(SinkPlugin.class);
+        // 使用当前线程的 ClassLoader 加载插件
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        if (classLoader == null) {
+            classLoader = PluginLoader.class.getClassLoader();
+        }
+
+        ServiceLoader<SinkPlugin> loader = ServiceLoader.load(SinkPlugin.class, classLoader);
         for (SinkPlugin plugin : loader) {
             if (plugin.getType().equals(type)) {
                 logger.info("Sink 插件加载成功: {}", plugin.getClass().getName());
