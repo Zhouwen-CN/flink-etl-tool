@@ -1,4 +1,4 @@
-package com.etl.core;
+package com.etl.client;
 
 import com.etl.core.job.JobExecutor;
 import com.etl.core.spi.PluginLoader;
@@ -6,15 +6,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * ETL 工具主入口
+ * ETL 客户端启动器
  */
-public class EtlApplication {
-    private static final Logger logger = LoggerFactory.getLogger(EtlApplication.class);
+public class EtlClient {
+    private static final Logger logger = LoggerFactory.getLogger(EtlClient.class);
 
     public static void main(String[] args) {
         if (args.length < 1) {
-            System.err.println("用法: java -jar etl-tool.jar <config.json>");
-            System.err.println("示例: java -jar etl-tool.jar config/mysql-to-console.json");
+            System.err.println("用法: java -jar flink-etl-tool.jar <config.json>");
+            System.err.println("示例: java -jar flink-etl-tool.jar config/mysql-to-console.json");
             System.exit(1);
         }
 

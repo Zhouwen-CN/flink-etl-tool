@@ -27,6 +27,7 @@
 
     <modules>
         <module>flink-etl-core</module>
+        <module>flink-etl-client</module>
         <module>flink-etl-source</module>
         <module>flink-etl-sink</module>
         <module>flink-etl-transform</module>
