@@ -13,7 +13,8 @@ import java.sql.SQLException;
  * MySQL 数据库方言实现
  */
 public class MySQLDialect implements JdbcDialect {
-    private static final Logger logger = LoggerFactory.getLogger(MySQLDialect.class);
+    private static final long serialVersionUID = 1L;
+    private static final transient Logger logger = LoggerFactory.getLogger(MySQLDialect.class);
 
     @Override
     public String getDriverClassName() {

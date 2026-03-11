@@ -2,6 +2,7 @@ package com.etl.source.jdbc;
 
 import org.apache.flink.types.Row;
 
+import java.io.Serializable;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -9,7 +10,7 @@ import java.sql.SQLException;
  * JDBC 数据库方言接口
  * 定义数据库特定的 SQL 构建和类型转换方法
  */
-public interface JdbcDialect {
+public interface JdbcDialect extends Serializable {
 
     /**
      * 获取 JDBC 驱动类名
