@@ -17,11 +17,9 @@ public abstract class AbstractRangeSplitSource<T> extends AbstractSplitSource<T,
     private static final Logger logger = LoggerFactory.getLogger(AbstractRangeSplitSource.class);
 
     protected final String splitColumn;
-    protected final int splitSize;
 
-    public AbstractRangeSplitSource(String splitColumn, int splitSize) {
+    public AbstractRangeSplitSource(String splitColumn) {
         this.splitColumn = splitColumn;
-        this.splitSize = splitSize;
     }
 
     /**
@@ -33,25 +31,41 @@ public abstract class AbstractRangeSplitSource<T> extends AbstractSplitSource<T,
     protected abstract Range<Long> getSplitColumnRange();
 
     /**
-     * 根据最小值、最大值和分片大小，计算所有分片
-     * 框架自动实现，子类无需重写
+     * 根据范围和并行度计算所有分片
      *
+     * @param range 数据范围
+     * @param parallelism 并行度（分片数量）
      * @return 分片列表
      */
-    protected List<RangeSplit> calculateSplits() {
-        Range<Long> range = getSplitColumnRange();
+    protected List<RangeSplit> calculateSplits(Range<Long> range, int parallelism) {
         List<RangeSplit> splits = new ArrayList<>();
 
         long start = range.getMinimum();
         long end = range.getMaximum();
 
-        logger.info("计算分片: splitColumn={}, range=[{}, {}], splitSize={}",
-                splitColumn, start, end, splitSize);
+        logger.info("计算分片: splitColumn={}, range=[{}, {}], parallelism={}",
+                splitColumn, start, end, parallelism);
 
-        while (start <= end) {
-            long splitEnd = Math.min(start + splitSize - 1, end);
-            splits.add(new RangeSplit(splitColumn, start, splitEnd));
-            start = splitEnd + 1;
+        if (start > end) {
+            logger.warn("数据范围为空，不创建分片");
+            return splits;
+        }
+
+        long totalRecords = end - start + 1;
+        int actualSplitCount = (int) Math.min(parallelism, totalRecords);
+
+        if (actualSplitCount < parallelism) {
+            logger.info("数据量({})小于并行度({})，实际分片数调整为 {}",
+                    totalRecords, parallelism, actualSplitCount);
+        }
+
+        long splitSize = (totalRecords + actualSplitCount - 1) / actualSplitCount;
+
+        long currentStart = start;
+        for (int i = 0; i < actualSplitCount && currentStart <= end; i++) {
+            long currentEnd = Math.min(currentStart + splitSize - 1, end);
+            splits.add(new RangeSplit(splitColumn, currentStart, currentEnd));
+            currentStart = currentEnd + 1;
         }
 
         logger.info("共计算出 {} 个分片", splits.size());
