@@ -72,12 +72,21 @@ flink-etl-tool/
 
 ```json
 {
-  "job": { "name": "job-name", "mode": "batch" },
+  "job": {
+    "name": "job-name",
+    "mode": "batch",
+    "parallelism": 4
+  },
   "source": { "type": "mysql", "config": { ... } },
   "transform": { "type": "field-mapping", "config": { ... } },
   "sink": { "type": "console", "config": { ... } }
 }
 ```
+
+**job 配置项说明：**
+- `name`: Job 名称
+- `mode`: 执行模式，支持 `batch`（批处理）或 `streaming`（流处理）
+- `parallelism`: 并行度配置（可选），不设置则使用 Flink 默认值
 
 示例配置位于 `docs/examples/` 目录。
 
