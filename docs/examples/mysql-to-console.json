@@ -2,7 +2,7 @@
   "job": {
     "name": "mysql-to-console",
     "mode": "batch",
-    "parallelism": 4
+    "parallelism": 2
   },
   "source": {
     "type": "mysql",
@@ -11,8 +11,7 @@
       "table": "user_table",
       "username": "root",
       "password": "Zw$8rb8*",
-      "splitColumn": "id",
-      "splitSize": 10000
+      "splitColumn": "id"
     }
   },
   "transform": {
