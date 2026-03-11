@@ -14,6 +14,7 @@ import org.apache.flink.api.connector.source.SourceReader;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
+import org.apache.flink.types.Row;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,9 +30,10 @@ import java.util.List;
  *   <li>{@link JdbcSplitEnumerator} - 继承 BaseSplitEnumerator</li>
  *   <li>{@link JdbcSourceReader} - 继承 BaseSourceReader</li>
  *   <li>默认序列化器 - 无需手写</li>
+ *   <li>直接输出 Flink Row 类型</li>
  * </ul>
  */
-public class JdbcSource extends AbstractRangeSplitSource<JdbcRecord> {
+public class JdbcSource extends AbstractRangeSplitSource<Row> {
 
     private static final Logger logger = LoggerFactory.getLogger(JdbcSource.class);
 
@@ -104,7 +106,7 @@ public class JdbcSource extends AbstractRangeSplitSource<JdbcRecord> {
     }
 
     @Override
-    public SourceReader<JdbcRecord, RangeSplit> createReader(SourceReaderContext readerContext) {
+    public SourceReader<Row, RangeSplit> createReader(SourceReaderContext readerContext) {
         logger.info("创建 SourceReader");
 
         // 创建 SplitReader 供应器

@@ -25,9 +25,10 @@ import java.util.Set;
  *   <li>每个分片创建独立的数据库连接</li>
  *   <li>使用 fetch() 方法一次性读取一个分片的所有数据</li>
  *   <li>支持流式读取（通过 fetchSize 控制）</li>
+ *   <li>直接返回 Flink Row 类型，无需额外包装</li>
  * </ul>
  */
-public class JdbcSplitReader implements BaseSplitReader<JdbcRecord, RangeSplit> {
+public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
 
     private static final Logger logger = LoggerFactory.getLogger(JdbcSplitReader.class);
 
@@ -60,12 +61,12 @@ public class JdbcSplitReader implements BaseSplitReader<JdbcRecord, RangeSplit> 
     }
 
     @Override
-    public RecordsWithSplitIds<JdbcRecord> fetch() throws IOException {
+    public RecordsWithSplitIds<Row> fetch() throws IOException {
         RangeSplit split = pendingSplits.poll();
 
         if (split == null) {
             // 没有待处理的分片，返回空结果
-            RecordsBySplits.Builder<JdbcRecord> builder = new RecordsBySplits.Builder<>();
+            RecordsBySplits.Builder<Row> builder = new RecordsBySplits.Builder<>();
             builder.addFinishedSplits(finishedSplits);
             return builder.build();
         }
@@ -82,8 +83,8 @@ public class JdbcSplitReader implements BaseSplitReader<JdbcRecord, RangeSplit> 
     /**
      * 读取单个分片的数据
      */
-    private RecordsWithSplitIds<JdbcRecord> fetchDataForSplit(RangeSplit split) throws SQLException {
-        RecordsBySplits.Builder<JdbcRecord> builder = new RecordsBySplits.Builder<>();
+    private RecordsWithSplitIds<Row> fetchDataForSplit(RangeSplit split) throws SQLException {
+        RecordsBySplits.Builder<Row> builder = new RecordsBySplits.Builder<>();
 
         try (Connection conn = DriverManager.getConnection(url, username, password);
              Statement stmt = conn.createStatement()) {
@@ -104,7 +105,7 @@ public class JdbcSplitReader implements BaseSplitReader<JdbcRecord, RangeSplit> 
             try (ResultSet rs = stmt.executeQuery(querySql)) {
                 while (rs.next()) {
                     Row row = dialect.createRow(rs);
-                    builder.add(split.splitId(), new JdbcRecord(row, split.splitId()));
+                    builder.add(split.splitId(), row);
                 }
             }
         }

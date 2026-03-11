@@ -6,6 +6,7 @@ import com.etl.core.source.base.BaseSourceReader;
 import com.etl.core.source.base.BaseSplitReader;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.types.Row;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +19,7 @@ import java.util.function.Supplier;
  *
  * <p>优化后代码行数：~50 行（优化前：~160 行）
  * <p>消除的重复代码：线程管理、状态追踪、pollNext 逻辑
+ * <p>直接输出 Flink Row 类型，无需额外包装
  *
  * <p>子类需要实现的方法：
  * <ul>
@@ -26,7 +28,7 @@ import java.util.function.Supplier;
  *   <li>{@link #onSplitFinished(Map)} - 分片完成回调</li>
  * </ul>
  */
-public class JdbcSourceReader extends BaseSourceReader<JdbcRecord, JdbcRecord, RangeSplit, RangeSplitState> {
+public class JdbcSourceReader extends BaseSourceReader<Row, Row, RangeSplit, RangeSplitState> {
 
     private static final Logger logger = LoggerFactory.getLogger(JdbcSourceReader.class);
 
@@ -57,14 +59,14 @@ public class JdbcSourceReader extends BaseSourceReader<JdbcRecord, JdbcRecord, R
      * @param dialect 方言
      */
     public JdbcSourceReader(
-            Supplier<BaseSplitReader<JdbcRecord, RangeSplit>> splitReaderSupplier,
+            Supplier<BaseSplitReader<Row, RangeSplit>> splitReaderSupplier,
             Configuration config,
             SourceReaderContext context,
             String url, String username, String password,
             String table, String sql, String splitColumn,
             Integer fetchSize, Integer queryTimeout,
             JdbcDialect dialect) {
-        super(splitReaderSupplier, new JdbcRecordEmitter(), config, context);
+        super(splitReaderSupplier, new RowRecordEmitter(), config, context);
         this.url = url;
         this.username = username;
         this.password = password;
@@ -99,7 +101,7 @@ public class JdbcSourceReader extends BaseSourceReader<JdbcRecord, JdbcRecord, R
      *
      * @return 供应器
      */
-    public static Supplier<BaseSplitReader<JdbcRecord, RangeSplit>> createSplitReaderSupplier(
+    public static Supplier<BaseSplitReader<Row, RangeSplit>> createSplitReaderSupplier(
             String url, String username, String password,
             String table, String sql, String splitColumn,
             Integer fetchSize, Integer queryTimeout,
