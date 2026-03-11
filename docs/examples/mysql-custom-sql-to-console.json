@@ -1,18 +1,17 @@
 {
   "job": {
     "name": "mysql-custom-sql-to-console",
-    "mode": "batch"
+    "mode": "batch",
+    "parallelism": 2
   },
   "source": {
     "type": "mysql",
     "config": {
-      "url": "jdbc:mysql://localhost:3306/test_db",
-      "sql": "SELECT id, name, email FROM user_table WHERE status = 'active'",
+      "url": "jdbc:mysql://118.145.119.51:3306/test_db",
+      "sql": "SELECT id, name, email FROM user_table WHERE age > 11",
       "username": "root",
-      "password": "123456",
+      "password": "Zw$8rb8*",
       "splitColumn": "id",
-      "splitSize": 10000,
-      "fetchSize": 1000,
       "queryTimeout": 300
     }
   },

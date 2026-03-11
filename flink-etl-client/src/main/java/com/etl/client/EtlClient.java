@@ -34,7 +34,6 @@ public class EtlClient {
         } catch (Exception e) {
             logger.error("Job 执行失败", e);
             System.err.println("Job 执行失败: " + e.getMessage());
-            e.printStackTrace();
             System.exit(1);
         }
     }

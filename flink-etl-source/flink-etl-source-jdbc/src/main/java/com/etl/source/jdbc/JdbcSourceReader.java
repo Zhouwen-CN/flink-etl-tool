@@ -95,18 +95,4 @@ public class JdbcSourceReader extends BaseSourceReader<Row, Row, RangeSplit, Ran
     protected RangeSplit toSplitType(String splitId, RangeSplitState splitState) {
         return splitState.getSplit();
     }
-
-    /**
-     * 创建 JdbcSplitReader 供应器
-     *
-     * @return 供应器
-     */
-    public static Supplier<BaseSplitReader<Row, RangeSplit>> createSplitReaderSupplier(
-            String url, String username, String password,
-            String table, String sql, String splitColumn,
-            Integer fetchSize, Integer queryTimeout,
-            JdbcDialect dialect) {
-        return () -> new JdbcSplitReader(url, username, password, table, sql,
-                splitColumn, fetchSize, queryTimeout, dialect);
-    }
 }

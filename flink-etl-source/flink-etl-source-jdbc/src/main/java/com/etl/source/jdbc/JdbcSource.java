@@ -4,6 +4,7 @@ import com.etl.core.config.SourceConfig;
 import com.etl.core.source.AbstractRangeSplitSource;
 import com.etl.core.source.RangeEnumCheckpoint;
 import com.etl.core.source.RangeSplit;
+import com.etl.core.source.base.BaseSplitReader;
 import com.etl.core.source.base.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.base.serde.DefaultSplitSerializer;
 import org.apache.commons.lang3.Range;
@@ -20,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * JDBC Source 实现
@@ -110,9 +112,9 @@ public class JdbcSource extends AbstractRangeSplitSource<Row> {
         logger.info("创建 SourceReader");
 
         // 创建 SplitReader 供应器
-        var splitReaderSupplier = JdbcSourceReader.createSplitReaderSupplier(
-                url, username, password, table, sql,
-                splitColumn, fetchSize, queryTimeout, dialect);
+        var splitReaderSupplier = (Supplier<BaseSplitReader<Row, RangeSplit>>) () ->
+                new JdbcSplitReader(url, username, password, table, sql,
+                        splitColumn, fetchSize, queryTimeout, dialect);
 
         // 创建 Reader
         return new JdbcSourceReader(

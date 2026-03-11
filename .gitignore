@@ -21,3 +21,4 @@ target/
 .claude
 .idea
 dependency-reduced-pom.xml
+logs

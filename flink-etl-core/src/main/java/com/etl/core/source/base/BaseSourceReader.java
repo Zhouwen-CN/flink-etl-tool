@@ -3,11 +3,9 @@ package com.etl.core.source.base;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.connector.base.source.reader.RecordEmitter;
-import org.apache.flink.connector.base.source.reader.RecordsWithSplitIds;
 import org.apache.flink.connector.base.source.reader.RecordEvaluator;
 import org.apache.flink.connector.base.source.reader.SingleThreadMultiplexSourceReaderBase;
 import org.apache.flink.connector.base.source.reader.fetcher.SingleThreadFetcherManager;
-import org.apache.flink.connector.base.source.reader.synchronization.FutureCompletingBlockingQueue;
 
 import javax.annotation.Nullable;
 import java.util.Map;
@@ -42,11 +40,6 @@ public abstract class BaseSourceReader<E, T, SplitT extends BaseSourceSplit, Sta
         extends SingleThreadMultiplexSourceReaderBase<E, T, SplitT, StateT> {
 
     /**
-     * 默认元素队列容量
-     */
-    private static final int DEFAULT_QUEUE_CAPACITY = 10;
-
-    /**
      * 构造函数
      *
      * @param splitReaderSupplier 分片读取器供应器
@@ -59,57 +52,28 @@ public abstract class BaseSourceReader<E, T, SplitT extends BaseSourceSplit, Sta
             RecordEmitter<E, T, StateT> recordEmitter,
             Configuration config,
             SourceReaderContext context) {
-        this(new FutureCompletingBlockingQueue<>(DEFAULT_QUEUE_CAPACITY),
-                splitReaderSupplier,
-                recordEmitter,
-                config,
-                context);
+        super(splitReaderSupplier::get, recordEmitter, config, context);
     }
 
     /**
-     * 构造函数（自定义队列）
+     * 构造函数（自定义 FetcherManager）
      *
-     * @param elementsQueue 元素队列
-     * @param splitReaderSupplier 分片读取器供应器
-     * @param recordEmitter 记录发射器
-     * @param config 配置
-     * @param context 读取器上下文
-     */
-    public BaseSourceReader(
-            FutureCompletingBlockingQueue<RecordsWithSplitIds<E>> elementsQueue,
-            Supplier<BaseSplitReader<E, SplitT>> splitReaderSupplier,
-            RecordEmitter<E, T, StateT> recordEmitter,
-            Configuration config,
-            SourceReaderContext context) {
-        this(elementsQueue,
-                new SingleThreadFetcherManager<>(elementsQueue, splitReaderSupplier::get, config),
-                recordEmitter,
-                config,
-                context);
-    }
-
-    /**
-     * 完整构造函数
-     *
-     * @param elementsQueue 元素队列
      * @param splitFetcherManager 分片提取管理器
      * @param recordEmitter 记录发射器
      * @param config 配置
      * @param context 读取器上下文
      */
     public BaseSourceReader(
-            FutureCompletingBlockingQueue<RecordsWithSplitIds<E>> elementsQueue,
             SingleThreadFetcherManager<E, SplitT> splitFetcherManager,
             RecordEmitter<E, T, StateT> recordEmitter,
             Configuration config,
             SourceReaderContext context) {
-        this(elementsQueue, splitFetcherManager, recordEmitter, null, config, context);
+        super(splitFetcherManager, recordEmitter, config, context);
     }
 
     /**
-     * 最完整构造函数
+     * 构造函数（完整版本，支持 EOF 记录评估）
      *
-     * @param elementsQueue 元素队列
      * @param splitFetcherManager 分片提取管理器
      * @param recordEmitter 记录发射器
      * @param eofRecordEvaluator EOF 记录评估器
@@ -117,13 +81,12 @@ public abstract class BaseSourceReader<E, T, SplitT extends BaseSourceSplit, Sta
      * @param context 读取器上下文
      */
     public BaseSourceReader(
-            FutureCompletingBlockingQueue<RecordsWithSplitIds<E>> elementsQueue,
             SingleThreadFetcherManager<E, SplitT> splitFetcherManager,
             RecordEmitter<E, T, StateT> recordEmitter,
             @Nullable RecordEvaluator<T> eofRecordEvaluator,
             Configuration config,
             SourceReaderContext context) {
-        super(elementsQueue, splitFetcherManager, recordEmitter, eofRecordEvaluator, config, context);
+        super(splitFetcherManager, recordEmitter, eofRecordEvaluator, config, context);
     }
 
     /**

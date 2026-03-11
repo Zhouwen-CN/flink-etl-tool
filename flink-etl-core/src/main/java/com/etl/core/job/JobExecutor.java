@@ -5,6 +5,8 @@ import com.etl.core.config.JobConfig;
 import com.etl.core.spi.PluginLoader;
 import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.CoreOptions;
+import org.apache.flink.configuration.ExecutionOptions;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,25 +66,23 @@ public class JobExecutor {
         Integer parallelism = config.getJob().getParallelism();
         logger.info("创建 Flink 执行环境: mode={}, parallelism={}", mode, parallelism);
 
-        StreamExecutionEnvironment env;
-        if ("batch".equals(mode)) {
-            // 批处理模式
-            Configuration configuration = new Configuration();
-            configuration.setString("execution.runtime-mode", "BATCH");
-            env = StreamExecutionEnvironment.getExecutionEnvironment(configuration);
-        } else {
-            // 流处理模式
-            env = StreamExecutionEnvironment.getExecutionEnvironment();
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+        Configuration configuration = new Configuration();
+
+        if ("batch".equalsIgnoreCase(mode)) {
+            configuration.set(ExecutionOptions.RUNTIME_MODE, RuntimeExecutionMode.BATCH);
+        } else if ("stream".equalsIgnoreCase(mode)) {
+            configuration.set(ExecutionOptions.RUNTIME_MODE, RuntimeExecutionMode.STREAMING);
+        }else{
+            throw new IllegalArgumentException("job.mode 仅支持 batch | stream");
         }
 
-        // env.setRuntimeMode(RuntimeExecutionMode.BATCH);
-
-        // 设置并行度（如果配置了）
         if (parallelism != null) {
-            env.setParallelism(parallelism);
+            configuration.set(CoreOptions.DEFAULT_PARALLELISM, parallelism);
             logger.info("设置 Job 并行度: {}", parallelism);
         }
 
+        env.configure(configuration);
         return env;
     }
 }
