@@ -28,7 +28,7 @@ mvn clean install -DskipTests
 
 ```
 flink-etl-tool/
-├── flink-etl-core/           # 核心框架（SPI 接口、配置解析、Job 编排）
+├── flink-etl-core/           # 核心框架（SPI 接口、配置解析、Job 编排、Source 抽象层）
 ├── flink-etl-client/         # 客户端启动器（打包入口）
 ├── flink-etl-source/         # Source 插件父模块
 │   ├── flink-etl-source-jdbc/    # JDBC 通用实现
@@ -56,13 +56,35 @@ flink-etl-tool/
 
 插件加载通过 [PluginLoader.java](flink-etl-core/src/main/java/com/etl/core/spi/PluginLoader.java) 实现。
 
-### 扩展新数据源
+### Source 抽象层架构
+
+项目参考 Clink 项目设计，实现了完整的 Source 抽象层，简化 Flink FLIP-27 Source API 的实现：
+
+**核心抽象类层次：**
+- `AbstractSplitSource<T, SplitT, CheckpointT>` - Source 基类
+  - `AbstractRangeSplitSource<T>` - 范围分片 Source（适用于关系型数据库）
+
+**base 包组件：**
+- `BaseSourceSplit` - 分片接口
+- `BaseSplitState` - 分片状态
+- `BaseEnumCheckpoint` - 枚举器检查点
+- `BaseSplitEnumerator` - 分片枚举器基类（自动处理分片分配和回收）
+- `BaseSourceReader` - 源阅读器基类（封装线程模型和状态管理）
+- `BaseSplitReader` - 分片读取器接口（阻塞式数据读取）
+
+**数据类型：**
+- 所有 Source 直接使用 Flink `Row` 类型输出，无额外包装层
+- 降低对象创建开销，与 Flink 生态更好集成
+
+**扩展新数据源：**
 
 添加新数据源需要：
 
 1. 创建新模块，依赖 `flink-etl-core`
 2. 实现 `SourcePlugin` 接口
 3. 继承 `AbstractRangeSplitSource` 实现分片读取（关系型数据库）
+   - 实现 `getSplitColumnRange()` 方法获取分片范围
+   - 分片数量根据 Job 配置的 `parallelism` 自动计算
 4. 添加 `META-INF/services/com.etl.core.spi.SourcePlugin` 文件
 5. 在 `flink-etl-client/pom.xml` 添加新模块依赖
 
@@ -87,18 +109,52 @@ flink-etl-tool/
 - `name`: Job 名称
 - `mode`: 执行模式，支持 `batch`（批处理）或 `streaming`（流处理）
 - `parallelism`: 并行度配置（可选），不设置则使用 Flink 默认值
+  - 对于支持分片的 Source（如 MySQL），分片数量等于并行度
+  - 如果数据量小于并行度，实际分片数会自动调整为数据量
+
+**source 配置项说明（以 MySQL 为例）：**
+- `url`: 数据库连接 URL
+- `table`: 表名（与 `sql` 二选一）
+- `sql`: 自定义查询 SQL（与 `table` 二选一）
+- `username`: 用户名
+- `password`: 密码
+- `splitColumn`: 分片列名（通常为主键）
+- `fetchSize`: JDBC fetch size（可选，流式读取优化）
+- `queryTimeout`: 查询超时时间（可选，单位秒）
+
+**注意：**
+- 旧版本的 `splitSize` 配置项已移除，分片数量现在根据 `parallelism` 自动计算
+- 分片算法会根据数据范围和并行度自动优化，确保每个分片大小均衡
 
 示例配置位于 `docs/examples/` 目录。
 
 ## 关键抽象类
 
-- **AbstractSplitSource**: 支持分片的 Source 抽象基类，封装 Flink FLIP-27 Source API
-- **AbstractRangeSplitSource**: 范围分片 Source，子类只需实现 `getSplitColumnRange()` 方法
+**Source 抽象层：**
+- `AbstractSplitSource<T, SplitT, CheckpointT>`: Source 基类，封装 Flink FLIP-27 Source API
+- `AbstractRangeSplitSource<T>`: 范围分片 Source，子类只需实现 `getSplitColumnRange()` 方法
+  - 自动根据并行度计算分片数量
+  - 自动处理分片大小均衡
+
+**Base 组件：**
+- `BaseSplitEnumerator`: 分片枚举器基类，自动处理分片分配和回收
+- `BaseSourceReader`: 源阅读器基类，封装线程模型和状态管理
+- `BaseSplitReader`: 分片读取器接口，实现阻塞式数据读取
+
+**分片和状态：**
+- `RangeSplit`: 范围分片，表示数据范围 [start, end]
+- `RangeSplitState`: 分片状态，追踪读取进度
+- `RangeEnumCheckpoint`: 枚举器检查点
+
+**JDBC 实现：**
+- `JdbcSource`: JDBC Source 实现，继承 `AbstractRangeSplitSource<Row>`
+- `JdbcDialect`: 数据库方言接口
+- `MySQLDialect`: MySQL 方言实现
 
 ## 技术栈
 
 - Java 11
 - Apache Flink 1.19.0
 - Jackson 2.15.2 (JSON 解析)
-- SLF4J + Logback (日志)
+- SLF4J + Log4j2 (日志)
 - Maven (构建)
