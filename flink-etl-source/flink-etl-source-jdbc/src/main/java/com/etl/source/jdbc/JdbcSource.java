@@ -36,10 +36,7 @@ public class JdbcSource extends AbstractRangeSplitSource<Row> {
     private final JdbcDialect dialect;
 
     public JdbcSource(SourceConfig config, JdbcDialect dialect) {
-        super(
-                config.getString("splitColumn"),
-                config.getInteger("splitSize")
-        );
+        super(config.getString("splitColumn"));  // 只传递 splitColumn
         this.url = config.getString("url");
         this.username = config.getString("username");
         this.password = config.getString("password");
@@ -49,8 +46,8 @@ public class JdbcSource extends AbstractRangeSplitSource<Row> {
         this.queryTimeout = config.getInteger("queryTimeout");
         this.dialect = dialect;
 
-        logger.info("创建 JdbcSource: table={}, sql={}, splitColumn={}, splitSize={}",
-                table, sql, splitColumn, splitSize);
+        logger.info("创建 JdbcSource: table={}, sql={}, splitColumn={}",
+                table, sql, splitColumn);
     }
 
     @Override
@@ -83,7 +80,10 @@ public class JdbcSource extends AbstractRangeSplitSource<Row> {
     public SplitEnumerator<RangeSplit, PendingSplitsCheckpoint<RangeSplit>>
     createEnumerator(SplitEnumeratorContext<RangeSplit> enumContext) {
         logger.info("创建 SplitEnumerator");
-        List<RangeSplit> splits = calculateSplits();
+        Range<Long> range = getSplitColumnRange();
+        // 从 Flink 上下文获取真实并行度
+        int parallelism = enumContext.currentParallelism();
+        List<RangeSplit> splits = calculateSplits(range, parallelism);
         return new JdbcSplitEnumerator(splits, enumContext);
     }
 
@@ -92,7 +92,10 @@ public class JdbcSource extends AbstractRangeSplitSource<Row> {
     restoreEnumerator(SplitEnumeratorContext<RangeSplit> enumContext,
                       PendingSplitsCheckpoint<RangeSplit> checkpoint) {
         logger.info("恢复 SplitEnumerator");
-        List<RangeSplit> splits = calculateSplits();
+        Range<Long> range = getSplitColumnRange();
+        // 从 Flink 上下文获取真实并行度
+        int parallelism = enumContext.currentParallelism();
+        List<RangeSplit> splits = calculateSplits(range, parallelism);
         return new JdbcSplitEnumerator(splits, enumContext);
     }
 
