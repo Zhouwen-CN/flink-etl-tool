@@ -6,7 +6,7 @@
   "source": {
     "type": "mysql",
     "config": {
-      "url": "jdbc:mysql://localhost:3306/test_db",
+      "url": "jdbc:mysql://118.145.119.51:3306/test_db",
       "table": "user_table",
       "username": "root",
       "password": "123456",
