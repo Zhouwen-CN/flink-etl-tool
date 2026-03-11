@@ -1,22 +1,32 @@
 package com.etl.source.jdbc;
 
 import com.etl.core.source.RangeSplit;
-import org.apache.flink.api.connector.source.ReaderOutput;
-import org.apache.flink.api.connector.source.SourceReader;
+import com.etl.core.source.RangeSplitState;
+import com.etl.core.source.base.BaseSourceReader;
+import com.etl.core.source.base.BaseSplitReader;
 import org.apache.flink.api.connector.source.SourceReaderContext;
-import org.apache.flink.core.io.InputStatus;
-import org.apache.flink.types.Row;
+import org.apache.flink.configuration.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.*;
-import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
 
 /**
  * JDBC Source Reader
- * 负责执行 SQL 查询并读取数据
+ * 继承 BaseSourceReader，自动处理线程模型和状态管理
+ *
+ * <p>优化后代码行数：~50 行（优化前：~160 行）
+ * <p>消除的重复代码：线程管理、状态追踪、pollNext 逻辑
+ *
+ * <p>子类需要实现的方法：
+ * <ul>
+ *   <li>{@link #initializedState(RangeSplit)} - 初始化分片状态</li>
+ *   <li>{@link #toSplitType(String, RangeSplitState)} - 状态转换为分片</li>
+ *   <li>{@link #onSplitFinished(Map)} - 分片完成回调</li>
+ * </ul>
  */
-public class JdbcSourceReader implements SourceReader<Row, RangeSplit> {
+public class JdbcSourceReader extends BaseSourceReader<JdbcRecord, JdbcRecord, RangeSplit, RangeSplitState> {
 
     private static final Logger logger = LoggerFactory.getLogger(JdbcSourceReader.class);
 
@@ -29,17 +39,32 @@ public class JdbcSourceReader implements SourceReader<Row, RangeSplit> {
     private final Integer fetchSize;
     private final Integer queryTimeout;
     private final JdbcDialect dialect;
-    private final SourceReaderContext context;
 
-    private Connection connection;
-    private Statement statement;
-    private ResultSet resultSet;
-    private RangeSplit currentSplit;
-
-    public JdbcSourceReader(String url, String username, String password,
-                            String table, String sql, String splitColumn,
-                            Integer fetchSize, Integer queryTimeout,
-                            JdbcDialect dialect, SourceReaderContext context) {
+    /**
+     * 构造函数
+     *
+     * @param splitReaderSupplier 分片读取器供应器
+     * @param config 配置
+     * @param context 读取器上下文
+     * @param url JDBC URL
+     * @param username 用户名
+     * @param password 密码
+     * @param table 表名
+     * @param sql SQL 语句
+     * @param splitColumn 分片列
+     * @param fetchSize 获取大小
+     * @param queryTimeout 查询超时
+     * @param dialect 方言
+     */
+    public JdbcSourceReader(
+            Supplier<BaseSplitReader<JdbcRecord, RangeSplit>> splitReaderSupplier,
+            Configuration config,
+            SourceReaderContext context,
+            String url, String username, String password,
+            String table, String sql, String splitColumn,
+            Integer fetchSize, Integer queryTimeout,
+            JdbcDialect dialect) {
+        super(splitReaderSupplier, new JdbcRecordEmitter(), config, context);
         this.url = url;
         this.username = username;
         this.password = password;
@@ -49,114 +74,37 @@ public class JdbcSourceReader implements SourceReader<Row, RangeSplit> {
         this.fetchSize = fetchSize;
         this.queryTimeout = queryTimeout;
         this.dialect = dialect;
-        this.context = context;
     }
 
     @Override
-    public void start() {
-        logger.info("JDBC Source Reader 启动");
-        try {
-            // 加载驱动
-            Class.forName(dialect.getDriverClassName());
-            // 创建连接
-            connection = DriverManager.getConnection(url, username, password);
-            logger.info("数据库连接成功");
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException("JDBC 驱动加载失败: " + e.getMessage(), e);
-        } catch (SQLException e) {
-            throw new RuntimeException("数据库连接失败: " + e.getMessage(), e);
-        }
+    protected void onSplitFinished(Map<String, RangeSplitState> finishedSplitIds) {
+        // 分片完成时请求新分片
+        logger.info("分片完成: {}", finishedSplitIds.keySet());
+        context.sendSplitRequest();
     }
 
     @Override
-    public InputStatus pollNext(ReaderOutput<Row> output) throws Exception {
-        if (resultSet == null) {
-            return InputStatus.NOTHING_AVAILABLE;
-        }
-
-        if (resultSet.next()) {
-            try {
-                // 创建 Row 并输出
-                Row row = dialect.createRow(resultSet);
-                output.collect(row);
-                return InputStatus.MORE_AVAILABLE;
-            } catch (SQLException e) {
-                throw new RuntimeException("数据读取失败: " + e.getMessage(), e);
-            }
-        } else {
-            // 当前分片读取完毕
-            logger.info("分片 {} 读取完毕", currentSplit.splitId());
-            closeCurrentSplit();
-            return InputStatus.NOTHING_AVAILABLE;
-        }
+    public RangeSplitState initializedState(RangeSplit split) {
+        logger.debug("初始化分片状态: {}", split.splitId());
+        return new RangeSplitState(split);
     }
 
     @Override
-    public void addSplits(List<RangeSplit> splits) {
-        if (!splits.isEmpty()) {
-            this.currentSplit = splits.get(0);
-            logger.info("接收分片: {}", currentSplit.splitId());
-            executeQuery();
-        }
+    protected RangeSplit toSplitType(String splitId, RangeSplitState splitState) {
+        return splitState.getSplit();
     }
 
-    @Override
-    public void notifyNoMoreSplits() {
-        logger.info("通知无更多分片");
-    }
-
-    @Override
-    public java.util.concurrent.CompletableFuture<Void> isAvailable() {
-        return java.util.concurrent.CompletableFuture.completedFuture(null);
-    }
-
-    @Override
-    public List<RangeSplit> snapshotState(long checkpointId) {
-        logger.info("快照状态，检查点ID: {}", checkpointId);
-        return currentSplit != null ? List.of(currentSplit) : List.of();
-    }
-
-    @Override
-    public void close() throws Exception {
-        logger.info("关闭 JDBC Source Reader");
-        closeCurrentSplit();
-        if (connection != null && !connection.isClosed()) {
-            connection.close();
-        }
-    }
-
-    private void executeQuery() {
-        String querySql = dialect.buildSplitQuery(table, sql, splitColumn,
-                currentSplit.getStart(), currentSplit.getEnd());
-
-        try {
-            statement = connection.createStatement();
-            if (fetchSize != null) {
-                statement.setFetchSize(fetchSize);
-            }
-            if (queryTimeout != null) {
-                statement.setQueryTimeout(queryTimeout);
-            }
-
-            logger.info("执行查询 SQL: {}", querySql);
-            resultSet = statement.executeQuery(querySql);
-        } catch (SQLException e) {
-            throw new RuntimeException("查询执行失败: " + e.getMessage(), e);
-        }
-    }
-
-    private void closeCurrentSplit() {
-        try {
-            if (resultSet != null) {
-                resultSet.close();
-                resultSet = null;
-            }
-            if (statement != null) {
-                statement.close();
-                statement = null;
-            }
-        } catch (SQLException e) {
-            logger.error("关闭资源失败", e);
-        }
+    /**
+     * 创建 JdbcSplitReader 供应器
+     *
+     * @return 供应器
+     */
+    public static Supplier<BaseSplitReader<JdbcRecord, RangeSplit>> createSplitReaderSupplier(
+            String url, String username, String password,
+            String table, String sql, String splitColumn,
+            Integer fetchSize, Integer queryTimeout,
+            JdbcDialect dialect) {
+        return () -> new JdbcSplitReader(url, username, password, table, sql,
+                splitColumn, fetchSize, queryTimeout, dialect);
     }
 }

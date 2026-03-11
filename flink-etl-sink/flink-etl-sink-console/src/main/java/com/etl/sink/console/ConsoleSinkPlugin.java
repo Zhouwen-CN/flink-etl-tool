@@ -39,7 +39,7 @@ public class ConsoleSinkPlugin implements SinkPlugin {
         @Override
         public void invoke(Object value, Context context) {
             // 简单实现：直接打印对象
-            System.out.println(value.toString());
+            System.out.println("console print: " + value.toString());
         }
     }
 }

@@ -3,6 +3,7 @@ package com.etl.core.job;
 import com.etl.core.config.ConfigParser;
 import com.etl.core.config.JobConfig;
 import com.etl.core.spi.PluginLoader;
+import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.slf4j.Logger;
@@ -73,6 +74,8 @@ public class JobExecutor {
             // 流处理模式
             env = StreamExecutionEnvironment.getExecutionEnvironment();
         }
+
+        // env.setRuntimeMode(RuntimeExecutionMode.BATCH);
 
         // 设置并行度（如果配置了）
         if (parallelism != null) {

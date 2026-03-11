@@ -1,17 +1,31 @@
 package com.etl.core.source;
 
-import org.apache.flink.api.connector.source.SourceSplit;
+import com.etl.core.source.base.BaseSourceSplit;
+
+import java.io.Serializable;
 
 /**
  * 范围分片
  * 表示一个数据范围，如 [1, 10000]
+ *
+ * <p>实现了 {@link BaseSourceSplit} 接口，支持序列化和状态管理
  */
-public class RangeSplit implements SourceSplit {
+public class RangeSplit implements BaseSourceSplit, Serializable {
+
+    private static final long serialVersionUID = 1L;
+
     private final String splitId;
     private final String columnName;
     private final long start;
     private final long end;
 
+    /**
+     * 构造函数
+     *
+     * @param columnName 分片列名
+     * @param start 起始值（包含）
+     * @param end 结束值（包含）
+     */
     public RangeSplit(String columnName, long start, long end) {
         this.columnName = columnName;
         this.start = start;
@@ -24,16 +38,40 @@ public class RangeSplit implements SourceSplit {
         return splitId;
     }
 
+    /**
+     * 获取分片列名
+     *
+     * @return 分片列名
+     */
     public String getColumnName() {
         return columnName;
     }
 
+    /**
+     * 获取起始值
+     *
+     * @return 起始值（包含）
+     */
     public long getStart() {
         return start;
     }
 
+    /**
+     * 获取结束值
+     *
+     * @return 结束值（包含）
+     */
     public long getEnd() {
         return end;
+    }
+
+    /**
+     * 获取分片包含的记录数量
+     *
+     * @return 记录数量
+     */
+    public long getRecordCount() {
+        return end - start + 1;
     }
 
     @Override
@@ -43,6 +81,7 @@ public class RangeSplit implements SourceSplit {
                 ", columnName='" + columnName + '\'' +
                 ", start=" + start +
                 ", end=" + end +
+                ", recordCount=" + getRecordCount() +
                 '}';
     }
 }

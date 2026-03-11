@@ -93,15 +93,15 @@ class AbstractRangeSplitSourceTest {
         }
 
         @Override
-        public SplitEnumerator<RangeSplit, PendingSplitsCheckpoint<RangeSplit>> createEnumerator(
+        public SplitEnumerator<RangeSplit, RangeEnumCheckpoint> createEnumerator(
                 SplitEnumeratorContext<RangeSplit> enumContext) {
             return null;
         }
 
         @Override
-        public SplitEnumerator<RangeSplit, PendingSplitsCheckpoint<RangeSplit>> restoreEnumerator(
+        public SplitEnumerator<RangeSplit, RangeEnumCheckpoint> restoreEnumerator(
                 SplitEnumeratorContext<RangeSplit> enumContext,
-                PendingSplitsCheckpoint<RangeSplit> checkpoint) {
+                RangeEnumCheckpoint checkpoint) {
             return null;
         }
 
@@ -116,7 +116,7 @@ class AbstractRangeSplitSourceTest {
         }
 
         @Override
-        public SimpleVersionedSerializer<PendingSplitsCheckpoint<RangeSplit>> getEnumeratorCheckpointSerializer() {
+        public SimpleVersionedSerializer<RangeEnumCheckpoint> getEnumeratorCheckpointSerializer() {
             return null;
         }
 

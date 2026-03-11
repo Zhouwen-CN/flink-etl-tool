@@ -2,16 +2,18 @@ package com.etl.source.jdbc;
 
 import com.etl.core.config.SourceConfig;
 import com.etl.core.source.AbstractRangeSplitSource;
-import com.etl.core.source.PendingSplitsCheckpoint;
+import com.etl.core.source.RangeEnumCheckpoint;
 import com.etl.core.source.RangeSplit;
+import com.etl.core.source.base.serde.DefaultCheckpointSerializer;
+import com.etl.core.source.base.serde.DefaultSplitSerializer;
 import org.apache.commons.lang3.Range;
 import org.apache.flink.api.connector.source.Boundedness;
 import org.apache.flink.api.connector.source.SplitEnumerator;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 import org.apache.flink.api.connector.source.SourceReader;
 import org.apache.flink.api.connector.source.SourceReaderContext;
+import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
-import org.apache.flink.types.Row;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,8 +23,15 @@ import java.util.List;
 /**
  * JDBC Source 实现
  * 支持主键范围分片读取关系型数据库
+ *
+ * <p>优化后使用新的抽象类：
+ * <ul>
+ *   <li>{@link JdbcSplitEnumerator} - 继承 BaseSplitEnumerator</li>
+ *   <li>{@link JdbcSourceReader} - 继承 BaseSourceReader</li>
+ *   <li>默认序列化器 - 无需手写</li>
+ * </ul>
  */
-public class JdbcSource extends AbstractRangeSplitSource<Row> {
+public class JdbcSource extends AbstractRangeSplitSource<JdbcRecord> {
 
     private static final Logger logger = LoggerFactory.getLogger(JdbcSource.class);
 
@@ -36,7 +45,7 @@ public class JdbcSource extends AbstractRangeSplitSource<Row> {
     private final JdbcDialect dialect;
 
     public JdbcSource(SourceConfig config, JdbcDialect dialect) {
-        super(config.getString("splitColumn"));  // 只传递 splitColumn
+        super(config.getString("splitColumn"));
         this.url = config.getString("url");
         this.username = config.getString("username");
         this.password = config.getString("password");
@@ -77,76 +86,50 @@ public class JdbcSource extends AbstractRangeSplitSource<Row> {
     }
 
     @Override
-    public SplitEnumerator<RangeSplit, PendingSplitsCheckpoint<RangeSplit>>
+    public SplitEnumerator<RangeSplit, RangeEnumCheckpoint>
     createEnumerator(SplitEnumeratorContext<RangeSplit> enumContext) {
         logger.info("创建 SplitEnumerator");
         Range<Long> range = getSplitColumnRange();
-        // 从 Flink 上下文获取真实并行度
         int parallelism = enumContext.currentParallelism();
         List<RangeSplit> splits = calculateSplits(range, parallelism);
         return new JdbcSplitEnumerator(splits, enumContext);
     }
 
     @Override
-    public SplitEnumerator<RangeSplit, PendingSplitsCheckpoint<RangeSplit>>
+    public SplitEnumerator<RangeSplit, RangeEnumCheckpoint>
     restoreEnumerator(SplitEnumeratorContext<RangeSplit> enumContext,
-                      PendingSplitsCheckpoint<RangeSplit> checkpoint) {
-        logger.info("恢复 SplitEnumerator");
-        Range<Long> range = getSplitColumnRange();
-        // 从 Flink 上下文获取真实并行度
-        int parallelism = enumContext.currentParallelism();
-        List<RangeSplit> splits = calculateSplits(range, parallelism);
-        return new JdbcSplitEnumerator(splits, enumContext);
+                      RangeEnumCheckpoint checkpoint) {
+        logger.info("从检查点恢复 SplitEnumerator");
+        return new JdbcSplitEnumerator(enumContext, checkpoint);
     }
 
     @Override
-    public SourceReader<Row, RangeSplit> createReader(SourceReaderContext readerContext) {
+    public SourceReader<JdbcRecord, RangeSplit> createReader(SourceReaderContext readerContext) {
         logger.info("创建 SourceReader");
-        return new JdbcSourceReader(url, username, password, table, sql,
-                splitColumn, fetchSize, queryTimeout, dialect, readerContext);
+
+        // 创建 SplitReader 供应器
+        var splitReaderSupplier = JdbcSourceReader.createSplitReaderSupplier(
+                url, username, password, table, sql,
+                splitColumn, fetchSize, queryTimeout, dialect);
+
+        // 创建 Reader
+        return new JdbcSourceReader(
+                splitReaderSupplier,
+                new Configuration(),
+                readerContext,
+                url, username, password, table, sql,
+                splitColumn, fetchSize, queryTimeout, dialect);
     }
 
     @Override
     public SimpleVersionedSerializer<RangeSplit> getSplitSerializer() {
-        // 使用简单的字符串序列化
-        return new SimpleVersionedSerializer<RangeSplit>() {
-            @Override
-            public int getVersion() {
-                return 1;
-            }
-
-            @Override
-            public byte[] serialize(RangeSplit split) {
-                return split.splitId().getBytes();
-            }
-
-            @Override
-            public RangeSplit deserialize(int version, byte[] serialized) {
-                // 简化实现，实际使用时会从 splitId 解析
-                return new RangeSplit(splitColumn, 0, 0);
-            }
-        };
+        // 使用默认序列化器
+        return new DefaultSplitSerializer<>();
     }
 
     @Override
-    public SimpleVersionedSerializer<PendingSplitsCheckpoint<RangeSplit>>
-    getEnumeratorCheckpointSerializer() {
-        // 简化实现
-        return new SimpleVersionedSerializer<PendingSplitsCheckpoint<RangeSplit>>() {
-            @Override
-            public int getVersion() {
-                return 1;
-            }
-
-            @Override
-            public byte[] serialize(PendingSplitsCheckpoint<RangeSplit> checkpoint) {
-                return new byte[0];
-            }
-
-            @Override
-            public PendingSplitsCheckpoint<RangeSplit> deserialize(int version, byte[] serialized) {
-                return new PendingSplitsCheckpoint<>(List.of());
-            }
-        };
+    public SimpleVersionedSerializer<RangeEnumCheckpoint> getEnumeratorCheckpointSerializer() {
+        // 使用默认序列化器
+        return new DefaultCheckpointSerializer<>();
     }
 }

@@ -13,7 +13,8 @@ import java.util.List;
  *
  * @param <T> 输出记录类型
  */
-public abstract class AbstractRangeSplitSource<T> extends AbstractSplitSource<T, RangeSplit> {
+public abstract class AbstractRangeSplitSource<T>
+        extends AbstractSplitSource<T, RangeSplit, RangeEnumCheckpoint> {
     private static final Logger logger = LoggerFactory.getLogger(AbstractRangeSplitSource.class);
 
     protected final String splitColumn;
