@@ -18,7 +18,6 @@ target/
 
 # Logs
 *.log
-.claude
 .idea
 dependency-reduced-pom.xml
 logs

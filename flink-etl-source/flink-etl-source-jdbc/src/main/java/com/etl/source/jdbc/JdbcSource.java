@@ -8,11 +8,7 @@ import com.etl.core.source.base.BaseSplitReader;
 import com.etl.core.source.base.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.base.serde.DefaultSplitSerializer;
 import org.apache.commons.lang3.Range;
-import org.apache.flink.api.connector.source.Boundedness;
-import org.apache.flink.api.connector.source.SplitEnumerator;
-import org.apache.flink.api.connector.source.SplitEnumeratorContext;
-import org.apache.flink.api.connector.source.SourceReader;
-import org.apache.flink.api.connector.source.SourceReaderContext;
+import org.apache.flink.api.connector.source.*;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
 import org.apache.flink.types.Row;
@@ -120,9 +116,8 @@ public class JdbcSource extends AbstractRangeSplitSource<Row> {
         return new JdbcSourceReader(
                 splitReaderSupplier,
                 new Configuration(),
-                readerContext,
-                url, username, password, table, sql,
-                splitColumn, fetchSize, queryTimeout, dialect);
+                readerContext
+        );
     }
 
     @Override

@@ -32,57 +32,12 @@ public class JdbcSourceReader extends BaseSourceReader<Row, Row, RangeSplit, Ran
 
     private static final Logger logger = LoggerFactory.getLogger(JdbcSourceReader.class);
 
-    private final String url;
-    private final String username;
-    private final String password;
-    private final String table;
-    private final String sql;
-    private final String splitColumn;
-    private final Integer fetchSize;
-    private final Integer queryTimeout;
-    private final JdbcDialect dialect;
-
-    /**
-     * 构造函数
-     *
-     * @param splitReaderSupplier 分片读取器供应器
-     * @param config 配置
-     * @param context 读取器上下文
-     * @param url JDBC URL
-     * @param username 用户名
-     * @param password 密码
-     * @param table 表名
-     * @param sql SQL 语句
-     * @param splitColumn 分片列
-     * @param fetchSize 获取大小
-     * @param queryTimeout 查询超时
-     * @param dialect 方言
-     */
     public JdbcSourceReader(
             Supplier<BaseSplitReader<Row, RangeSplit>> splitReaderSupplier,
             Configuration config,
-            SourceReaderContext context,
-            String url, String username, String password,
-            String table, String sql, String splitColumn,
-            Integer fetchSize, Integer queryTimeout,
-            JdbcDialect dialect) {
+            SourceReaderContext context
+    ) {
         super(splitReaderSupplier, new RowRecordEmitter(), config, context);
-        this.url = url;
-        this.username = username;
-        this.password = password;
-        this.table = table;
-        this.sql = sql;
-        this.splitColumn = splitColumn;
-        this.fetchSize = fetchSize;
-        this.queryTimeout = queryTimeout;
-        this.dialect = dialect;
-    }
-
-    @Override
-    protected void onSplitFinished(Map<String, RangeSplitState> finishedSplitIds) {
-        // 分片完成时请求新分片
-        logger.info("分片完成: {}", finishedSplitIds.keySet());
-        context.sendSplitRequest();
     }
 
     @Override

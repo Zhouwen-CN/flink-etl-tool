@@ -6,6 +6,8 @@ import org.apache.flink.connector.base.source.reader.RecordEmitter;
 import org.apache.flink.connector.base.source.reader.RecordEvaluator;
 import org.apache.flink.connector.base.source.reader.SingleThreadMultiplexSourceReaderBase;
 import org.apache.flink.connector.base.source.reader.fetcher.SingleThreadFetcherManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.Map;
@@ -38,6 +40,9 @@ import java.util.function.Supplier;
  */
 public abstract class BaseSourceReader<E, T, SplitT extends BaseSourceSplit, StateT extends BaseSplitState<SplitT>>
         extends SingleThreadMultiplexSourceReaderBase<E, T, SplitT, StateT> {
+
+    private static final Logger logger = LoggerFactory.getLogger(BaseSourceReader.class);
+
 
     /**
      * 构造函数
@@ -107,7 +112,11 @@ public abstract class BaseSourceReader<E, T, SplitT extends BaseSourceSplit, Sta
      * @param finishedSplitIds 完成的分片 ID 和状态映射
      */
     @Override
-    protected abstract void onSplitFinished(Map<String, StateT> finishedSplitIds);
+    protected void onSplitFinished(Map<String, StateT> finishedSplitIds){
+        // 分片完成时请求新分片
+        logger.info("分片完成: {}", finishedSplitIds.keySet());
+        context.sendSplitRequest();
+    };
 
     /**
      * 初始化分片状态
