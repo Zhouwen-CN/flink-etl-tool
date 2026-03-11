@@ -20,7 +20,7 @@
         <flink.version>1.19.0</flink.version>
         <jackson.version>2.15.2</jackson.version>
         <slf4j.version>1.7.36</slf4j.version>
-        <logback.version>1.2.11</logback.version>
+        <log4j2.version>2.20.0</log4j2.version>
         <mysql.connector.version>8.0.33</mysql.connector.version>
         <junit.version>5.9.3</junit.version>
     </properties>
@@ -65,10 +65,17 @@
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j.version}</version>
             </dependency>
+            <!-- Log4j2 核心 -->
             <dependency>
-                <groupId>ch.qos.logback</groupId>
-                <artifactId>logback-classic</artifactId>
-                <version>${logback.version}</version>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-core</artifactId>
+                <version>${log4j2.version}</version>
+            </dependency>
+            <!-- Log4j2 与 SLF4J 的桥接 -->
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-slf4j-impl</artifactId>
+                <version>${log4j2.version}</version>
             </dependency>
 
             <!-- MySQL 驱动 -->
