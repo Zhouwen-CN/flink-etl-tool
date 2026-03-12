@@ -32,7 +32,6 @@
       "table": "user_table",
       "username": "root",
       "password": "your_password",
-      "columns": "id,name,age",
       "batchSize": 100,
       "writeMode": "upsert"
     }

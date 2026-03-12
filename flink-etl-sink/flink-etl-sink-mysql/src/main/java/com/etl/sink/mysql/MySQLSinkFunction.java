@@ -11,11 +11,12 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
  * MySQL Sink Function
- * 支持批量写入和 upsert 模式
+ * 支持批量写入和 upsert 模式，列名从 Row 字段名中动态获取
  */
 public class MySQLSinkFunction extends RichSinkFunction<Row> {
     private static final long serialVersionUID = 1L;
@@ -25,21 +26,20 @@ public class MySQLSinkFunction extends RichSinkFunction<Row> {
     private final String username;
     private final String password;
     private final String table;
-    private final String[] columns;
     private final int batchSize;
     private final String writeMode;
 
     private transient Connection connection;
     private transient PreparedStatement statement;
     private transient int pendingCount;
+    private transient String[] columns;
 
     public MySQLSinkFunction(String url, String username, String password,
-                              String table, String[] columns, int batchSize, String writeMode) {
+                              String table, int batchSize, String writeMode) {
         this.url = url;
         this.username = username;
         this.password = password;
         this.table = table;
-        this.columns = columns;
         this.batchSize = batchSize;
         this.writeMode = writeMode;
     }
@@ -48,15 +48,26 @@ public class MySQLSinkFunction extends RichSinkFunction<Row> {
     public void open(Configuration parameters) throws Exception {
         connection = DriverManager.getConnection(url, username, password);
         connection.setAutoCommit(false);
-        statement = connection.prepareStatement(buildSql());
         pendingCount = 0;
-        logger.info("MySQL Sink 已连接: table={}, mode={}, batchSize={}", table, writeMode, batchSize);
+        // columns 和 statement 在第一条记录到来时初始化
     }
 
     @Override
     public void invoke(Row row, Context context) throws Exception {
+        if (statement == null) {
+            Set<String> fieldNames = row.getFieldNames(true);
+            if (fieldNames == null || fieldNames.isEmpty()) {
+                throw new IllegalStateException(
+                    "Row 没有字段名信息，请使用 Row.withNames() 或确保 RowType 包含字段名");
+            }
+            columns = fieldNames.toArray(new String[0]);
+            statement = connection.prepareStatement(buildSql());
+            logger.info("MySQL Sink 已连接: table={}, mode={}, batchSize={}, columns={}",
+                    table, writeMode, batchSize, Arrays.toString(columns));
+        }
+
         for (int i = 0; i < columns.length; i++) {
-            statement.setObject(i + 1, row.getField(i));
+            statement.setObject(i + 1, row.getField(columns[i]));
         }
         statement.addBatch();
         pendingCount++;
@@ -98,7 +109,6 @@ public class MySQLSinkFunction extends RichSinkFunction<Row> {
                 .collect(Collectors.joining(", "));
 
         if ("upsert".equalsIgnoreCase(writeMode)) {
-            // MySQL INSERT ... ON DUPLICATE KEY UPDATE
             String updateClause = Arrays.stream(columns)
                     .map(c -> "`" + c + "` = VALUES(`" + c + "`)")
                     .collect(Collectors.joining(", "));

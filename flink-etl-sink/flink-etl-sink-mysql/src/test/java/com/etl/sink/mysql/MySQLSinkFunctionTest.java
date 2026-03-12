@@ -48,19 +48,16 @@ class MySQLSinkFunctionTest {
     }
 
     private MySQLSinkFunction createSink(String writeMode, int batchSize) {
-        Map<String, Object> config = new HashMap<>();
-        config.put("url", JDBC_URL);
-        config.put("username", USERNAME);
-        config.put("password", PASSWORD);
-        config.put("table", TABLE);
-        config.put("columns", "id,name,age");
-        config.put("batchSize", batchSize);
-        if (writeMode != null) {
-            config.put("writeMode", writeMode);
-        }
-        return new MySQLSinkFunction(JDBC_URL, USERNAME, PASSWORD, TABLE,
-                new String[]{"id", "name", "age"}, batchSize,
+        return new MySQLSinkFunction(JDBC_URL, USERNAME, PASSWORD, TABLE, batchSize,
                 writeMode != null ? writeMode : "insert");
+    }
+
+    private Row namedRow(int id, String name, int age) {
+        Row row = Row.withNames();
+        row.setField("id", id);
+        row.setField("name", name);
+        row.setField("age", age);
+        return row;
     }
 
     @Test
@@ -68,8 +65,7 @@ class MySQLSinkFunctionTest {
         MySQLSinkFunction sink = createSink("insert", 1);
         sink.open(new org.apache.flink.configuration.Configuration());
 
-        Row row = Row.of(1, "Alice", 30);
-        sink.invoke(row, null);
+        sink.invoke(namedRow(1, "Alice", 30), null);
         sink.close();
 
         try (Statement stmt = conn.createStatement();
@@ -85,11 +81,8 @@ class MySQLSinkFunctionTest {
         MySQLSinkFunction sink = createSink("insert", 3);
         sink.open(new org.apache.flink.configuration.Configuration());
 
-        // 插入 2 条（未触发批量提交）
-        sink.invoke(Row.of(1, "Alice", 30), null);
-        sink.invoke(Row.of(2, "Bob", 25), null);
-
-        // 此时批次未满，数据可能还在缓冲，调用 close 触发 flush
+        sink.invoke(namedRow(1, "Alice", 30), null);
+        sink.invoke(namedRow(2, "Bob", 25), null);
         sink.close();
 
         try (Statement stmt = conn.createStatement();
@@ -104,11 +97,9 @@ class MySQLSinkFunctionTest {
         MySQLSinkFunction sink = createSink("insert", 2);
         sink.open(new org.apache.flink.configuration.Configuration());
 
-        // 插入 2 条，触发批量提交
-        sink.invoke(Row.of(1, "Alice", 30), null);
-        sink.invoke(Row.of(2, "Bob", 25), null);
+        sink.invoke(namedRow(1, "Alice", 30), null);
+        sink.invoke(namedRow(2, "Bob", 25), null);
 
-        // 批次已满，数据已写入
         try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM user_table")) {
             assertTrue(rs.next());
@@ -123,10 +114,8 @@ class MySQLSinkFunctionTest {
         MySQLSinkFunction sink = createSink("upsert", 1);
         sink.open(new org.apache.flink.configuration.Configuration());
 
-        // 插入初始数据
-        sink.invoke(Row.of(1, "Alice", 30), null);
-        // 更新同一行
-        sink.invoke(Row.of(1, "Alice Updated", 31), null);
+        sink.invoke(namedRow(1, "Alice", 30), null);
+        sink.invoke(namedRow(1, "Alice Updated", 31), null);
         sink.close();
 
         try (Statement stmt = conn.createStatement();
