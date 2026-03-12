@@ -4,6 +4,7 @@ import com.etl.core.config.ConfigParser;
 import com.etl.core.config.JobConfig;
 import com.etl.core.spi.PluginLoader;
 import org.apache.flink.api.common.RuntimeExecutionMode;
+import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.CoreOptions;
 import org.apache.flink.configuration.ExecutionOptions;
@@ -28,22 +29,36 @@ public class JobExecutor {
      * 执行 Job
      *
      * @param configPath 配置文件路径
+     * @deprecated 请使用 {@link #execute(JobConfig)} 方法
      */
+    @Deprecated
     public void execute(String configPath) {
-        logger.info("开始执行 Job");
+        logger.info("开始执行 Job（从文件: {}）", configPath);
 
         try {
-            // 1. 解析配置
             JobConfig config = ConfigParser.parse(configPath);
+            execute(config);
+        } catch (Exception e) {
+            String errorMsg = String.format("Job 执行失败: %s", e.getMessage());
+            logger.error(errorMsg, e);
+            throw new RuntimeException(errorMsg, e);
+        }
+    }
 
-            // 2. 创建 Flink 执行环境
+    /**
+     * 执行 Job（使用 JobConfig 对象）
+     *
+     * @param config Job 配置对象
+     */
+    public void execute(JobConfig config) {
+        logger.info("开始执行 Job: {}", config.getJob().getName());
+
+        try {
             StreamExecutionEnvironment env = createExecutionEnvironment(config);
 
-            // 3. 构建 Job
             JobBuilder jobBuilder = new JobBuilder(pluginLoader);
             jobBuilder.build(env, config);
 
-            // 4. 执行 Job
             logger.info("提交 Job 到 Flink 执行引擎");
             env.execute(config.getJob().getName());
 
