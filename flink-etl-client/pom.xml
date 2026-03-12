@@ -36,6 +36,11 @@
             <artifactId>flink-etl-sink-console</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.etl</groupId>
+            <artifactId>flink-etl-sink-mysql</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- Transform 插件 -->
         <dependency>
