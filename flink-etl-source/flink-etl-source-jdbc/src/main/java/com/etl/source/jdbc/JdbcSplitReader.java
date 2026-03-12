@@ -23,8 +23,8 @@ import java.util.Set;
  * <p>设计说明：
  * <ul>
  *   <li>每个分片创建独立的数据库连接</li>
- *   <li>使用 fetch() 方法一次性读取一个分片的所有数据</li>
- *   <li>支持流式读取（通过 fetchSize 控制）</li>
+ *   <li>支持分批读取，每批最多 fetchSize 条记录</li>
+ *   <li>支持流式读取（MySQL 需设置 fetchSize=Integer.MIN_VALUE）</li>
  *   <li>直接返回 Flink Row 类型，无需额外包装</li>
  * </ul>
  */
@@ -45,6 +45,14 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
     private final Queue<RangeSplit> pendingSplits = new ArrayDeque<>();
     private final Set<String> finishedSplits = new HashSet<>();
 
+    // 当前分片读取状态
+    private RangeSplit currentSplit;
+    private Connection currentConnection;
+    private Statement currentStatement;
+    private ResultSet currentResultSet;
+    private boolean hasNextRecord;
+    private int currentOffset;
+
     public JdbcSplitReader(String url, String username, String password,
                            String table, String sql, String splitColumn,
                            Integer fetchSize, Integer queryTimeout,
@@ -62,39 +70,44 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
 
     @Override
     public RecordsWithSplitIds<Row> fetch() throws IOException {
-        RangeSplit split = pendingSplits.poll();
+        // 如果没有当前分片，尝试开始新分片
+        if (currentSplit == null) {
+            RangeSplit split = pendingSplits.poll();
+            if (split == null) {
+                // 没有待处理的分片，返回空结果
+                RecordsBySplits.Builder<Row> builder = new RecordsBySplits.Builder<>();
+                builder.addFinishedSplits(finishedSplits);
+                return builder.build();
+            }
 
-        if (split == null) {
-            // 没有待处理的分片，返回空结果
-            RecordsBySplits.Builder<Row> builder = new RecordsBySplits.Builder<>();
-            builder.addFinishedSplits(finishedSplits);
-            return builder.build();
+            // 开始新分片
+            startNewSplit(split);
         }
 
-        logger.info("开始读取分片: {}", split.splitId());
-
-        try {
-            return fetchDataForSplit(split);
-        } catch (SQLException e) {
-            throw new IOException("读取分片失败: " + split.splitId(), e);
-        }
+        // 读取一批数据
+        return fetchBatch();
     }
 
     /**
-     * 读取单个分片的数据
+     * 开始读取新分片
      */
-    private RecordsWithSplitIds<Row> fetchDataForSplit(RangeSplit split) throws SQLException {
-        RecordsBySplits.Builder<Row> builder = new RecordsBySplits.Builder<>();
+    private void startNewSplit(RangeSplit split) throws IOException {
+        logger.info("开始读取分片: {}", split.splitId());
 
-        try (Connection conn = DriverManager.getConnection(url, username, password);
-             Statement stmt = conn.createStatement()) {
+        try {
+            // 创建连接
+            currentConnection = DriverManager.getConnection(url, username, password);
+            currentStatement = currentConnection.createStatement(
+                    ResultSet.TYPE_FORWARD_ONLY,
+                    ResultSet.CONCUR_READ_ONLY
+            );
 
-            // 设置 fetchSize 实现流式读取
+            // 设置 fetchSize（MySQL 流式读取需要设置为 Integer.MIN_VALUE）
             if (fetchSize != null) {
-                stmt.setFetchSize(fetchSize);
+                currentStatement.setFetchSize(fetchSize);
             }
             if (queryTimeout != null) {
-                stmt.setQueryTimeout(queryTimeout);
+                currentStatement.setQueryTimeout(queryTimeout);
             }
 
             // 构建分片查询 SQL
@@ -102,19 +115,83 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
                     split.getStart(), split.getEnd());
             logger.debug("执行查询: {}", querySql);
 
-            try (ResultSet rs = stmt.executeQuery(querySql)) {
-                while (rs.next()) {
-                    Row row = dialect.createRow(rs);
-                    builder.add(split.splitId(), row);
-                }
+            // 执行查询
+            currentResultSet = currentStatement.executeQuery(querySql);
+            hasNextRecord = currentResultSet.next();
+            currentOffset = 0;
+            currentSplit = split;
+
+        } catch (SQLException e) {
+            // 出错时关闭资源
+            closeCurrentSplit();
+            throw new IOException("读取分片失败: " + split.splitId(), e);
+        }
+    }
+
+    /**
+     * 读取一批数据
+     */
+    private RecordsWithSplitIds<Row> fetchBatch() throws IOException {
+        RecordsBySplits.Builder<Row> builder = new RecordsBySplits.Builder<>();
+
+        try {
+            int recordsInBatch = 0;
+            int batchSize = (fetchSize != null && fetchSize > 0) ? fetchSize : Integer.MAX_VALUE;
+
+            // 读取一批记录
+            while (hasNextRecord && recordsInBatch < batchSize) {
+                Row row = dialect.createRow(currentResultSet);
+                builder.add(currentSplit.splitId(), row);
+                recordsInBatch++;
+                currentOffset++;
+
+                // 读取下一条记录
+                hasNextRecord = currentResultSet.next();
             }
+
+            // 如果没有更多记录，标记分片完成
+            if (!hasNextRecord) {
+                finishedSplits.add(currentSplit.splitId());
+                logger.info("分片 {} 读取完成，共 {} 条记录", currentSplit.splitId(), currentOffset);
+
+                // 关闭资源
+                closeCurrentSplit();
+            }
+
+        } catch (SQLException e) {
+            closeCurrentSplit();
+            throw new IOException("读取分片失败: " + currentSplit.splitId(), e);
         }
 
-        // 标记分片完成
-        finishedSplits.add(split.splitId());
-        logger.info("分片 {} 读取完成", split.splitId());
-
         return builder.build();
+    }
+
+    /**
+     * 关闭当前分片的资源
+     */
+    private void closeCurrentSplit() {
+        closeQuietly(currentResultSet, "ResultSet");
+        closeQuietly(currentStatement, "Statement");
+        closeQuietly(currentConnection, "Connection");
+
+        currentResultSet = null;
+        currentStatement = null;
+        currentConnection = null;
+        currentSplit = null;
+        hasNextRecord = false;
+    }
+
+    /**
+     * 安静地关闭资源（忽略异常）
+     */
+    private void closeQuietly(AutoCloseable resource, String resourceName) {
+        if (resource != null) {
+            try {
+                resource.close();
+            } catch (Exception e) {
+                logger.warn("关闭 {} 失败", resourceName, e);
+            }
+        }
     }
 
     @Override
@@ -130,6 +207,7 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
 
     @Override
     public void close() throws Exception {
+        closeCurrentSplit();
         logger.info("JdbcSplitReader 关闭");
     }
 }
