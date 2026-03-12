@@ -35,6 +35,27 @@ public class ConfigParser {
     }
 
     /**
+     * 从 JSON 字符串解析 Job 配置
+     *
+     * @param json JSON 字符串
+     * @return Job 配置对象
+     */
+    public static JobConfig parseFromString(String json) {
+        logger.info("从字符串解析配置");
+
+        try {
+            JobConfig config = mapper.readValue(json, JobConfig.class);
+            validate(config);
+            logger.info("配置解析成功");
+            return config;
+        } catch (Exception e) {
+            String errorMsg = String.format("配置解析失败: %s", e.getMessage());
+            logger.error(errorMsg, e);
+            throw new IllegalArgumentException(errorMsg, e);
+        }
+    }
+
+    /**
      * 校验配置完整性
      *
      * @param config Job 配置
