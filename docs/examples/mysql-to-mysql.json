@@ -1,0 +1,40 @@
+{
+  "job": {
+    "name": "mysql-to-mysql",
+    "mode": "batch",
+    "parallelism": 1
+  },
+  "source": {
+    "type": "mysql",
+    "config": {
+      "url": "jdbc:mysql://source-host:3306/source_db",
+      "table": "user_table",
+      "username": "root",
+      "password": "your_password",
+      "splitColumn": "id",
+      "fetchSize": 1000
+    }
+  },
+  "transform": {
+    "type": "field-mapping",
+    "config": {
+      "mappings": [
+        { "from": "id", "to": "id" },
+        { "from": "name", "to": "name" },
+        { "from": "age", "to": "age" }
+      ]
+    }
+  },
+  "sink": {
+    "type": "mysql",
+    "config": {
+      "url": "jdbc:mysql://target-host:3306/target_db",
+      "table": "user_table",
+      "username": "root",
+      "password": "your_password",
+      "columns": "id,name,age",
+      "batchSize": 100,
+      "writeMode": "upsert"
+    }
+  }
+}

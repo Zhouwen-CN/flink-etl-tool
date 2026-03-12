@@ -18,6 +18,7 @@
 
     <modules>
         <module>flink-etl-sink-console</module>
+        <module>flink-etl-sink-mysql</module>
     </modules>
 
     <dependencies>
