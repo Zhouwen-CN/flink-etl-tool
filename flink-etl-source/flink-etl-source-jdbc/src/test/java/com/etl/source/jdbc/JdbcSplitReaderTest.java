@@ -236,10 +236,11 @@ class JdbcSplitReaderTest {
 
         @Override
         public Row createRow(java.sql.ResultSet rs) throws java.sql.SQLException {
-            int columnCount = rs.getMetaData().getColumnCount();
-            Row row = new Row(columnCount);
-            for (int i = 0; i < columnCount; i++) {
-                row.setField(i, rs.getObject(i + 1));
+            java.sql.ResultSetMetaData metaData = rs.getMetaData();
+            int columnCount = metaData.getColumnCount();
+            Row row = Row.withNames();
+            for (int i = 1; i <= columnCount; i++) {
+                row.setField(metaData.getColumnLabel(i), rs.getObject(i));
             }
             return row;
         }

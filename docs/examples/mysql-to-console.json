@@ -21,8 +21,7 @@
       "mappings": [
         { "from": "id", "to": "user_id" },
         { "from": "name", "to": "user_name" }
-      ],
-      "filters": ["age", "email"]
+      ]
     }
   },
   "sink": {

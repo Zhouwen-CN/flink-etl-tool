@@ -3,8 +3,13 @@ package com.etl.transform;
 import com.etl.core.config.TransformConfig;
 import com.etl.core.spi.TransformPlugin;
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.types.Row;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 字段映射转换插件
@@ -20,23 +25,51 @@ public class FieldMappingTransformPlugin implements TransformPlugin {
 
     @Override
     public MapFunction<?, ?> createTransform(TransformConfig config) {
-        logger.info("创建字段映射转换插件");
+        List<Map<String, String>> mappings = (List<Map<String, String>>) config.get("mappings");
+        if (mappings == null || mappings.isEmpty()) {
+            throw new IllegalArgumentException("field-mapping 配置缺少 mappings");
+        }
 
-        // 简化实现：这里返回一个简单的 MapFunction
-        // 实际实现需要根据配置进行字段映射和过滤
-        return new FieldMappingFunction();
+        List<String> fromFields = new ArrayList<>(mappings.size());
+        List<String> toFields = new ArrayList<>(mappings.size());
+        for (Map<String, String> mapping : mappings) {
+            fromFields.add(mapping.get("from"));
+            toFields.add(mapping.get("to"));
+        }
+
+        logger.info("创建字段映射转换插件, mappings={}", mappings);
+        return new FieldMappingFunction(fromFields, toFields);
     }
 
     /**
      * 字段映射函数
-     * TODO: 实现完整的字段映射和过滤逻辑
+     * 将输入 Row 中配置了映射的字段重命名，未配置的字段原样保留
      */
-    private static class FieldMappingFunction implements MapFunction<Object, Object> {
+    private static class FieldMappingFunction implements MapFunction<Row, Row> {
+        private static final long serialVersionUID = 1L;
+
+        private final List<String> fromFields;
+        private final List<String> toFields;
+
+        public FieldMappingFunction(List<String> fromFields, List<String> toFields) {
+            this.fromFields = fromFields;
+            this.toFields = toFields;
+        }
+
         @Override
-        public Object map(Object value) throws Exception {
-            // 简化实现：直接返回原值
-            // 后续需要实现：字段重命名、字段过滤
-            return value;
+        public Row map(Row input) throws Exception {
+            Row output = Row.withNames();
+            for (String fieldName : input.getFieldNames(true)) {
+                int mappingIndex = fromFields.indexOf(fieldName);
+                if (mappingIndex >= 0) {
+                    // 该字段有映射，使用新字段名写入
+                    output.setField(toFields.get(mappingIndex), input.getField(fieldName));
+                } else {
+                    // 无映射，原样保留
+                    output.setField(fieldName, input.getField(fieldName));
+                }
+            }
+            return output;
         }
     }
 }

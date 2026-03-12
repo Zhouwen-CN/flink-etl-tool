@@ -65,9 +65,14 @@ public class MySQLDialect implements JdbcDialect {
         ResultSetMetaData metaData = rs.getMetaData();
         int columnCount = metaData.getColumnCount();
 
-        Row row = new Row(columnCount);
+        String[] fieldNames = new String[columnCount];
         for (int i = 1; i <= columnCount; i++) {
-            row.setField(i - 1, rs.getObject(i));
+            fieldNames[i - 1] = metaData.getColumnLabel(i);
+        }
+
+        Row row = Row.withNames();
+        for (int i = 1; i <= columnCount; i++) {
+            row.setField(fieldNames[i - 1], rs.getObject(i));
         }
         return row;
     }
