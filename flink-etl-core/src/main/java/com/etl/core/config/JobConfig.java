@@ -1,12 +1,14 @@
 package com.etl.core.config;
 
+import java.util.List;
+
 /**
  * Job 完整配置
  */
 public class JobConfig {
     private JobMeta job;
     private SourceConfig source;
-    private TransformConfig transform;
+    private List<TransformConfig> transforms;
     private SinkConfig sink;
 
     public JobMeta getJob() {
@@ -25,12 +27,12 @@ public class JobConfig {
         this.source = source;
     }
 
-    public TransformConfig getTransform() {
-        return transform;
+    public List<TransformConfig> getTransforms() {
+        return transforms;
     }
 
-    public void setTransform(TransformConfig transform) {
-        this.transform = transform;
+    public void setTransforms(List<TransformConfig> transforms) {
+        this.transforms = transforms;
     }
 
     public SinkConfig getSink() {

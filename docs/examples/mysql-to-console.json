@@ -15,15 +15,17 @@
       "fetchSize": 1
     }
   },
-  "transform": {
-    "type": "field-mapping",
-    "config": {
-      "mappings": [
-        { "from": "id", "to": "user_id" },
-        { "from": "name", "to": "user_name" }
-      ]
+  "transforms": [
+    {
+      "type": "field-mapping",
+      "config": {
+        "mappings": [
+          { "from": "id", "to": "user_id" },
+          { "from": "name", "to": "user_name" }
+        ]
+      }
     }
-  },
+  ],
   "sink": {
     "type": "console",
     "config": {

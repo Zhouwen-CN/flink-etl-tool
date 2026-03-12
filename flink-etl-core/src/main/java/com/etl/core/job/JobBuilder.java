@@ -1,6 +1,7 @@
 package com.etl.core.job;
 
 import com.etl.core.config.JobConfig;
+import com.etl.core.config.TransformConfig;
 import com.etl.core.spi.PluginLoader;
 import com.etl.core.spi.SinkPlugin;
 import com.etl.core.spi.SourcePlugin;
@@ -50,12 +51,14 @@ public class JobBuilder {
 
         logger.info("Source 创建成功");
 
-        // 3. 应用 Transform（如果配置）
-        if (config.getTransform() != null) {
-            TransformPlugin transformPlugin = pluginLoader.loadTransformPlugin(config.getTransform().getType());
-            MapFunction transform = transformPlugin.createTransform(config.getTransform());
-            stream = stream.map(transform);
-            logger.info("Transform 应用成功");
+        // 3. 依次应用 Transform 列表（如果配置）
+        if (config.getTransforms() != null && !config.getTransforms().isEmpty()) {
+            for (TransformConfig transformConfig : config.getTransforms()) {
+                TransformPlugin transformPlugin = pluginLoader.loadTransformPlugin(transformConfig.getType());
+                MapFunction transform = transformPlugin.createTransform(transformConfig);
+                stream = stream.map(transform);
+                logger.info("Transform 应用成功: {}", transformConfig.getType());
+            }
         }
 
         // 4. 加载 Sink 插件并写入

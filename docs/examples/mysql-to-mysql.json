@@ -7,31 +7,33 @@
   "source": {
     "type": "mysql",
     "config": {
-      "url": "jdbc:mysql://source-host:3306/source_db",
+      "url": "jdbc:mysql://118.145.119.51:3306/test_db",
       "table": "user_table",
       "username": "root",
-      "password": "your_password",
+      "password": "Zw$8rb8*",
       "splitColumn": "id",
       "fetchSize": 1000
     }
   },
-  "transform": {
-    "type": "field-mapping",
-    "config": {
-      "mappings": [
-        { "from": "id", "to": "id" },
-        { "from": "name", "to": "name" },
-        { "from": "age", "to": "age" }
-      ]
+  "transforms": [
+    {
+      "type": "field-mapping",
+      "config": {
+        "mappings": [
+          { "from": "id", "to": "id" },
+          { "from": "name", "to": "name" },
+          { "from": "age", "to": "age" }
+        ]
+      }
     }
-  },
+  ],
   "sink": {
     "type": "mysql",
     "config": {
-      "url": "jdbc:mysql://target-host:3306/target_db",
-      "table": "user_table",
+      "url": "jdbc:mysql://118.145.119.51:3306/test_db",
+      "table": "user_table_2",
       "username": "root",
-      "password": "your_password",
+      "password": "Zw$8rb8*",
       "batchSize": 100,
       "writeMode": "upsert"
     }
