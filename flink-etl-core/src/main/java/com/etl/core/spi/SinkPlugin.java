@@ -3,11 +3,13 @@ package com.etl.core.spi;
 import com.etl.core.config.SinkConfig;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 
+import java.io.Serializable;
+
 /**
  * Sink 插件接口
  * 所有数据写入插件必须实现此接口
  */
-public interface SinkPlugin {
+public interface SinkPlugin extends Serializable {
 
     /**
      * 获取插件类型标识

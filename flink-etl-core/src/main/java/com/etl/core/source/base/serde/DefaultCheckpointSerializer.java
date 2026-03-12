@@ -1,29 +1,35 @@
 package com.etl.core.source.base.serde;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
 import com.etl.core.source.base.BaseEnumCheckpoint;
 import com.etl.core.source.base.BaseSourceSplit;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
+import org.objenesis.strategy.StdInstantiatorStrategy;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 
 /**
  * 默认的检查点序列化器
- * 使用 Java 原生序列化，适用于实现了 Serializable 接口的检查点
+ * 使用 Kryo 序列化，性能优于 Java 原生序列化
  *
- * <p>注意：对于高性能场景，建议实现自定义序列化器
- *
- * @param <SplitT> 分片类型
+ * @param <SplitT>      分片类型
  * @param <CheckpointT> 检查点类型
  */
 public class DefaultCheckpointSerializer<SplitT extends BaseSourceSplit,
         CheckpointT extends BaseEnumCheckpoint<SplitT>>
         implements SimpleVersionedSerializer<CheckpointT> {
 
-    private static final int VERSION = 1;
+    private static final int VERSION = 2;
+
+    private static final ThreadLocal<Kryo> KRYO_THREAD_LOCAL = ThreadLocal.withInitial(() -> {
+        Kryo kryo = new Kryo();
+        kryo.setRegistrationRequired(false);
+        kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
+        return kryo;
+    });
 
     @Override
     public int getVersion() {
@@ -32,10 +38,11 @@ public class DefaultCheckpointSerializer<SplitT extends BaseSourceSplit,
 
     @Override
     public byte[] serialize(CheckpointT checkpoint) throws IOException {
+        Kryo kryo = KRYO_THREAD_LOCAL.get();
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             ObjectOutputStream oos = new ObjectOutputStream(baos)) {
-            oos.writeObject(checkpoint);
-            oos.flush();
+             Output output = new Output(baos)) {
+            kryo.writeClassAndObject(output, checkpoint);
+            output.flush();
             return baos.toByteArray();
         }
     }
@@ -46,11 +53,9 @@ public class DefaultCheckpointSerializer<SplitT extends BaseSourceSplit,
         if (version != VERSION) {
             throw new IOException("版本不匹配，期望版本: " + VERSION + "，实际版本: " + version);
         }
-        try (ByteArrayInputStream bais = new ByteArrayInputStream(serialized);
-             ObjectInputStream ois = new ObjectInputStream(bais)) {
-            return (CheckpointT) ois.readObject();
-        } catch (ClassNotFoundException e) {
-            throw new IOException("反序列化失败，类未找到", e);
+        Kryo kryo = KRYO_THREAD_LOCAL.get();
+        try (Input input = new Input(serialized)) {
+            return (CheckpointT) kryo.readClassAndObject(input);
         }
     }
 }

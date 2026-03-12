@@ -1,6 +1,5 @@
 package com.etl.core.job;
 
-import com.etl.core.config.ConfigParser;
 import com.etl.core.config.JobConfig;
 import com.etl.core.spi.PluginLoader;
 import org.apache.flink.api.common.RuntimeExecutionMode;
@@ -22,26 +21,6 @@ public class JobExecutor {
 
     public JobExecutor(PluginLoader pluginLoader) {
         this.pluginLoader = pluginLoader;
-    }
-
-    /**
-     * 执行 Job
-     *
-     * @param configPath 配置文件路径
-     * @deprecated 请使用 {@link #execute(JobConfig)} 方法
-     */
-    @Deprecated
-    public void execute(String configPath) {
-        logger.info("开始执行 Job（从文件: {}）", configPath);
-
-        try {
-            JobConfig config = ConfigParser.parse(configPath);
-            execute(config);
-        } catch (Exception e) {
-            String errorMsg = String.format("Job 执行失败: %s", e.getMessage());
-            logger.error(errorMsg, e);
-            throw new RuntimeException(errorMsg, e);
-        }
     }
 
     /**

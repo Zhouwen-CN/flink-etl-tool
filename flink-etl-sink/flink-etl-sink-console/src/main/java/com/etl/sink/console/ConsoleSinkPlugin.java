@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
  * 将数据输出到控制台
  */
 public class ConsoleSinkPlugin implements SinkPlugin {
+    private static final long serialVersionUID = 1L;
     private static final Logger logger = LoggerFactory.getLogger(ConsoleSinkPlugin.class);
 
     @Override
@@ -30,6 +31,7 @@ public class ConsoleSinkPlugin implements SinkPlugin {
      * Console Sink Function
      */
     private static class ConsoleSinkFunction implements SinkFunction<Object> {
+        private static final long serialVersionUID = 1L;
         private final String format;
 
         public ConsoleSinkFunction(String format) {

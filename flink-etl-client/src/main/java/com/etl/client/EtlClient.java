@@ -42,11 +42,6 @@ public class EtlClient {
                 }
                 logger.info("从命令行 JSON 字符串加载配置");
                 config = ConfigLoader.loadFromJsonString(jsonString);
-            } else if (args.length == 1 && !args[0].startsWith("--")) {
-                logger.warn("使用已弃用的参数格式，建议使用 --file 或 --config 参数");
-                String configPath = args[0];
-                logger.info("从文件加载配置: {}", configPath);
-                config = ConfigLoader.loadFromFile(configPath);
             } else {
                 printUsage();
                 System.exit(1);
@@ -85,7 +80,5 @@ public class EtlClient {
         System.err.println("  java -jar flink-etl-tool.jar --file config/mysql-to-console.json");
         System.err.println("  java -jar flink-etl-tool.jar --config '{\"job\":{\"name\":\"test\",\"mode\":\"batch\"},...}'");
         System.err.println();
-        System.err.println("注意:");
-        System.err.println("  旧格式（直接传文件路径）已弃用，建议使用 --file 参数");
     }
 }

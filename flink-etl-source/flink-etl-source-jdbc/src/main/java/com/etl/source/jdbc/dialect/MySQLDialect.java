@@ -14,24 +14,30 @@ import java.sql.SQLException;
  */
 public class MySQLDialect implements JdbcDialect {
     private static final long serialVersionUID = 1L;
-    private static final transient Logger logger = LoggerFactory.getLogger(MySQLDialect.class);
+    private static final Logger logger = LoggerFactory.getLogger(MySQLDialect.class);
 
     @Override
     public String getDriverClassName() {
         return "com.mysql.cj.jdbc.Driver";
     }
 
+    /** 用反引号包裹标识符并转义内部的反引号，防止 SQL 注入 */
+    private static String quoteIdentifier(String name) {
+        return "`" + name.replace("`", "``") + "`";
+    }
+
     @Override
     public String buildRangeQuery(String table, String sql, String splitColumn) {
+        String quotedColumn = quoteIdentifier(splitColumn);
         String query;
         if (table != null) {
             // 表名模式
             query = String.format("SELECT MIN(%s), MAX(%s) FROM %s",
-                    splitColumn, splitColumn, table);
+                    quotedColumn, quotedColumn, quoteIdentifier(table));
         } else {
             // 自定义 SQL 模式
             query = String.format("SELECT MIN(%s), MAX(%s) FROM (%s) AS t",
-                    splitColumn, splitColumn, sql);
+                    quotedColumn, quotedColumn, sql);
         }
         logger.debug("构建范围查询 SQL: {}", query);
         return query;
@@ -39,15 +45,16 @@ public class MySQLDialect implements JdbcDialect {
 
     @Override
     public String buildSplitQuery(String table, String sql, String splitColumn, long start, long end) {
+        String quotedColumn = quoteIdentifier(splitColumn);
         String query;
         if (table != null) {
             // 表名模式
             query = String.format("SELECT * FROM %s WHERE %s BETWEEN %d AND %d",
-                    table, splitColumn, start, end);
+                    quoteIdentifier(table), quotedColumn, start, end);
         } else {
             // 自定义 SQL 模式
             query = String.format("SELECT * FROM (%s) AS t WHERE %s BETWEEN %d AND %d",
-                    sql, splitColumn, start, end);
+                    sql, quotedColumn, start, end);
         }
         logger.debug("构建分片查询 SQL: {}", query);
         return query;
