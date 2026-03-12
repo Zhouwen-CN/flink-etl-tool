@@ -4,7 +4,6 @@ import com.etl.core.config.ConfigParser;
 import com.etl.core.config.JobConfig;
 import com.etl.core.spi.PluginLoader;
 import org.apache.flink.api.common.RuntimeExecutionMode;
-import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.CoreOptions;
 import org.apache.flink.configuration.ExecutionOptions;
