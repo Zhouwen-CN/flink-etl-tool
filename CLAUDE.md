@@ -16,7 +16,11 @@ mvn clean compile
 mvn clean package
 
 # 运行 ETL 任务
-java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar docs/examples/mysql-to-console.json
+# 方式一：从文件加载配置（推荐）
+java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar --file docs/examples/mysql-to-console.json
+
+# 方式二：从 JSON 字符串加载配置
+java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar --config '{"job":{...},"source":{...},"sink":{...}}'
 
 # 安装到本地仓库（开发新插件时需要）
 mvn clean install -DskipTests
