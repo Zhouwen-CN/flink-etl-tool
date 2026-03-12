@@ -24,10 +24,22 @@ public class EtlClient {
 
             if (params.has("file")) {
                 String filePath = params.get("file");
+                if (filePath == null || filePath.trim().isEmpty()) {
+                    logger.error("--file 参数值不能为空");
+                    System.err.println("错误: --file 参数值不能为空");
+                    printUsage();
+                    System.exit(1);
+                }
                 logger.info("从文件加载配置: {}", filePath);
                 config = ConfigLoader.loadFromFile(filePath);
             } else if (params.has("config")) {
                 String jsonString = params.get("config");
+                if (jsonString == null || jsonString.trim().isEmpty()) {
+                    logger.error("--config 参数值不能为空");
+                    System.err.println("错误: --config 参数值不能为空");
+                    printUsage();
+                    System.exit(1);
+                }
                 logger.info("从命令行 JSON 字符串加载配置");
                 config = ConfigLoader.loadFromJsonString(jsonString);
             } else if (args.length == 1 && !args[0].startsWith("--")) {
