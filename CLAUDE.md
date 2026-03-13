@@ -82,17 +82,28 @@ flink-etl-tool/
 - 所有 Source 直接使用 Flink `Row` 类型输出，无额外包装层
 - 降低对象创建开销，与 Flink 生态更好集成
 
-**扩展新数据源：**
+### 扩展新数据源
 
 添加新数据源需要：
 
 1. 创建新模块，依赖 `flink-etl-core`
 2. 实现 `SourcePlugin` 接口
-3. 继承 `AbstractRangeSplitSource` 实现分片读取（关系型数据库）
+3. 添加 `@AutoService(SourcePlugin.class)` 注解（自动生成 SPI 配置）
+4. 继承 `AbstractRangeSplitSource` 实现分片读取（关系型数据库）
    - 实现 `getSplitColumnRange()` 方法获取分片范围
    - 分片数量根据 Job 配置的 `parallelism` 自动计算
-4. 添加 `META-INF/services/com.etl.core.spi.SourcePlugin` 文件
 5. 在 `flink-etl-client/pom.xml` 添加新模块依赖
+
+**注意：** 使用 `@AutoService` 注解后，无需手动创建 `META-INF/services/` 目录下的服务配置文件，编译时会自动生成。
+
+```java
+import com.google.auto.service.AutoService;
+
+@AutoService(SourcePlugin.class)
+public class MySourcePlugin implements SourcePlugin {
+    // ...
+}
+```
 
 ## 配置文件格式
 
