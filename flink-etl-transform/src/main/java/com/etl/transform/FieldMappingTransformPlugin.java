@@ -2,6 +2,7 @@ package com.etl.transform;
 
 import com.etl.core.config.TransformConfig;
 import com.etl.core.spi.TransformPlugin;
+import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.types.Row;
@@ -15,6 +16,7 @@ import java.util.Map;
  * 支持字段重命名和字段过滤
  */
 @Slf4j
+@AutoService(TransformPlugin.class)
 public class FieldMappingTransformPlugin implements TransformPlugin {
 
     @Override
