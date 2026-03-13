@@ -15,11 +15,4 @@
     <name>Flink ETL Sink - Console</name>
     <description>控制台输出 Sink 插件</description>
 
-    <dependencies>
-        <!-- Flink -->
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-streaming-java</artifactId>
-        </dependency>
-    </dependencies>
 </project>

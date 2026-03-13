@@ -30,11 +30,6 @@
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-connector-base</artifactId>
         </dependency>
-        <!-- Flink Connector Base - 提供 SourceReaderBase 等基础类 -->
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-connector-base</artifactId>
-        </dependency>
 
         <!-- Jackson -->
         <dependency>
