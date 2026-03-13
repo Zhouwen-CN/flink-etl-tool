@@ -2,6 +2,7 @@ package com.etl.sink.mysql;
 
 import com.etl.core.config.SinkConfig;
 import com.etl.core.spi.SinkPlugin;
+import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 
@@ -11,6 +12,7 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction;
  * 列名从运行时 Row 的字段名中动态获取，无需在配置中指定
  */
 @Slf4j
+@AutoService(SinkPlugin.class)
 public class MySQLSinkPlugin implements SinkPlugin {
     private static final long serialVersionUID = 1L;
 
