@@ -107,11 +107,22 @@ public interface FileFormatPlugin {
     /**
      * 获取字段名列表
      * header=true 时从文件头解析，header=false 时从配置获取
+     *
+     * @param config 配置
+     * @param firstFile 第一个文件的输入流（用于解析文件头）
+     *                  调用方负责打开和关闭此流
+     * @return 字段名列表
      */
     List<String> resolveFields(SourceConfig config, InputStream firstFile);
 
     /**
      * 解析文件内容，返回 Row 迭代器
+     *
+     * @param config 配置
+     * @param inputStream 文件输入流
+     *                    调用方负责打开，实现方负责在迭代完成后关闭
+     * @param fields 字段名列表
+     * @return Row 迭代器
      */
     Iterable<Row> parse(SourceConfig config, InputStream inputStream, List<String> fields);
 }
@@ -152,6 +163,18 @@ public class LocalFileSplit implements BaseSourceSplit, Serializable {
     }
 }
 ```
+
+### LocalFileSplitState
+
+- 继承 `BaseSplitState<LocalFileSplit>`
+- 参考 `RangeSplitState` 实现
+- 用于追踪分片读取状态，支持断点续传
+
+### LocalFileEnumCheckpoint
+
+- 继承 `BaseEnumCheckpoint<LocalFileSplit>`
+- 参考 `RangeEnumCheckpoint` 实现
+- 用于保存枚举器状态，支持 Checkpoint 恢复
 
 ## 数据流程
 
@@ -250,10 +273,11 @@ public class LocalFileSplit implements BaseSourceSplit, Serializable {
 
 ## 错误处理
 
-1. 文件不存在：启动时检查，抛出明确异常
-2. 文件读取失败：记录错误日志，跳过该文件继续处理其他文件
-3. 格式解析失败：记录错误日志，抛出异常终止任务
-4. 编码错误：使用配置的编码，解析失败时抛出异常
+1. **无匹配文件**：启动时检查，若无任何文件匹配路径，抛出明确异常 `NoFilesFoundException`
+2. **文件不存在**：启动时检查，抛出明确异常
+3. **文件读取失败**：记录错误日志，跳过该文件继续处理其他文件
+4. **格式解析失败**：记录错误日志，抛出异常终止任务
+5. **编码错误**：使用配置的编码，解析失败时抛出异常
 
 ## 扩展性
 
