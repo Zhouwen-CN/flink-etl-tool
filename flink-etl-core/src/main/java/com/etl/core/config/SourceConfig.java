@@ -1,38 +1,21 @@
 package com.etl.core.config;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
+
 import java.util.Map;
 
 /**
  * Source 配置类
  * 定义数据源的基本配置
  */
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class SourceConfig {
     private String type;
     private Map<String, Object> config;
-
-    public SourceConfig() {
-    }
-
-    public SourceConfig(String type, Map<String, Object> config) {
-        this.type = type;
-        this.config = config;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
-    }
-
-    public Map<String, Object> getConfig() {
-        return config;
-    }
-
-    public void setConfig(Map<String, Object> config) {
-        this.config = config;
-    }
 
     /**
      * 获取字符串类型的配置值

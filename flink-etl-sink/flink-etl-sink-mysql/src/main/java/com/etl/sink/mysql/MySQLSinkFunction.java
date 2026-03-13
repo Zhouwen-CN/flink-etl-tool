@@ -1,10 +1,9 @@
 package com.etl.sink.mysql;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 import org.apache.flink.types.Row;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -18,9 +17,9 @@ import java.util.stream.Collectors;
  * MySQL Sink Function
  * 支持批量写入和 upsert 模式，列名从 Row 字段名中动态获取
  */
+@Slf4j
 public class MySQLSinkFunction extends RichSinkFunction<Row> {
     private static final long serialVersionUID = 1L;
-    private static final Logger logger = LoggerFactory.getLogger(MySQLSinkFunction.class);
 
     private final String url;
     private final String username;
@@ -62,7 +61,7 @@ public class MySQLSinkFunction extends RichSinkFunction<Row> {
             }
             columns = fieldNames.toArray(new String[0]);
             statement = connection.prepareStatement(buildSql());
-            logger.info("MySQL Sink 已连接: table={}, mode={}, batchSize={}, columns={}",
+            log.info("MySQL Sink 已连接: table={}, mode={}, batchSize={}, columns={}",
                     table, writeMode, batchSize, Arrays.toString(columns));
         }
 
@@ -96,7 +95,7 @@ public class MySQLSinkFunction extends RichSinkFunction<Row> {
     private void flush() throws SQLException {
         statement.executeBatch();
         connection.commit();
-        logger.debug("已写入 {} 条记录到 {}", pendingCount, table);
+        log.debug("已写入 {} 条记录到 {}", pendingCount, table);
         pendingCount = 0;
     }
 

@@ -402,7 +402,7 @@ git commit -m "refactor: JobExecutor 支持 JobConfig 对象参数"
 ```java
 package com.etl.client;
 
-import com.etl.core.config.ConfigLoader;
+import com.etl.client.ConfigLoader;
 import com.etl.core.config.JobConfig;
 import com.etl.core.job.JobExecutor;
 import com.etl.core.spi.PluginLoader;

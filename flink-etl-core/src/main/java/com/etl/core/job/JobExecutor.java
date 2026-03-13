@@ -2,20 +2,19 @@ package com.etl.core.job;
 
 import com.etl.core.config.JobConfig;
 import com.etl.core.spi.PluginLoader;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.CoreOptions;
 import org.apache.flink.configuration.ExecutionOptions;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Job 执行器
  * 负责执行完整的 ETL Job
  */
+@Slf4j
 public class JobExecutor {
-    private static final Logger logger = LoggerFactory.getLogger(JobExecutor.class);
 
     private final PluginLoader pluginLoader;
 
@@ -29,7 +28,7 @@ public class JobExecutor {
      * @param config Job 配置对象
      */
     public void execute(JobConfig config) {
-        logger.info("开始执行 Job: {}", config.getJob().getName());
+        log.info("开始执行 Job: {}", config.getJob().getName());
 
         try {
             StreamExecutionEnvironment env = createExecutionEnvironment(config);
@@ -37,13 +36,13 @@ public class JobExecutor {
             JobBuilder jobBuilder = new JobBuilder(pluginLoader);
             jobBuilder.build(env, config);
 
-            logger.info("提交 Job 到 Flink 执行引擎");
+            log.info("提交 Job 到 Flink 执行引擎");
             env.execute(config.getJob().getName());
 
-            logger.info("Job 执行成功");
+            log.info("Job 执行成功");
         } catch (Exception e) {
             String errorMsg = String.format("Job 执行失败: %s", e.getMessage());
-            logger.error(errorMsg, e);
+            log.error(errorMsg, e);
             throw new RuntimeException(errorMsg, e);
         }
     }
@@ -57,7 +56,7 @@ public class JobExecutor {
     StreamExecutionEnvironment createExecutionEnvironment(JobConfig config) {
         String mode = config.getJob().getMode();
         Integer parallelism = config.getJob().getParallelism();
-        logger.info("创建 Flink 执行环境: mode={}, parallelism={}", mode, parallelism);
+        log.info("创建 Flink 执行环境: mode={}, parallelism={}", mode, parallelism);
 
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         Configuration configuration = new Configuration();
@@ -66,13 +65,13 @@ public class JobExecutor {
             configuration.set(ExecutionOptions.RUNTIME_MODE, RuntimeExecutionMode.BATCH);
         } else if ("stream".equalsIgnoreCase(mode)) {
             configuration.set(ExecutionOptions.RUNTIME_MODE, RuntimeExecutionMode.STREAMING);
-        }else{
+        } else {
             throw new IllegalArgumentException("job.mode 仅支持 batch | stream");
         }
 
         if (parallelism != null) {
             configuration.set(CoreOptions.DEFAULT_PARALLELISM, parallelism);
-            logger.info("设置 Job 并行度: {}", parallelism);
+            log.info("设置 Job 并行度: {}", parallelism);
         }
 
         env.configure(configuration);

@@ -2,12 +2,11 @@ package com.etl.source.jdbc;
 
 import com.etl.core.source.RangeSplit;
 import com.etl.core.source.base.BaseSplitReader;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
 import org.apache.flink.connector.base.source.reader.RecordsWithSplitIds;
 import org.apache.flink.connector.base.source.reader.splitreader.SplitsChange;
 import org.apache.flink.types.Row;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.sql.*;
@@ -28,9 +27,8 @@ import java.util.Set;
  *   <li>直接返回 Flink Row 类型，无需额外包装</li>
  * </ul>
  */
+@Slf4j
 public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
-
-    private static final Logger logger = LoggerFactory.getLogger(JdbcSplitReader.class);
 
     private final String url;
     private final String username;
@@ -92,7 +90,7 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
      * 开始读取新分片
      */
     private void startNewSplit(RangeSplit split) throws IOException {
-        logger.info("开始读取分片: {}", split.splitId());
+        log.info("开始读取分片: {}", split.splitId());
 
         try {
             // 创建连接
@@ -113,7 +111,7 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
             // 构建分片查询 SQL
             String querySql = dialect.buildSplitQuery(table, sql, splitColumn,
                     split.getStart(), split.getEnd());
-            logger.debug("执行查询: {}", querySql);
+            log.debug("执行查询: {}", querySql);
 
             // 执行查询
             currentResultSet = currentStatement.executeQuery(querySql);
@@ -152,7 +150,7 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
             // 如果没有更多记录，标记分片完成
             if (!hasNextRecord) {
                 finishedSplits.add(currentSplit.splitId());
-                logger.info("分片 {} 读取完成，共 {} 条记录", currentSplit.splitId(), currentOffset);
+                log.info("分片 {} 读取完成，共 {} 条记录", currentSplit.splitId(), currentOffset);
 
                 // 关闭资源
                 closeCurrentSplit();
@@ -189,7 +187,7 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
             try {
                 resource.close();
             } catch (Exception e) {
-                logger.warn("关闭 {} 失败", resourceName, e);
+                log.warn("关闭 {} 失败", resourceName, e);
             }
         }
     }
@@ -197,7 +195,7 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
     @Override
     public void handleSplitsChanges(SplitsChange<RangeSplit> splitsChanges) {
         pendingSplits.addAll(splitsChanges.splits());
-        logger.debug("接收到 {} 个新分片", splitsChanges.splits().size());
+        log.debug("接收到 {} 个新分片", splitsChanges.splits().size());
     }
 
     @Override
@@ -208,6 +206,6 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
     @Override
     public void close() throws Exception {
         closeCurrentSplit();
-        logger.info("JdbcSplitReader 关闭");
+        log.info("JdbcSplitReader 关闭");
     }
 }

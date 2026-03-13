@@ -1,16 +1,15 @@
 package com.etl.core.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 
 /**
  * 配置文件解析器
  */
+@Slf4j
 public class ConfigParser {
-    private static final Logger logger = LoggerFactory.getLogger(ConfigParser.class);
     private static final ObjectMapper mapper = new ObjectMapper();
 
     /**
@@ -20,16 +19,16 @@ public class ConfigParser {
      * @return Job 配置对象
      */
     public static JobConfig parse(String configPath) {
-        logger.info("解析配置文件: {}", configPath);
+        log.info("解析配置文件: {}", configPath);
 
         try {
             JobConfig config = mapper.readValue(new File(configPath), JobConfig.class);
             validate(config);
-            logger.info("配置文件解析成功");
+            log.info("配置文件解析成功");
             return config;
         } catch (Exception e) {
             String errorMsg = String.format("配置文件解析失败: %s", e.getMessage());
-            logger.error(errorMsg, e);
+            log.error(errorMsg, e);
             throw new IllegalArgumentException(errorMsg, e);
         }
     }
@@ -41,16 +40,16 @@ public class ConfigParser {
      * @return Job 配置对象
      */
     public static JobConfig parseFromString(String json) {
-        logger.info("从字符串解析配置");
+        log.info("从字符串解析配置");
 
         try {
             JobConfig config = mapper.readValue(json, JobConfig.class);
             validate(config);
-            logger.info("配置解析成功");
+            log.info("配置解析成功");
             return config;
         } catch (Exception e) {
             String errorMsg = String.format("配置解析失败: %s", e.getMessage());
-            logger.error(errorMsg, e);
+            log.error(errorMsg, e);
             throw new IllegalArgumentException(errorMsg, e);
         }
     }

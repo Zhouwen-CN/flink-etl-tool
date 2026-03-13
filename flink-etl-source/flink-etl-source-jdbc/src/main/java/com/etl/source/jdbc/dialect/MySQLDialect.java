@@ -1,9 +1,8 @@
 package com.etl.source.jdbc.dialect;
 
 import com.etl.source.jdbc.JdbcDialect;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.types.Row;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -12,9 +11,9 @@ import java.sql.SQLException;
 /**
  * MySQL 数据库方言实现
  */
+@Slf4j
 public class MySQLDialect implements JdbcDialect {
     private static final long serialVersionUID = 1L;
-    private static final Logger logger = LoggerFactory.getLogger(MySQLDialect.class);
 
     @Override
     public String getDriverClassName() {
@@ -39,7 +38,7 @@ public class MySQLDialect implements JdbcDialect {
             query = String.format("SELECT MIN(%s), MAX(%s) FROM (%s) AS t",
                     quotedColumn, quotedColumn, sql);
         }
-        logger.debug("构建范围查询 SQL: {}", query);
+        log.debug("构建范围查询 SQL: {}", query);
         return query;
     }
 
@@ -56,7 +55,7 @@ public class MySQLDialect implements JdbcDialect {
             query = String.format("SELECT * FROM (%s) AS t WHERE %s BETWEEN %d AND %d",
                     sql, quotedColumn, start, end);
         }
-        logger.debug("构建分片查询 SQL: {}", query);
+        log.debug("构建分片查询 SQL: {}", query);
         return query;
     }
 

@@ -1,6 +1,8 @@
 package com.etl.core.source;
 
 import com.etl.core.source.base.BaseSplitState;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
  * 范围分片状态
@@ -13,19 +15,16 @@ import com.etl.core.source.base.BaseSplitState;
  *   <li>记录读取统计信息</li>
  * </ul>
  */
+@Getter
+@Setter
 public class RangeSplitState extends BaseSplitState<RangeSplit> {
 
     private static final long serialVersionUID = 1L;
 
-    /**
-     * 当前读取位置
-     * 用于断点续读
-     */
+    /** 当前读取位置，用于断点续读 */
     private long currentPosition;
 
-    /**
-     * 已读取的记录数
-     */
+    /** 已读取的记录数 */
     private long recordsRead;
 
     /**
@@ -37,33 +36,6 @@ public class RangeSplitState extends BaseSplitState<RangeSplit> {
         super(split);
         this.currentPosition = split.getStart();
         this.recordsRead = 0;
-    }
-
-    /**
-     * 获取当前读取位置
-     *
-     * @return 当前位置
-     */
-    public long getCurrentPosition() {
-        return currentPosition;
-    }
-
-    /**
-     * 更新当前读取位置
-     *
-     * @param position 新位置
-     */
-    public void setCurrentPosition(long position) {
-        this.currentPosition = position;
-    }
-
-    /**
-     * 获取已读取记录数
-     *
-     * @return 已读取记录数
-     */
-    public long getRecordsRead() {
-        return recordsRead;
     }
 
     /**

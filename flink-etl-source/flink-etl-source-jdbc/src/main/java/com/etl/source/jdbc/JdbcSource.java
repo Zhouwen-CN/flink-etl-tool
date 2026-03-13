@@ -7,13 +7,12 @@ import com.etl.core.source.RangeSplit;
 import com.etl.core.source.base.BaseSplitReader;
 import com.etl.core.source.base.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.base.serde.DefaultSplitSerializer;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.Range;
 import org.apache.flink.api.connector.source.*;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
 import org.apache.flink.types.Row;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.List;
@@ -31,9 +30,8 @@ import java.util.function.Supplier;
  *   <li>直接输出 Flink Row 类型</li>
  * </ul>
  */
+@Slf4j
 public class JdbcSource extends AbstractRangeSplitSource<Row> {
-
-    private static final Logger logger = LoggerFactory.getLogger(JdbcSource.class);
 
     private final String url;
     private final String username;
@@ -55,14 +53,14 @@ public class JdbcSource extends AbstractRangeSplitSource<Row> {
         this.queryTimeout = config.getInteger("queryTimeout");
         this.dialect = dialect;
 
-        logger.info("创建 JdbcSource: table={}, sql={}, splitColumn={}",
+        log.info("创建 JdbcSource: table={}, sql={}, splitColumn={}",
                 table, sql, splitColumn);
     }
 
     @Override
     protected Range<Long> getSplitColumnRange() {
         String querySql = dialect.buildRangeQuery(table, sql, splitColumn);
-        logger.info("查询分片范围: {}", querySql);
+        log.info("查询分片范围: {}", querySql);
 
         try (Connection conn = DriverManager.getConnection(url, username, password);
              Statement stmt = conn.createStatement();
@@ -71,7 +69,7 @@ public class JdbcSource extends AbstractRangeSplitSource<Row> {
             if (rs.next()) {
                 long min = rs.getLong(1);
                 long max = rs.getLong(2);
-                logger.info("分片范围: [{}, {}]", min, max);
+                log.info("分片范围: [{}, {}]", min, max);
                 return Range.between(min, max);
             }
             return Range.between(0L, 0L);
@@ -88,7 +86,7 @@ public class JdbcSource extends AbstractRangeSplitSource<Row> {
     @Override
     public SplitEnumerator<RangeSplit, RangeEnumCheckpoint>
     createEnumerator(SplitEnumeratorContext<RangeSplit> enumContext) {
-        logger.info("创建 SplitEnumerator");
+        log.info("创建 SplitEnumerator");
         Range<Long> range = getSplitColumnRange();
         int parallelism = enumContext.currentParallelism();
         List<RangeSplit> splits = calculateSplits(range, parallelism);
@@ -99,13 +97,13 @@ public class JdbcSource extends AbstractRangeSplitSource<Row> {
     public SplitEnumerator<RangeSplit, RangeEnumCheckpoint>
     restoreEnumerator(SplitEnumeratorContext<RangeSplit> enumContext,
                       RangeEnumCheckpoint checkpoint) {
-        logger.info("从检查点恢复 SplitEnumerator");
+        log.info("从检查点恢复 SplitEnumerator");
         return new JdbcSplitEnumerator(enumContext, checkpoint);
     }
 
     @Override
     public SourceReader<Row, RangeSplit> createReader(SourceReaderContext readerContext) {
-        logger.info("创建 SourceReader");
+        log.info("创建 SourceReader");
 
         // 创建 SplitReader 供应器
         var splitReaderSupplier = (Supplier<BaseSplitReader<Row, RangeSplit>>) () ->

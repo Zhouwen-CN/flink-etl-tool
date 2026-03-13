@@ -1,6 +1,7 @@
 package com.etl.core.source;
 
 import com.etl.core.source.base.BaseSourceSplit;
+import lombok.Getter;
 
 import java.io.Serializable;
 
@@ -10,6 +11,7 @@ import java.io.Serializable;
  *
  * <p>实现了 {@link BaseSourceSplit} 接口，支持序列化和状态管理
  */
+@Getter
 public class RangeSplit implements BaseSourceSplit, Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -36,33 +38,6 @@ public class RangeSplit implements BaseSourceSplit, Serializable {
     @Override
     public String splitId() {
         return splitId;
-    }
-
-    /**
-     * 获取分片列名
-     *
-     * @return 分片列名
-     */
-    public String getColumnName() {
-        return columnName;
-    }
-
-    /**
-     * 获取起始值
-     *
-     * @return 起始值（包含）
-     */
-    public long getStart() {
-        return start;
-    }
-
-    /**
-     * 获取结束值
-     *
-     * @return 结束值（包含）
-     */
-    public long getEnd() {
-        return end;
     }
 
     /**

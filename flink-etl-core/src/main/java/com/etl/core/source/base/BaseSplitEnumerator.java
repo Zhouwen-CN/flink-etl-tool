@@ -1,9 +1,8 @@
 package com.etl.core.source.base;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SplitEnumerator;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -23,20 +22,15 @@ import java.util.ArrayDeque;
  * @param <SplitT> 分片类型
  * @param <CheckpointT> 检查点类型
  */
+@Slf4j
 public abstract class BaseSplitEnumerator<SplitT extends BaseSourceSplit,
         CheckpointT extends BaseEnumCheckpoint<SplitT>>
         implements SplitEnumerator<SplitT, CheckpointT> {
 
-    private static final Logger logger = LoggerFactory.getLogger(BaseSplitEnumerator.class);
-
-    /**
-     * 待分配的分片队列
-     */
+    /** 待分配的分片队列 */
     protected final Queue<SplitT> pendingSplits = new ArrayDeque<>();
 
-    /**
-     * 枚举器上下文
-     */
+    /** 枚举器上下文 */
     protected final SplitEnumeratorContext<SplitT> context;
 
     /**
@@ -58,7 +52,7 @@ public abstract class BaseSplitEnumerator<SplitT extends BaseSourceSplit,
         this(context);
         if (checkpoint != null && checkpoint.getPendingSplits() != null) {
             pendingSplits.addAll(checkpoint.getPendingSplits());
-            logger.info("从检查点恢复 {} 个待处理分片", pendingSplits.size());
+            log.info("从检查点恢复 {} 个待处理分片", pendingSplits.size());
         }
     }
 
@@ -73,10 +67,10 @@ public abstract class BaseSplitEnumerator<SplitT extends BaseSourceSplit,
     public void handleSplitRequest(int subtaskId, @Nullable String requesterHostname) {
         SplitT split = pendingSplits.poll();
         if (split != null) {
-            logger.debug("分配分片 {} 给 Reader {}", split.splitId(), subtaskId);
+            log.debug("分配分片 {} 给 Reader {}", split.splitId(), subtaskId);
             context.assignSplit(split, subtaskId);
         } else {
-            logger.debug("无更多分片，通知 Reader {}", subtaskId);
+            log.debug("无更多分片，通知 Reader {}", subtaskId);
             context.signalNoMoreSplits(subtaskId);
         }
     }
@@ -90,7 +84,7 @@ public abstract class BaseSplitEnumerator<SplitT extends BaseSourceSplit,
      */
     @Override
     public void addSplitsBack(List<SplitT> splits, int subtaskId) {
-        logger.warn("Reader {} 返回 {} 个未处理的分片", subtaskId, splits.size());
+        log.warn("Reader {} 返回 {} 个未处理的分片", subtaskId, splits.size());
         pendingSplits.addAll(splits);
     }
 
@@ -101,7 +95,7 @@ public abstract class BaseSplitEnumerator<SplitT extends BaseSourceSplit,
      */
     @Override
     public void addReader(int subtaskId) {
-        logger.debug("Reader {} 已注册", subtaskId);
+        log.debug("Reader {} 已注册", subtaskId);
     }
 
     /**
@@ -120,6 +114,6 @@ public abstract class BaseSplitEnumerator<SplitT extends BaseSourceSplit,
      */
     protected void addPendingSplits(List<SplitT> splits) {
         pendingSplits.addAll(splits);
-        logger.debug("添加 {} 个分片到待处理队列，当前队列大小: {}", splits.size(), pendingSplits.size());
+        log.debug("添加 {} 个分片到待处理队列，当前队列大小: {}", splits.size(), pendingSplits.size());
     }
 }

@@ -1,5 +1,7 @@
 package com.etl.core.source.base;
 
+import lombok.Getter;
+
 import java.io.Serializable;
 import java.util.Collection;
 
@@ -9,14 +11,13 @@ import java.util.Collection;
  *
  * @param <SplitT> 分片类型
  */
+@Getter
 public abstract class BaseEnumCheckpoint<SplitT extends BaseSourceSplit> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    /**
-     * 待处理的分片集合
-     */
-    protected Collection<SplitT> pendingSplits;
+    /** 待处理的分片集合 */
+    protected final Collection<SplitT> pendingSplits;
 
     /**
      * 构造函数
@@ -25,15 +26,6 @@ public abstract class BaseEnumCheckpoint<SplitT extends BaseSourceSplit> impleme
      */
     public BaseEnumCheckpoint(Collection<SplitT> pendingSplits) {
         this.pendingSplits = pendingSplits;
-    }
-
-    /**
-     * 获取待处理的分片
-     *
-     * @return 待处理分片集合
-     */
-    public Collection<SplitT> getPendingSplits() {
-        return pendingSplits;
     }
 
     @Override

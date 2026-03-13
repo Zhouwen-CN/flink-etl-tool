@@ -1,13 +1,12 @@
 package com.etl.core.source.base;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.connector.base.source.reader.RecordEmitter;
 import org.apache.flink.connector.base.source.reader.RecordEvaluator;
 import org.apache.flink.connector.base.source.reader.SingleThreadMultiplexSourceReaderBase;
 import org.apache.flink.connector.base.source.reader.fetcher.SingleThreadFetcherManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import java.util.Map;
@@ -38,11 +37,9 @@ import java.util.function.Supplier;
  *
  * @see SingleThreadMultiplexSourceReaderBase
  */
+@Slf4j
 public abstract class BaseSourceReader<E, T, SplitT extends BaseSourceSplit, StateT extends BaseSplitState<SplitT>>
         extends SingleThreadMultiplexSourceReaderBase<E, T, SplitT, StateT> {
-
-    private static final Logger logger = LoggerFactory.getLogger(BaseSourceReader.class);
-
 
     /**
      * 构造函数
@@ -114,7 +111,7 @@ public abstract class BaseSourceReader<E, T, SplitT extends BaseSourceSplit, Sta
     @Override
     protected void onSplitFinished(Map<String, StateT> finishedSplitIds){
         // 分片完成时请求新分片
-        logger.info("分片完成: {}", finishedSplitIds.keySet());
+        log.info("分片完成: {}", finishedSplitIds.keySet());
         context.sendSplitRequest();
     };
 

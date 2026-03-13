@@ -2,17 +2,16 @@ package com.etl.sink.console;
 
 import com.etl.core.config.SinkConfig;
 import com.etl.core.spi.SinkPlugin;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * Console Sink 插件
  * 将数据输出到控制台
  */
+@Slf4j
 public class ConsoleSinkPlugin implements SinkPlugin {
     private static final long serialVersionUID = 1L;
-    private static final Logger logger = LoggerFactory.getLogger(ConsoleSinkPlugin.class);
 
     @Override
     public String getType() {
@@ -22,7 +21,7 @@ public class ConsoleSinkPlugin implements SinkPlugin {
     @Override
     public SinkFunction<?> createSink(SinkConfig config) {
         String format = config.getString("format");
-        logger.info("创建 Console Sink, format={}", format);
+        log.info("创建 Console Sink, format={}", format);
 
         return new ConsoleSinkFunction(format);
     }

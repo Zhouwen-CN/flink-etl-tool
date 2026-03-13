@@ -1,19 +1,16 @@
 package com.etl.client;
 
-import com.etl.core.config.ConfigLoader;
 import com.etl.core.config.JobConfig;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.java.utils.ParameterTool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * 命令行参数解析器
  * <p>
  * 负责解析命令行参数并加载对应的 Job 配置
  */
+@Slf4j
 public class CliArgumentParser {
-    private static final Logger logger = LoggerFactory.getLogger(CliArgumentParser.class);
-
     /**
      * 解析命令行参数并返回 Job 配置
      *
@@ -52,23 +49,23 @@ public class CliArgumentParser {
 
     private JobConfig loadFromFile(String filePath) {
         if (filePath == null || filePath.trim().isEmpty()) {
-            logger.error("--file 参数值不能为空");
+            log.error("--file 参数值不能为空");
             System.err.println("错误: --file 参数值不能为空");
             return null;
         }
 
-        logger.info("从文件加载配置: {}", filePath);
+        log.info("从文件加载配置: {}", filePath);
         return ConfigLoader.loadFromFile(filePath);
     }
 
     private JobConfig loadFromJsonString(String jsonString) {
         if (jsonString == null || jsonString.trim().isEmpty()) {
-            logger.error("--config 参数值不能为空");
+            log.error("--config 参数值不能为空");
             System.err.println("错误: --config 参数值不能为空");
             return null;
         }
 
-        logger.info("从命令行 JSON 字符串加载配置");
+        log.info("从命令行 JSON 字符串加载配置");
         return ConfigLoader.loadFromJsonString(jsonString);
     }
 }

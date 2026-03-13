@@ -4,13 +4,11 @@ import com.etl.core.source.RangeSplit;
 import com.etl.core.source.RangeSplitState;
 import com.etl.core.source.base.BaseSourceReader;
 import com.etl.core.source.base.BaseSplitReader;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.types.Row;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -28,9 +26,8 @@ import java.util.function.Supplier;
  *   <li>{@link #onSplitFinished(Map)} - 分片完成回调</li>
  * </ul>
  */
+@Slf4j
 public class JdbcSourceReader extends BaseSourceReader<Row, Row, RangeSplit, RangeSplitState> {
-
-    private static final Logger logger = LoggerFactory.getLogger(JdbcSourceReader.class);
 
     public JdbcSourceReader(
             Supplier<BaseSplitReader<Row, RangeSplit>> splitReaderSupplier,
@@ -42,7 +39,7 @@ public class JdbcSourceReader extends BaseSourceReader<Row, Row, RangeSplit, Ran
 
     @Override
     public RangeSplitState initializedState(RangeSplit split) {
-        logger.debug("初始化分片状态: {}", split.splitId());
+        log.debug("初始化分片状态: {}", split.splitId());
         return new RangeSplitState(split);
     }
 

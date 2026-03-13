@@ -23,6 +23,7 @@
         <log4j2.version>2.20.0</log4j2.version>
         <mysql.connector.version>8.0.33</mysql.connector.version>
         <junit.version>5.9.3</junit.version>
+        <lombok.version>1.18.30</lombok.version>
     </properties>
 
     <modules>

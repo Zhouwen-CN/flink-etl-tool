@@ -1,7 +1,6 @@
 package com.etl.core.spi;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.ServiceLoader;
 
@@ -9,8 +8,8 @@ import java.util.ServiceLoader;
  * SPI 插件加载器
  * 通过 Java SPI 机制动态加载插件
  */
+@Slf4j
 public class PluginLoader {
-    private static final Logger logger = LoggerFactory.getLogger(PluginLoader.class);
 
     /**
      * 加载 Source 插件
@@ -19,7 +18,7 @@ public class PluginLoader {
      * @return Source 插件实例
      */
     public SourcePlugin loadSourcePlugin(String type) {
-        logger.info("加载 Source 插件: {}", type);
+        log.info("加载 Source 插件: {}", type);
 
         // 使用当前线程的 ClassLoader 加载插件
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
@@ -30,13 +29,13 @@ public class PluginLoader {
         ServiceLoader<SourcePlugin> loader = ServiceLoader.load(SourcePlugin.class, classLoader);
         for (SourcePlugin plugin : loader) {
             if (plugin.getType().equals(type)) {
-                logger.info("Source 插件加载成功: {}", plugin.getClass().getName());
+                log.info("Source 插件加载成功: {}", plugin.getClass().getName());
                 return plugin;
             }
         }
 
         String errorMsg = String.format("未找到 Source 插件: %s", type);
-        logger.error(errorMsg);
+        log.error(errorMsg);
         throw new IllegalArgumentException(errorMsg);
     }
 
@@ -47,7 +46,7 @@ public class PluginLoader {
      * @return Transform 插件实例
      */
     public TransformPlugin loadTransformPlugin(String type) {
-        logger.info("加载 Transform 插件: {}", type);
+        log.info("加载 Transform 插件: {}", type);
 
         // 使用当前线程的 ClassLoader 加载插件
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
@@ -58,13 +57,13 @@ public class PluginLoader {
         ServiceLoader<TransformPlugin> loader = ServiceLoader.load(TransformPlugin.class, classLoader);
         for (TransformPlugin plugin : loader) {
             if (plugin.getType().equals(type)) {
-                logger.info("Transform 插件加载成功: {}", plugin.getClass().getName());
+                log.info("Transform 插件加载成功: {}", plugin.getClass().getName());
                 return plugin;
             }
         }
 
         String errorMsg = String.format("未找到 Transform 插件: %s", type);
-        logger.error(errorMsg);
+        log.error(errorMsg);
         throw new IllegalArgumentException(errorMsg);
     }
 
@@ -75,7 +74,7 @@ public class PluginLoader {
      * @return Sink 插件实例
      */
     public SinkPlugin loadSinkPlugin(String type) {
-        logger.info("加载 Sink 插件: {}", type);
+        log.info("加载 Sink 插件: {}", type);
 
         // 使用当前线程的 ClassLoader 加载插件
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
@@ -86,13 +85,13 @@ public class PluginLoader {
         ServiceLoader<SinkPlugin> loader = ServiceLoader.load(SinkPlugin.class, classLoader);
         for (SinkPlugin plugin : loader) {
             if (plugin.getType().equals(type)) {
-                logger.info("Sink 插件加载成功: {}", plugin.getClass().getName());
+                log.info("Sink 插件加载成功: {}", plugin.getClass().getName());
                 return plugin;
             }
         }
 
         String errorMsg = String.format("未找到 Sink 插件: %s", type);
-        logger.error(errorMsg);
+        log.error(errorMsg);
         throw new IllegalArgumentException(errorMsg);
     }
 }

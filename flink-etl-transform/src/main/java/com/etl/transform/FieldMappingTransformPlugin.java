@@ -2,10 +2,9 @@ package com.etl.transform;
 
 import com.etl.core.config.TransformConfig;
 import com.etl.core.spi.TransformPlugin;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.types.Row;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,8 +14,8 @@ import java.util.Map;
  * 字段映射转换插件
  * 支持字段重命名和字段过滤
  */
+@Slf4j
 public class FieldMappingTransformPlugin implements TransformPlugin {
-    private static final Logger logger = LoggerFactory.getLogger(FieldMappingTransformPlugin.class);
 
     @Override
     public String getType() {
@@ -37,7 +36,7 @@ public class FieldMappingTransformPlugin implements TransformPlugin {
             toFields.add(mapping.get("to"));
         }
 
-        logger.info("创建字段映射转换插件, mappings={}", mappings);
+        log.info("创建字段映射转换插件, mappings={}", mappings);
         return new FieldMappingFunction(fromFields, toFields);
     }
 
