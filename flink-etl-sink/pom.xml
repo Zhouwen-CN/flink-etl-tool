@@ -22,6 +22,13 @@
     </modules>
 
     <dependencies>
+        <!-- 核心模块 -->
+        <dependency>
+            <groupId>com.etl</groupId>
+            <artifactId>flink-etl-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -29,11 +36,12 @@
             <version>${lombok.version}</version>
             <optional>true</optional>
         </dependency>
-        <!-- 核心模块 -->
+        <!-- 测试 -->
         <dependency>
-            <groupId>com.etl</groupId>
-            <artifactId>flink-etl-core</artifactId>
-            <version>${project.version}</version>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>
