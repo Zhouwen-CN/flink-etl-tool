@@ -2,6 +2,7 @@ package com.etl.sink.console;
 
 import com.etl.core.config.SinkConfig;
 import com.etl.core.spi.SinkPlugin;
+import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 
@@ -10,6 +11,7 @@ import org.apache.flink.streaming.api.functions.sink.SinkFunction;
  * 将数据输出到控制台
  */
 @Slf4j
+@AutoService(SinkPlugin.class)
 public class ConsoleSinkPlugin implements SinkPlugin {
     private static final long serialVersionUID = 1L;
 
