@@ -23,14 +23,6 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- Lombok -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
-            <optional>true</optional>
-        </dependency>
-
         <!-- Source 插件 -->
         <dependency>
             <groupId>com.etl</groupId>

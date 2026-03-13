@@ -1,8 +1,13 @@
 package com.etl.client;
 
+import com.etl.core.config.ConfigParser;
 import com.etl.core.config.JobConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.java.utils.ParameterTool;
+
+import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 /**
  * 命令行参数解析器
@@ -11,6 +16,7 @@ import org.apache.flink.api.java.utils.ParameterTool;
  */
 @Slf4j
 public class CliArgumentParser {
+
     /**
      * 解析命令行参数并返回 Job 配置
      *
@@ -47,6 +53,12 @@ public class CliArgumentParser {
         System.err.println();
     }
 
+    /**
+     * 从文件加载配置
+     *
+     * @param filePath 配置文件路径
+     * @return Job 配置对象，参数无效时返回 null
+     */
     private JobConfig loadFromFile(String filePath) {
         if (filePath == null || filePath.trim().isEmpty()) {
             log.error("--file 参数值不能为空");
@@ -55,17 +67,36 @@ public class CliArgumentParser {
         }
 
         log.info("从文件加载配置: {}", filePath);
-        return ConfigLoader.loadFromFile(filePath);
+
+        if (!Files.exists(Paths.get(filePath))) {
+            String errorMsg = String.format("配置文件不存在: %s", filePath);
+            log.error(errorMsg);
+            throw new IllegalArgumentException(errorMsg);
+        }
+
+        if (!new File(filePath).isFile()) {
+            String errorMsg = String.format("路径不是文件: %s", filePath);
+            log.error(errorMsg);
+            throw new IllegalArgumentException(errorMsg);
+        }
+
+        return ConfigParser.parse(filePath);
     }
 
-    private JobConfig loadFromJsonString(String jsonString) {
-        if (jsonString == null || jsonString.trim().isEmpty()) {
+    /**
+     * 从 JSON 字符串加载配置
+     *
+     * @param json JSON 字符串
+     * @return Job 配置对象，参数无效时返回 null
+     */
+    private JobConfig loadFromJsonString(String json) {
+        if (json == null || json.trim().isEmpty()) {
             log.error("--config 参数值不能为空");
             System.err.println("错误: --config 参数值不能为空");
             return null;
         }
 
         log.info("从命令行 JSON 字符串加载配置");
-        return ConfigLoader.loadFromJsonString(jsonString);
+        return ConfigParser.parseFromString(json);
     }
 }
