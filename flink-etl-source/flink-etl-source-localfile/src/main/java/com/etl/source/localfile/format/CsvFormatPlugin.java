@@ -40,30 +40,28 @@ public class CsvFormatPlugin implements FileFormatPlugin {
             String encoding = config.getString("encoding");
             Charset charset = encoding != null ? Charset.forName(encoding) : StandardCharsets.UTF_8;
 
+            String delimiter = config.getString("delimiter");
+            char delim = delimiter != null ? delimiter.charAt(0) : ',';
+
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(firstFile, charset))) {
-                String headerLine = reader.readLine();
-                if (headerLine == null) {
+                // 使用 Apache Commons CSV 解析首行获取字段名
+                CSVFormat csvFormat = CSVFormat.DEFAULT.builder()
+                        .setDelimiter(delim)
+                        .build();
+
+                CSVParser parser = csvFormat.parse(reader);
+                Iterator<CSVRecord> iterator = parser.iterator();
+
+                if (!iterator.hasNext()) {
                     throw new RuntimeException("CSV 文件为空，无法解析字段名");
                 }
 
-                String delimiter = config.getString("delimiter");
-                char delim = delimiter != null ? delimiter.charAt(0) : ',';
-
-                List<String> fields = new ArrayList<>();
-                StringBuilder field = new StringBuilder();
-                boolean inQuotes = false;
-
-                for (char c : headerLine.toCharArray()) {
-                    if (c == '"') {
-                        inQuotes = !inQuotes;
-                    } else if (c == delim && !inQuotes) {
-                        fields.add(field.toString().trim());
-                        field = new StringBuilder();
-                    } else {
-                        field.append(c);
-                    }
+                // 从第一条记录解析字段名
+                CSVRecord headerRecord = iterator.next();
+                List<String> fields = new ArrayList<>(headerRecord.size());
+                for (int i = 0; i < headerRecord.size(); i++) {
+                    fields.add(headerRecord.get(i).trim());
                 }
-                fields.add(field.toString().trim());
 
                 log.info("从 CSV 文件头解析到 {} 个字段: {}", fields.size(), fields);
                 return fields;
@@ -94,14 +92,13 @@ public class CsvFormatPlugin implements FileFormatPlugin {
 
         CSVFormat csvFormat = CSVFormat.DEFAULT.builder()
                 .setDelimiter(delim)
-                .setSkipHeaderRecord(hasHeader)
                 .build();
 
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, charset));
             CSVParser parser = csvFormat.parse(reader);
 
-            return new CsvRowIterable(parser, fields, inputStream);
+            return new CsvRowIterable(parser, fields, reader, inputStream, hasHeader);
 
         } catch (IOException e) {
             throw new RuntimeException("解析 CSV 文件失败: " + e.getMessage(), e);
@@ -116,21 +113,35 @@ public class CsvFormatPlugin implements FileFormatPlugin {
 
         private final CSVParser parser;
         private final List<String> fields;
+        private final BufferedReader reader;
         private final InputStream inputStream;
+        private final boolean skipHeader;
+        private volatile boolean closed = false;
 
-        CsvRowIterable(CSVParser parser, List<String> fields, InputStream inputStream) {
+        CsvRowIterable(CSVParser parser, List<String> fields, BufferedReader reader, InputStream inputStream, boolean skipHeader) {
             this.parser = parser;
             this.fields = fields;
+            this.reader = reader;
             this.inputStream = inputStream;
+            this.skipHeader = skipHeader;
         }
 
         @Override
         public Iterator<Row> iterator() {
             return new Iterator<Row>() {
                 private final Iterator<CSVRecord> csvIterator = parser.iterator();
+                private boolean headerSkipped = false;
 
                 @Override
                 public boolean hasNext() {
+                    if (closed) {
+                        return false;
+                    }
+                    // 跳过头部行
+                    if (skipHeader && !headerSkipped && csvIterator.hasNext()) {
+                        csvIterator.next(); // 跳过头部
+                        headerSkipped = true;
+                    }
                     boolean hasNext = csvIterator.hasNext();
                     if (!hasNext) {
                         // 迭代完成，关闭资源
@@ -153,10 +164,19 @@ public class CsvFormatPlugin implements FileFormatPlugin {
                 }
 
                 private void closeQuietly() {
+                    if (closed) {
+                        return;
+                    }
+                    closed = true;
                     try {
                         parser.close();
                     } catch (Exception e) {
                         log.warn("关闭 CSV 解析器失败", e);
+                    }
+                    try {
+                        reader.close();
+                    } catch (Exception e) {
+                        log.warn("关闭 BufferedReader 失败", e);
                     }
                     try {
                         inputStream.close();

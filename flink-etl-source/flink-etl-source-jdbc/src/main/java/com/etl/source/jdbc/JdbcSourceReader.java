@@ -23,7 +23,6 @@ import java.util.function.Supplier;
  * <ul>
  *   <li>{@link #initializedState(RangeSplit)} - 初始化分片状态</li>
  *   <li>{@link #toSplitType(String, RangeSplitState)} - 状态转换为分片</li>
- *   <li>{@link #onSplitFinished(Map)} - 分片完成回调</li>
  * </ul>
  */
 @Slf4j

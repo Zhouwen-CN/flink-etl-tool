@@ -1,6 +1,7 @@
 package com.etl.source.localfile;
 
 import com.etl.core.config.SourceConfig;
+import com.etl.core.exception.SourceConfigException;
 import com.etl.core.source.base.BaseSplitEnumerator;
 import com.etl.source.localfile.format.FileFormatPlugin;
 import lombok.extern.slf4j.Slf4j;
@@ -85,7 +86,7 @@ public class LocalFileSplitEnumerator extends BaseSplitEnumerator<LocalFileSplit
         // 扫描匹配的文件
         List<File> matchedFiles = scanFiles();
         if (matchedFiles.isEmpty()) {
-            throw new RuntimeException("未找到匹配的文件: " + pathPattern);
+            throw new SourceConfigException("未找到匹配的文件: " + pathPattern);
         }
 
         log.info("找到 {} 个匹配的文件", matchedFiles.size());
@@ -134,7 +135,7 @@ public class LocalFileSplitEnumerator extends BaseSplitEnumerator<LocalFileSplit
                         .forEach(path -> result.add(path.toFile()));
             }
         } catch (IOException e) {
-            throw new RuntimeException("扫描文件失败: " + e.getMessage(), e);
+            throw new SourceConfigException("扫描文件失败: " + e.getMessage(), e);
         }
 
         return result;
@@ -202,7 +203,7 @@ public class LocalFileSplitEnumerator extends BaseSplitEnumerator<LocalFileSplit
             fields = formatPlugin.resolveFields(config, inputStream);
             log.info("解析到 {} 个字段: {}", fields.size(), fields);
         } catch (IOException e) {
-            throw new RuntimeException("解析字段名失败: " + e.getMessage(), e);
+            throw new SourceConfigException("解析字段名失败: " + e.getMessage(), e);
         }
     }
 
@@ -217,7 +218,7 @@ public class LocalFileSplitEnumerator extends BaseSplitEnumerator<LocalFileSplit
                 return plugin;
             }
         }
-        throw new RuntimeException("未找到格式插件: " + format);
+        throw new SourceConfigException("未找到格式插件: " + format);
     }
 
     /**

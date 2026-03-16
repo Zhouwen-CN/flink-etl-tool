@@ -7,7 +7,7 @@ import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Queue;
-import java.util.ArrayDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * 分片枚举器抽象基类
@@ -27,8 +27,8 @@ public abstract class BaseSplitEnumerator<SplitT extends BaseSourceSplit,
         CheckpointT extends BaseEnumCheckpoint<SplitT>>
         implements SplitEnumerator<SplitT, CheckpointT> {
 
-    /** 待分配的分片队列 */
-    protected final Queue<SplitT> pendingSplits = new ArrayDeque<>();
+    /** 待分配的分片队列（线程安全） */
+    protected final Queue<SplitT> pendingSplits = new ConcurrentLinkedQueue<>();
 
     /** 枚举器上下文 */
     protected final SplitEnumeratorContext<SplitT> context;

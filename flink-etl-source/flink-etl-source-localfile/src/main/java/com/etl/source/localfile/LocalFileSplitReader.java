@@ -36,8 +36,12 @@ import java.util.Set;
 @Slf4j
 public class LocalFileSplitReader implements BaseSplitReader<Row, LocalFileSplit> {
 
+    /** 默认批次大小 */
+    private static final int DEFAULT_BATCH_SIZE = 1000;
+
     private final SourceConfig config;
     private final String format;
+    private final int batchSize;
 
     private final Queue<LocalFileSplit> pendingSplits = new ArrayDeque<>();
     private final Set<String> finishedSplits = new HashSet<>();
@@ -51,6 +55,8 @@ public class LocalFileSplitReader implements BaseSplitReader<Row, LocalFileSplit
     public LocalFileSplitReader(SourceConfig config, String format) {
         this.config = config;
         this.format = format;
+        Integer configBatchSize = config.getInteger("batchSize");
+        this.batchSize = configBatchSize != null ? configBatchSize : DEFAULT_BATCH_SIZE;
     }
 
     @Override
@@ -116,7 +122,6 @@ public class LocalFileSplitReader implements BaseSplitReader<Row, LocalFileSplit
 
         try {
             int recordsInBatch = 0;
-            int batchSize = 1000; // 每批最多 1000 条记录
 
             // 读取一批记录
             while (currentRowIterator.hasNext() && recordsInBatch < batchSize) {

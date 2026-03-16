@@ -1,6 +1,7 @@
 package com.etl.source.localfile;
 
 import com.etl.core.config.SourceConfig;
+import com.etl.core.exception.SourceConfigException;
 import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.base.BaseSplitReader;
 import lombok.extern.slf4j.Slf4j;
@@ -34,10 +35,31 @@ public class LocalFileSource extends AbstractSplitSource<Row, LocalFileSplit, Lo
 
     public LocalFileSource(SourceConfig config) {
         this.config = config;
+
+        // 验证必要配置项
+        validateConfig(config);
+
         this.format = config.getString("format");
 
         log.info("创建 LocalFileSource: path={}, format={}",
                 config.getString("path"), format);
+    }
+
+    /**
+     * 验证配置项
+     *
+     * @param config 配置
+     */
+    private void validateConfig(SourceConfig config) {
+        String path = config.getString("path");
+        if (path == null || path.trim().isEmpty()) {
+            throw new SourceConfigException("path 配置项不能为空");
+        }
+
+        String format = config.getString("format");
+        if (format == null || format.trim().isEmpty()) {
+            throw new SourceConfigException("format 配置项不能为空");
+        }
     }
 
     @Override
