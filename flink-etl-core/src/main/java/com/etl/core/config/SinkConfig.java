@@ -60,4 +60,25 @@ public class SinkConfig {
     public Object get(String key) {
         return config != null ? config.get(key) : null;
     }
+
+    /**
+     * 获取布尔类型的配置值
+     *
+     * @param key 配置键
+     * @param defaultValue 默认值
+     * @return 配置值
+     */
+    public boolean getBoolean(String key, boolean defaultValue) {
+        if (config == null) {
+            return defaultValue;
+        }
+        Object value = config.get(key);
+        if (value == null) {
+            return defaultValue;
+        }
+        if (value instanceof Boolean) {
+            return (Boolean) value;
+        }
+        return Boolean.parseBoolean(String.valueOf(value));
+    }
 }

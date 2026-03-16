@@ -4,7 +4,11 @@ import com.etl.core.config.SinkConfig;
 import com.etl.core.spi.SinkPlugin;
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.flink.streaming.api.functions.sink.SinkFunction;
+import lombok.val;
+import org.apache.flink.api.common.TaskInfo;
+import org.apache.flink.api.common.functions.RuntimeContext;
+import org.apache.flink.configuration.Configuration;
+import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
 
 /**
  * Console Sink 插件
@@ -21,28 +25,50 @@ public class ConsoleSinkPlugin implements SinkPlugin {
     }
 
     @Override
-    public SinkFunction<?> createSink(SinkConfig config) {
+    public RichSinkFunction<?> createSink(SinkConfig config) {
         String format = config.getString("format");
-        log.info("创建 Console Sink, format={}", format);
+        boolean showSubtask = config.getBoolean("showSubtask", true);
+        log.info("创建 Console Sink, format={}, showSubtask={}", format, showSubtask);
 
-        return new ConsoleSinkFunction(format);
+        return new ConsoleSinkFunction(format, showSubtask);
     }
 
     /**
      * Console Sink Function
+     * 使用 RichSinkFunction 获取 RuntimeContext，支持显示分片信息
      */
-    private static class ConsoleSinkFunction implements SinkFunction<Object> {
+    private static class ConsoleSinkFunction extends RichSinkFunction<Object> {
         private static final long serialVersionUID = 1L;
         private final String format;
+        private final boolean showSubtask;
 
-        public ConsoleSinkFunction(String format) {
+        // 缓存分片信息，避免每次 invoke 都调用
+        private transient int subtaskIndex = -1;
+        private transient int totalSubtasks = -1;
+
+        public ConsoleSinkFunction(String format, boolean showSubtask) {
             this.format = format != null ? format : "json";
+            this.showSubtask = showSubtask;
         }
 
         @Override
-        public void invoke(Object value, Context context) {
-            // 简单实现：直接打印对象
-            System.out.println("console print: " + value.toString());
+        public void open(Configuration parameters) throws Exception {
+            super.open(parameters);
+            // 在 open() 中获取分片信息，只执行一次
+            RuntimeContext ctx = getRuntimeContext();
+            TaskInfo taskInfo = ctx.getTaskInfo();
+            this.subtaskIndex = taskInfo.getIndexOfThisSubtask() + 1;
+            this.totalSubtasks = taskInfo.getNumberOfParallelSubtasks();
+            log.info("ConsoleSinkFunction 初始化, subtask[{}/{}]", subtaskIndex, totalSubtasks);
+        }
+
+        @Override
+        public void invoke(Object value, Context context) throws Exception {
+            if (showSubtask) {
+                System.out.printf("[subtask-%d/%d] %s%n", subtaskIndex, totalSubtasks, value);
+            } else {
+                System.out.println(value);
+            }
         }
     }
 }
