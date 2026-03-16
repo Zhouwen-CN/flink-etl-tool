@@ -7,6 +7,7 @@ import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.CoreOptions;
 import org.apache.flink.configuration.ExecutionOptions;
+import org.apache.flink.configuration.TaskManagerOptions;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
 /**
@@ -71,7 +72,9 @@ public class JobExecutor {
 
         if (parallelism != null) {
             configuration.set(CoreOptions.DEFAULT_PARALLELISM, parallelism);
-            log.info("设置 Job 并行度: {}", parallelism);
+            // 本地执行环境需要配置足够的 slot 数量
+            configuration.set(TaskManagerOptions.NUM_TASK_SLOTS, parallelism);
+            log.info("设置 Job 并行度: {}, TaskManager slots: {}", parallelism, parallelism);
         }
 
         env.configure(configuration);
