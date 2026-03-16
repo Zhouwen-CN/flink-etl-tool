@@ -54,6 +54,7 @@
     "config": {
       "path": "/data/users.csv",
       "format": "csv",
+      "skipHeader": true,
       "schema": {
         "fields": [
           {"name": "id", "type": "long"},
@@ -69,6 +70,15 @@
   }
 }
 ```
+
+**CSV 配置参数说明：**
+
+| 参数 | 类型 | 必填 | 默认值 | 说明 |
+|------|------|------|--------|------|
+| `schema` | object | **是** | - | 字段定义，包含字段名和类型 |
+| `skipHeader` | boolean | 否 | `true` | 是否跳过 CSV 第一行（头行） |
+| `delimiter` | string | 否 | `,` | CSV 分隔符 |
+| `encoding` | string | 否 | `UTF-8` | 文件编码 |
 
 ## 模块设计
 
@@ -399,6 +409,14 @@ public abstract class AbstractSplitSource<T, SplitT extends SourceSplit, Checkpo
 
 **要求**：必须配置 schema
 
+**CSV 参数变更：**
+
+| 旧参数 | 新参数 | 说明 |
+|--------|--------|------|
+| `header=true` | `skipHeader=true` | 语义调整：从"是否有头"改为"是否跳过头行" |
+| `header=false` + `columns` | 删除 | 字段名从 schema 获取，无需 columns |
+| - | `schema`（必填） | 新增：定义字段名和类型 |
+
 **字段数量匹配规则**：
 - CSV 列数 < schema 字段数：缺少字段设为 null，记录警告日志
 - CSV 列数 > schema 字段数：多余列忽略，记录警告日志
@@ -407,45 +425,153 @@ public abstract class AbstractSplitSource<T, SplitT extends SourceSplit, Checkpo
 **CsvFormatPlugin 改造**：
 
 ```java
-@Override
-public Iterable<Row> parse(SourceConfig config, InputStream inputStream, List<String> fields) {
-    EtlSchema schema = config.getSchema();
-    if (schema == null) {
-        throw new SchemaConfigException("CSV Source 必须配置 schema");
-    }
-
-    // 验证字段名匹配（可选，用于调试）
-    validateFieldNames(schema, fields);
-
-    // ... 解析逻辑
+@Slf4j
+@AutoService(FileFormatPlugin.class)
+public class CsvFormatPlugin implements FileFormatPlugin {
 
     @Override
-    public Row next() {
-        CSVRecord record = csvIterator.next();
-        int schemaSize = schema.getFields().size();
-        int recordSize = record.size();
-        Row row = new Row(schemaSize);
+    public String getType() {
+        return "csv";
+    }
 
-        for (int i = 0; i < schemaSize; i++) {
-            Object value;
-            if (i < recordSize) {
-                value = record.get(i);
-            } else {
-                log.warn("CSV 行缺少字段 '{}', 已设为 null", schema.getField(i).getName());
-                value = null;
-            }
+    @Override
+    public List<String> resolveFields(SourceConfig config, InputStream firstFile) {
+        // 字段名从 schema 获取
+        EtlSchema schema = config.getSchema();
+        if (schema == null) {
+            throw new SchemaConfigException("CSV Source 必须配置 schema");
+        }
+        return schema.getFieldNames();
+    }
 
-            EtlField field = schema.getField(i);
-            Object converted = TypeConverter.convert(value, field.getName(), field.getType());
-            row.setField(i, converted);
+    @Override
+    public Iterable<Row> parse(SourceConfig config, InputStream inputStream, List<String> fields) {
+        EtlSchema schema = config.getSchema();
+        if (schema == null) {
+            throw new SchemaConfigException("CSV Source 必须配置 schema");
         }
 
-        // 检查是否有多余列
-        if (recordSize > schemaSize) {
-            log.warn("CSV 行有 {} 个多余列被忽略", recordSize - schemaSize);
+        String encoding = config.getString("encoding");
+        Charset charset = encoding != null ? Charset.forName(encoding) : StandardCharsets.UTF_8;
+
+        String delimiter = config.getString("delimiter");
+        char delim = delimiter != null ? delimiter.charAt(0) : ',';
+
+        // skipHeader: 是否跳过 CSV 第一行（默认 true）
+        boolean skipHeader = config.getBoolean("skipHeader", true);
+
+        CSVFormat csvFormat = CSVFormat.DEFAULT.builder()
+                .setDelimiter(delim)
+                .build();
+
+        try {
+            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, charset));
+            CSVParser parser = csvFormat.parse(reader);
+
+            return new CsvRowIterable(parser, schema, reader, inputStream, skipHeader);
+
+        } catch (IOException e) {
+            throw new RuntimeException("解析 CSV 文件失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * CSV Row 迭代器封装
+     * 确保在迭代完成后关闭输入流
+     */
+    private static class CsvRowIterable implements Iterable<Row> {
+
+        private final CSVParser parser;
+        private final EtlSchema schema;
+        private final BufferedReader reader;
+        private final InputStream inputStream;
+        private final boolean skipHeader;
+        private volatile boolean closed = false;
+
+        CsvRowIterable(CSVParser parser, EtlSchema schema, BufferedReader reader,
+                       InputStream inputStream, boolean skipHeader) {
+            this.parser = parser;
+            this.schema = schema;
+            this.reader = reader;
+            this.inputStream = inputStream;
+            this.skipHeader = skipHeader;
         }
 
-        return row;
+        @Override
+        public Iterator<Row> iterator() {
+            return new Iterator<Row>() {
+                private final Iterator<CSVRecord> csvIterator = parser.iterator();
+                private boolean headerSkipped = false;
+
+                @Override
+                public boolean hasNext() {
+                    if (closed) {
+                        return false;
+                    }
+                    // 跳过头部行（如果配置了 skipHeader=true）
+                    if (skipHeader && !headerSkipped && csvIterator.hasNext()) {
+                        csvIterator.next(); // 跳过头部
+                        headerSkipped = true;
+                    }
+                    boolean hasNext = csvIterator.hasNext();
+                    if (!hasNext) {
+                        closeQuietly();
+                    }
+                    return hasNext;
+                }
+
+                @Override
+                public Row next() {
+                    CSVRecord record = csvIterator.next();
+                    int schemaSize = schema.getFields().size();
+                    int recordSize = record.size();
+                    Row row = new Row(schemaSize);
+
+                    for (int i = 0; i < schemaSize; i++) {
+                        Object value;
+                        if (i < recordSize) {
+                            value = record.get(i);
+                        } else {
+                            log.warn("CSV 行缺少字段 '{}', 已设为 null", schema.getField(i).getName());
+                            value = null;
+                        }
+
+                        EtlField field = schema.getField(i);
+                        Object converted = TypeConverter.convert(value, field.getName(), field.getType());
+                        row.setField(i, converted);
+                    }
+
+                    // 检查是否有多余列
+                    if (recordSize > schemaSize) {
+                        log.warn("CSV 行有 {} 个多余列被忽略", recordSize - schemaSize);
+                    }
+
+                    return row;
+                }
+
+                private void closeQuietly() {
+                    if (closed) {
+                        return;
+                    }
+                    closed = true;
+                    try {
+                        parser.close();
+                    } catch (Exception e) {
+                        log.warn("关闭 CSV 解析器失败", e);
+                    }
+                    try {
+                        reader.close();
+                    } catch (Exception e) {
+                        log.warn("关闭 BufferedReader 失败", e);
+                    }
+                    try {
+                        inputStream.close();
+                    } catch (Exception e) {
+                        log.warn("关闭输入流失败", e);
+                    }
+                }
+            };
+        }
     }
 }
 ```
@@ -619,6 +745,9 @@ public class TypeConversionException extends RuntimeException {
    - CSV 列数与 schema 字段数不一致
    - CSV 列数少于 schema 字段数
    - CSV 列数多于 schema 字段数
+   - `skipHeader=true` 跳过头行
+   - `skipHeader=false` 不跳过头行
+   - schema 缺失时抛出异常
 
 2. **JDBC Source 集成测试**
    - 无 schema 配置时自动推断
