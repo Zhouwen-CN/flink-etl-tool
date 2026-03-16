@@ -1,20 +1,22 @@
 {
   "job": {
     "name": "csv-to-console",
-    "mode": "batch"
+    "mode": "batch",
+    "parallelism": 2
   },
   "source": {
-    "type": "file",
+    "type": "localfile",
     "config": {
-      "path": "/data/input/users.csv",
+      "path": "docs/examples/data/*.csv",
       "format": "csv",
-      "fields": ["id", "name", "age", "email"]
+      "recursive": false,
+      "encoding": "UTF-8",
+      "delimiter": ",",
+      "header": true
     }
   },
   "sink": {
     "type": "console",
-    "config": {
-      "format": "json"
-    }
+    "config": {}
   }
 }
