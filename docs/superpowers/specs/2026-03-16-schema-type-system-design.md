@@ -144,23 +144,73 @@ public class EtlSchema implements Serializable {
 
 ```java
 public class SchemaParser {
+
     @SuppressWarnings("unchecked")
     public static EtlSchema parse(Object schemaConfig) {
         if (schemaConfig == null) {
             return null;
         }
 
-        Map<String, Object> schemaMap = (Map<String, Object>) schemaConfig;
-        List<Map<String, Object>> fieldsConfig = (List<Map<String, Object>>) schemaMap.get("fields");
+        // 类型校验
+        if (!(schemaConfig instanceof Map)) {
+            throw new SchemaConfigException("schema 必须是一个对象");
+        }
 
-        List<EtlField> fields = fieldsConfig.stream()
-            .map(f -> new EtlField(
-                (String) f.get("name"),
-                EtlFieldType.fromString((String) f.get("type"))
-            ))
-            .collect(Collectors.toList());
+        Map<String, Object> schemaMap = (Map<String, Object>) schemaConfig;
+        Object fieldsObj = schemaMap.get("fields");
+
+        if (fieldsObj == null) {
+            throw new SchemaConfigException("schema 缺少 'fields' 字段");
+        }
+
+        if (!(fieldsObj instanceof List)) {
+            throw new SchemaConfigException("'fields' 必须是数组");
+        }
+
+        List<Map<String, Object>> fieldsConfig = (List<Map<String, Object>>) fieldsObj;
+
+        List<EtlField> fields = new ArrayList<>();
+        for (int i = 0; i < fieldsConfig.size(); i++) {
+            Map<String, Object> fieldConfig = fieldsConfig.get(i);
+
+            Object nameObj = fieldConfig.get("name");
+            if (nameObj == null) {
+                throw new SchemaConfigException("字段[" + i + "] 缺少 'name'");
+            }
+            if (!(nameObj instanceof String)) {
+                throw new SchemaConfigException("字段[" + i + "] 的 'name' 必须是字符串");
+            }
+
+            Object typeObj = fieldConfig.get("type");
+            if (typeObj == null) {
+                throw new SchemaConfigException("字段[" + i + "] 缺少 'type'");
+            }
+            if (!(typeObj instanceof String)) {
+                throw new SchemaConfigException("字段[" + i + "] 的 'type' 必须是字符串");
+            }
+
+            String name = (String) nameObj;
+            String typeName = (String) typeObj;
+            EtlFieldType type = EtlFieldType.fromString(typeName);
+            if (type == null) {
+                throw new SchemaConfigException(
+                    "字段[" + i + "] '" + name + "' 的类型 '" + typeName + "' 不支持");
+            }
+
+            fields.add(new EtlField(name, type));
+        }
 
         return new EtlSchema(fields);
+    }
+}
+```
+
+#### SchemaConfigException
+
+```java
+public class SchemaConfigException extends RuntimeException {
+    public SchemaConfigException(String message) {
+        super("Schema 配置错误: " + message);
     }
 }
 ```
@@ -172,9 +222,23 @@ public class TypeConverter {
     private static final DateTimeFormatter DEFAULT_TIMESTAMP_FORMAT =
         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    public static Object convert(Object value, EtlFieldType targetType) {
+    /**
+     * 将原始值转换为目标类型
+     *
+     * @param value 原始值（通常是 String）
+     * @param fieldName 字段名（用于错误信息）
+     * @param targetType 目标类型
+     * @return 转换后的值
+     * @throws TypeConversionException 转换失败时抛出
+     */
+    public static Object convert(Object value, String fieldName, EtlFieldType targetType) {
         if (value == null) {
             return null;
+        }
+
+        // 如果已经是目标类型或兼容类型，直接返回
+        if (isCompatibleType(value, targetType)) {
+            return value;
         }
 
         String strValue = String.valueOf(value).trim();
@@ -182,26 +246,73 @@ public class TypeConverter {
             return null;
         }
 
+        try {
+            switch (targetType) {
+                case STRING:
+                    return strValue;
+                case BOOLEAN:
+                    return parseBoolean(strValue);
+                case INT:
+                    return Integer.parseInt(strValue);
+                case LONG:
+                    return Long.parseLong(strValue);
+                case DOUBLE:
+                    return Double.parseDouble(strValue);
+                case DECIMAL:
+                    return new BigDecimal(strValue);
+                case TIMESTAMP:
+                    return LocalDateTime.parse(strValue, DEFAULT_TIMESTAMP_FORMAT);
+                case BYTES:
+                    return parseBytes(value, strValue);
+                default:
+                    throw new IllegalArgumentException("不支持的类型: " + targetType);
+            }
+        } catch (NumberFormatException | DateTimeParseException e) {
+            throw new TypeConversionException(fieldName, strValue, targetType, e);
+        }
+    }
+
+    private static boolean isCompatibleType(Object value, EtlFieldType targetType) {
         switch (targetType) {
             case STRING:
-                return strValue;
+                return value instanceof String;
             case BOOLEAN:
-                return Boolean.parseBoolean(strValue);
+                return value instanceof Boolean;
             case INT:
-                return Integer.parseInt(strValue);
+                return value instanceof Integer;
             case LONG:
-                return Long.parseLong(strValue);
+                return value instanceof Long;
             case DOUBLE:
-                return Double.parseDouble(strValue);
+                return value instanceof Double;
             case DECIMAL:
-                return new BigDecimal(strValue);
+                return value instanceof BigDecimal;
             case TIMESTAMP:
-                return LocalDateTime.parse(strValue, DEFAULT_TIMESTAMP_FORMAT);
+                return value instanceof LocalDateTime || value instanceof java.sql.Timestamp;
             case BYTES:
-                return strValue.getBytes(StandardCharsets.UTF_8);
+                return value instanceof byte[];
             default:
-                throw new IllegalArgumentException("不支持的类型: " + targetType);
+                return false;
         }
+    }
+
+    private static Boolean parseBoolean(String value) {
+        // 支持多种布尔值表示
+        if ("true".equalsIgnoreCase(value) || "1".equals(value) || "yes".equalsIgnoreCase(value)) {
+            return true;
+        }
+        if ("false".equalsIgnoreCase(value) || "0".equals(value) || "no".equalsIgnoreCase(value)) {
+            return false;
+        }
+        throw new NumberFormatException("无法解析为布尔值: " + value);
+    }
+
+    private static byte[] parseBytes(Object value, String strValue) {
+        // 如果已经是字节数组，直接返回
+        if (value instanceof byte[]) {
+            return (byte[]) value;
+        }
+        // 字符串转字节数组
+        return strValue.getBytes(StandardCharsets.UTF_8);
     }
 }
 ```
@@ -277,9 +388,21 @@ public abstract class AbstractSplitSource<T, SplitT extends SourceSplit, Checkpo
 
 ## 插件适配
 
+### Row 类型规范
+
+**统一使用位置访问方式**：
+- 使用 `new Row(size)` 创建 Row
+- 使用 `row.setField(index, value)` 设置字段值
+- 与 Flink Source 抽象层设计一致
+
 ### LocalFile Source (CSV)
 
 **要求**：必须配置 schema
+
+**字段数量匹配规则**：
+- CSV 列数 < schema 字段数：缺少字段设为 null，记录警告日志
+- CSV 列数 > schema 字段数：多余列忽略，记录警告日志
+- CSV 列数 = schema 字段数：正常处理
 
 **CsvFormatPlugin 改造**：
 
@@ -288,21 +411,38 @@ public abstract class AbstractSplitSource<T, SplitT extends SourceSplit, Checkpo
 public Iterable<Row> parse(SourceConfig config, InputStream inputStream, List<String> fields) {
     EtlSchema schema = config.getSchema();
     if (schema == null) {
-        throw new RuntimeException("CSV Source 必须配置 schema");
+        throw new SchemaConfigException("CSV Source 必须配置 schema");
     }
+
+    // 验证字段名匹配（可选，用于调试）
+    validateFieldNames(schema, fields);
 
     // ... 解析逻辑
 
     @Override
     public Row next() {
         CSVRecord record = csvIterator.next();
-        Row row = new Row(fields.size());
+        int schemaSize = schema.getFields().size();
+        int recordSize = record.size();
+        Row row = new Row(schemaSize);
 
-        for (int i = 0; i < fields.size(); i++) {
-            String value = i < record.size() ? record.get(i) : null;
+        for (int i = 0; i < schemaSize; i++) {
+            Object value;
+            if (i < recordSize) {
+                value = record.get(i);
+            } else {
+                log.warn("CSV 行缺少字段 '{}', 已设为 null", schema.getField(i).getName());
+                value = null;
+            }
+
             EtlField field = schema.getField(i);
-            Object converted = TypeConverter.convert(value, field.getType());
+            Object converted = TypeConverter.convert(value, field.getName(), field.getType());
             row.setField(i, converted);
+        }
+
+        // 检查是否有多余列
+        if (recordSize > schemaSize) {
+            log.warn("CSV 行有 {} 个多余列被忽略", recordSize - schemaSize);
         }
 
         return row;
@@ -314,7 +454,14 @@ public Iterable<Row> parse(SourceConfig config, InputStream inputStream, List<St
 
 **要求**：schema 可选
 
-**无 schema 时**：从 ResultSetMetaData 自动推断类型
+**Schema 配置优先级**：
+- **有 schema 配置**：使用配置的类型，忽略数据库元数据推断
+- **无 schema 配置**：从 ResultSetMetaData 自动推断类型
+
+**字段名匹配规则**（有 schema 配置时）：
+- schema 中的字段名必须与数据库列名一致（或使用别名）
+- 字段按位置匹配，不按名称匹配
+- 建议配置 schema 时明确所有字段，避免遗漏
 
 **MySQLDialect 改造**：
 
@@ -324,10 +471,10 @@ public Row createRow(ResultSet rs) throws SQLException {
     ResultSetMetaData metaData = rs.getMetaData();
     int columnCount = metaData.getColumnCount();
 
-    Row row = Row.withNames();
+    // 使用位置访问方式
+    Row row = new Row(columnCount);
     for (int i = 1; i <= columnCount; i++) {
-        String fieldName = metaData.getColumnLabel(i);
-        row.setField(fieldName, rs.getObject(i));
+        row.setField(i - 1, rs.getObject(i));
     }
     return row;
 }
@@ -375,6 +522,41 @@ private EtlFieldType inferFieldType(int sqlType) {
 }
 ```
 
+**JdbcSource 改造**：
+
+```java
+public class JdbcSource extends AbstractRangeSplitSource<Row> {
+
+    public JdbcSource(SourceConfig config, JdbcDialect dialect) {
+        super(config.getString("splitColumn"));
+        // ... 其他初始化
+
+        // 解析 schema（可选）
+        this.schema = config.getSchema();
+    }
+
+    @Override
+    public SplitEnumerator<RangeSplit, RangeEnumCheckpoint>
+    createEnumerator(SplitEnumeratorContext<RangeSplit> enumContext) {
+        // 如果没有配置 schema，尝试从数据库推断
+        if (schema == null) {
+            schema = inferSchemaFromDatabase();
+        }
+        // ... 其余逻辑
+    }
+
+    private EtlSchema inferSchemaFromDatabase() {
+        try (Connection conn = DriverManager.getConnection(url, username, password);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(dialect.buildSampleQuery(table, sql))) {
+            return dialect.inferSchema(rs.getMetaData());
+        } catch (SQLException e) {
+            throw new RuntimeException("从数据库推断 Schema 失败", e);
+        }
+    }
+}
+```
+
 ## 错误处理
 
 ### 类型转换失败
@@ -411,25 +593,38 @@ public class TypeConversionException extends RuntimeException {
    - 解析有效配置
    - 解析无效配置（缺少 name/type）
    - 解析未知类型
+   - 缺少 fields 字段
+   - fields 不是数组
+   - 空字段列表
 
 2. **TypeConverter 测试**
    - 各类型正常转换
    - null 值处理
    - 空字符串处理
-   - 转换失败场景
+   - 转换失败场景（非数字转 int、无效日期格式等）
+   - 数值边界值测试（int 最大值/最小值）
+   - 数值溢出测试
+   - 布尔值多种格式（true/false/1/0/yes/no）
+   - bytes 类型处理（字符串和字节数组输入）
 
 3. **FlinkTypeConverter 测试**
    - EtlSchema 到 RowType 的正确映射
+   - 所有类型的 LogicalType 验证
 
 ### 集成测试
 
 1. **CSV Source 集成测试**
    - 配置 schema 读取 CSV 文件
    - 验证输出 Row 的字段类型
+   - CSV 列数与 schema 字段数不一致
+   - CSV 列数少于 schema 字段数
+   - CSV 列数多于 schema 字段数
 
 2. **JDBC Source 集成测试**
    - 无 schema 配置时自动推断
    - 有 schema 配置时使用配置类型
+   - schema 字段名与数据库列名一致
+   - 类型推断正确性验证
 
 ## 后续扩展
 
