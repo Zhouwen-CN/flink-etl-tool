@@ -70,7 +70,7 @@ public class MySQLDialect implements JdbcDialect {
         ResultSetMetaData metaData = rs.getMetaData();
         int columnCount = metaData.getColumnCount();
 
-        // 使用位置访问方式
+        // 使用位置访问方式创建 Row（兼容性好）
         Row row = new Row(columnCount);
         for (int i = 1; i <= columnCount; i++) {
             row.setField(i - 1, rs.getObject(i));

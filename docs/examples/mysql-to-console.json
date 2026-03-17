@@ -16,7 +16,7 @@
       "schema": {
         "tableName": "users",
         "fields": [
-          { "name": "id", "type": "LONG" },
+          { "name": "id", "type": "INT" },
           { "name": "name", "type": "STRING" }
         ]
       }

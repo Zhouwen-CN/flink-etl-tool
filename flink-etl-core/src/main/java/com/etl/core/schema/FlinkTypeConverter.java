@@ -1,5 +1,7 @@
 package com.etl.core.schema;
 
+import org.apache.flink.table.api.DataTypes;
+import org.apache.flink.table.types.DataType;
 import org.apache.flink.table.types.logical.*;
 
 import java.util.List;
@@ -42,6 +44,32 @@ public class FlinkTypeConverter {
                 return new TimestampType(9); // 纳秒精度
             case BYTES:
                 return new VarBinaryType(VarBinaryType.MAX_LENGTH);
+            default:
+                throw new IllegalArgumentException("不支持的类型: " + type);
+        }
+    }
+
+    /**
+     * 将 EtlFieldType 转换为 Flink DataTypes
+     */
+    public static DataType toDataType(EtlFieldType type) {
+        switch (type) {
+            case STRING:
+                return DataTypes.STRING();
+            case BOOLEAN:
+                return DataTypes.BOOLEAN();
+            case INT:
+                return DataTypes.INT();
+            case LONG:
+                return DataTypes.BIGINT();
+            case DOUBLE:
+                return DataTypes.DOUBLE();
+            case DECIMAL:
+                return DataTypes.DECIMAL(38, 18);
+            case TIMESTAMP:
+                return DataTypes.TIMESTAMP(9);
+            case BYTES:
+                return DataTypes.BYTES();
             default:
                 throw new IllegalArgumentException("不支持的类型: " + type);
         }

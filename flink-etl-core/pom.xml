@@ -74,5 +74,10 @@
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-table-runtime</artifactId>
         </dependency>
+        <!-- Flink Table Planner Loader - 提供 PlannerFactory 和 ExecutorFactory -->
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-table-planner-loader</artifactId>
+        </dependency>
     </dependencies>
 </project>

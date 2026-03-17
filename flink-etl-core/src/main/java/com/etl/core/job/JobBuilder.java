@@ -1,6 +1,8 @@
 package com.etl.core.job;
 
+import com.etl.core.schema.EtlField;
 import com.etl.core.schema.EtlSchema;
+import com.etl.core.schema.FlinkTypeConverter;
 import com.etl.core.config.JobConfig;
 import com.etl.core.config.TransformConfig;
 import com.etl.core.spi.PluginLoader;
@@ -9,15 +11,20 @@ import com.etl.core.spi.SourcePlugin;
 import com.etl.core.spi.TransformPlugin;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.connector.source.Source;
+import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
+import org.apache.flink.table.types.DataType;
+import org.apache.flink.table.types.utils.TypeConversions;
 import org.apache.flink.types.Row;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Job 构建器
@@ -59,9 +66,29 @@ public class JobBuilder {
             throw new IllegalArgumentException("Source 的 schema.tableName 不能为空");
         }
 
+        // 使用 schema 字段名重建 Row，确保 Flink Table API 能识别列名
+        final List<String> fieldNames = schema.getFieldNames();
+        final List<EtlField> fields = schema.getFields();
+
+        // 构建 RowTypeInfo 用于 Flink Table API
+        TypeInformation<?>[] typeInfos = fields.stream()
+                .map(f -> TypeConversions.fromDataTypeToLegacyInfo(FlinkTypeConverter.toDataType(f.getType())))
+                .toArray(TypeInformation<?>[]::new);
+        String[] names = fieldNames.toArray(new String[0]);
+        RowTypeInfo rowTypeInfo = new RowTypeInfo(typeInfos, names);
+
+        DataStream<Row> namedStream = sourceStream.map(row -> {
+            // 创建位置模式的 Row，Flink 会根据 RowTypeInfo 自动映射字段名
+            Row namedRow = new Row(fieldNames.size());
+            for (int i = 0; i < fieldNames.size() && i < row.getArity(); i++) {
+                namedRow.setField(i, row.getField(i));
+            }
+            return namedRow;
+        }).returns(rowTypeInfo);
+
         // 注册为 Table
-        stEnv.createTemporaryView(schema.getTableName(), sourceStream);
-        log.info("注册 Table: {}", schema.getTableName());
+        stEnv.createTemporaryView(schema.getTableName(), namedStream);
+        log.info("注册 Table: {}, 字段: {}", schema.getTableName(), fieldNames);
 
         // 2. Transform 链式处理
         Table resultTable = stEnv.from(schema.getTableName());
