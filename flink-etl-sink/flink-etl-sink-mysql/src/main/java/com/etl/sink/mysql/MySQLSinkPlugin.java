@@ -5,6 +5,7 @@ import com.etl.core.spi.SinkPlugin;
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
+import org.apache.flink.types.Row;
 
 /**
  * MySQL Sink 插件
@@ -22,7 +23,7 @@ public class MySQLSinkPlugin implements SinkPlugin {
     }
 
     @Override
-    public SinkFunction<?> createSink(SinkConfig config) {
+    public SinkFunction<Row> createSink(SinkConfig config) {
         String url = config.getString("url");
         String username = config.getString("username");
         String password = config.getString("password");
