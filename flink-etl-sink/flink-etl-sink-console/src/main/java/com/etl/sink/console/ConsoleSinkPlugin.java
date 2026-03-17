@@ -4,11 +4,11 @@ import com.etl.core.config.SinkConfig;
 import com.etl.core.spi.SinkPlugin;
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.apache.flink.api.common.TaskInfo;
 import org.apache.flink.api.common.functions.RuntimeContext;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
+import org.apache.flink.types.Row;
 
 /**
  * Console Sink 插件
@@ -25,7 +25,7 @@ public class ConsoleSinkPlugin implements SinkPlugin {
     }
 
     @Override
-    public RichSinkFunction<?> createSink(SinkConfig config) {
+    public RichSinkFunction<Row> createSink(SinkConfig config) {
         String format = config.getString("format");
         boolean showSubtask = config.getBoolean("showSubtask", true);
         log.info("创建 Console Sink, format={}, showSubtask={}", format, showSubtask);
@@ -37,7 +37,7 @@ public class ConsoleSinkPlugin implements SinkPlugin {
      * Console Sink Function
      * 使用 RichSinkFunction 获取 RuntimeContext，支持显示分片信息
      */
-    private static class ConsoleSinkFunction extends RichSinkFunction<Object> {
+    private static class ConsoleSinkFunction extends RichSinkFunction<Row> {
         private static final long serialVersionUID = 1L;
         private final String format;
         private final boolean showSubtask;
@@ -63,7 +63,7 @@ public class ConsoleSinkPlugin implements SinkPlugin {
         }
 
         @Override
-        public void invoke(Object value, Context context) throws Exception {
+        public void invoke(Row value, Context context) throws Exception {
             if (showSubtask) {
                 System.out.printf("[subtask-%d/%d] %s%n", subtaskIndex, totalSubtasks, value);
             } else {
