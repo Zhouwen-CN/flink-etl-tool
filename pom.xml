@@ -65,6 +65,12 @@
                 <artifactId>flink-table-api-java-bridge</artifactId>
                 <version>${flink.version}</version>
             </dependency>
+            <!-- Flink Table Runtime - 提供 ExecutorFactory 实现 -->
+            <dependency>
+                <groupId>org.apache.flink</groupId>
+                <artifactId>flink-table-runtime</artifactId>
+                <version>${flink.version}</version>
+            </dependency>
 
             <!-- Jackson JSON 解析 -->
             <dependency>
