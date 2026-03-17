@@ -244,5 +244,19 @@ class JdbcSplitReaderTest {
             }
             return row;
         }
+
+        @Override
+        public com.etl.core.schema.EtlSchema inferSchema(java.sql.ResultSetMetaData metaData) throws java.sql.SQLException {
+            // 测试用简单实现
+            return null;
+        }
+
+        @Override
+        public String buildSampleQuery(String table, String sql) {
+            if (table != null) {
+                return "SELECT * FROM " + table + " WHERE 1=0";
+            }
+            return "SELECT * FROM (" + sql + ") AS t WHERE 1=0";
+        }
     }
 }
