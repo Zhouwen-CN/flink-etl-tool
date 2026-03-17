@@ -361,9 +361,17 @@ public class JobBuilder {
 
         List<TransformConfig> transforms = config.getTransforms();
         if (transforms != null && !transforms.isEmpty()) {
-            for (TransformConfig transformConfig : transforms) {
+            for (int i = 0; i < transforms.size(); i++) {
+                TransformConfig transformConfig = transforms.get(i);
                 TransformPlugin transformPlugin = pluginLoader.loadTransformPlugin(transformConfig.getType());
                 resultTable = transformPlugin.transform(resultTable, transformConfig, stEnv);
+
+                // 将 Transform 结果注册为中间表，供后续 SQL 引用
+                // 命名规则: transform_result_0, transform_result_1, ...
+                String intermediateTableName = "transform_result_" + i;
+                stEnv.createTemporaryView(intermediateTableName, resultTable);
+                log.info("注册中间表: {}", intermediateTableName);
+
                 log.info("Transform 应用成功: {}", transformConfig.getType());
             }
         }
@@ -525,8 +533,16 @@ public class JobBuilder {
 
 ### 多 Transform 链式处理
 
+每个 Transform 的结果会自动注册为中间表，命名规则为 `transform_result_0`、`transform_result_1` 等。后续 Transform 可通过这些表名引用前一步的结果。
+
 ```json
 {
+  "source": {
+    "type": "mysql",
+    "config": {
+      "schema": { "tableName": "users", "fields": [...] }
+    }
+  },
   "transforms": [
     {
       "type": "sql",
@@ -534,13 +550,17 @@ public class JobBuilder {
     },
     {
       "type": "sql",
-      "config": { "sql": "SELECT id, UPPER(name) as name FROM filtered_users" }
+      "config": { "sql": "SELECT id, UPPER(name) as name FROM transform_result_0" }
     }
-  ]
+  ],
+  "sink": { "type": "console" }
 }
 ```
 
-**注意**：多 Transform 时，SQL 中引用的表名需要是已注册的表名（第一个 SQL 的结果会自动注册为新表，表名需要后续定义）。
+**中间表命名规则**：
+- 第 1 个 Transform 的结果 → `transform_result_0`
+- 第 2 个 Transform 的结果 → `transform_result_1`
+- 第 N 个 Transform 的结果 → `transform_result_{N-1}`
 
 ### 无 Transform（直接透传）
 
