@@ -2,6 +2,7 @@ package com.etl.core.spi;
 
 import com.etl.core.config.SinkConfig;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
+import org.apache.flink.types.Row;
 
 import java.io.Serializable;
 
@@ -22,7 +23,7 @@ public interface SinkPlugin extends Serializable {
      * 创建 Sink 函数
      *
      * @param config Sink 配置
-     * @return Flink SinkFunction
+     * @return Flink SinkFunction，强制消费 Row 类型
      */
-    SinkFunction<?> createSink(SinkConfig config);
+    SinkFunction<Row> createSink(SinkConfig config);
 }
