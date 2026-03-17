@@ -1,5 +1,6 @@
 package com.etl.core.source;
 
+import com.etl.core.schema.EtlSchema;
 import org.apache.flink.api.connector.source.*;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
 
@@ -13,6 +14,8 @@ import org.apache.flink.core.io.SimpleVersionedSerializer;
  */
 public abstract class AbstractSplitSource<T, SplitT extends SourceSplit, CheckpointT>
         implements Source<T, SplitT, CheckpointT> {
+
+    protected EtlSchema schema;
 
     @Override
     public abstract SplitEnumerator<SplitT, CheckpointT>
