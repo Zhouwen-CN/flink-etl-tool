@@ -33,6 +33,23 @@
 | `splitColumn` | 是 | - | 分片列名，通常为主键列 |
 | `fetchSize` | 否 | 无限制 | JDBC fetch size，流式读取时建议设置 |
 | `queryTimeout` | 否 | 无限制 | 查询超时时间（秒） |
+| `schema` | 否 | 自动推断 | Schema 定义，不配置则从数据库元数据自动推断 |
+
+#### schema 结构（可选）
+
+| 字段 | 必填 | 说明 |
+|------|:----:|------|
+| `fields` | 是 | 字段列表，每项包含 `name` 和 `type` |
+
+每个字段支持以下类型：
+- `string` - 字符串类型
+- `boolean` - 布尔类型
+- `int` - 32位整数
+- `long` - 64位长整数
+- `double` - 双精度浮点数
+- `decimal` - 高精度十进制数
+- `timestamp` - 时间戳
+- `bytes` - 字节数组
 
 #### 配置示例
 
@@ -93,12 +110,28 @@
 | `recursive` | 否 | `false` | 是否递归匹配子目录 |
 | `encoding` | 否 | `UTF-8` | 文件编码 |
 | `delimiter` | 否 | `,` | CSV 字段分隔符 |
-| `header` | 否 | `true` | CSV 是否有文件头 |
-| `columns` | 条件必填 | - | 字段名列表，`header=false` 时必填 |
+| `skipHeader` | 否 | `false` | 是否跳过 CSV 文件头 |
+| `schema` | 是 | - | Schema 定义，包含字段名和类型 |
+
+#### schema 结构
+
+| 字段 | 必填 | 说明 |
+|------|:----:|------|
+| `fields` | 是 | 字段列表，每项包含 `name` 和 `type` |
+
+每个字段支持以下类型：
+- `string` - 字符串类型
+- `boolean` - 布尔类型
+- `int` - 32位整数
+- `long` - 64位长整数
+- `double` - 双精度浮点数
+- `decimal` - 高精度十进制数
+- `timestamp` - 时间戳
+- `bytes` - 字节数组
 
 #### 配置示例
 
-**有文件头的 CSV：**
+**CSV 文件读取（带类型转换）：**
 
 ```json
 {
@@ -109,23 +142,15 @@
       "format": "csv",
       "encoding": "UTF-8",
       "delimiter": ",",
-      "header": true
-    }
-  }
-}
-```
-
-**无文件头的 CSV：**
-
-```json
-{
-  "source": {
-    "type": "localfile",
-    "config": {
-      "path": "/data/input/*.csv",
-      "format": "csv",
-      "header": false,
-      "columns": ["id", "name", "age", "email"]
+      "skipHeader": true,
+      "schema": {
+        "fields": [
+          {"name": "id", "type": "long"},
+          {"name": "name", "type": "string"},
+          {"name": "age", "type": "int"},
+          {"name": "email", "type": "string"}
+        ]
+      }
     }
   }
 }
@@ -140,7 +165,14 @@
     "config": {
       "path": "/data/**/*.csv",
       "format": "csv",
-      "recursive": true
+      "recursive": true,
+      "skipHeader": true,
+      "schema": {
+        "fields": [
+          {"name": "id", "type": "string"},
+          {"name": "value", "type": "double"}
+        ]
+      }
     }
   }
 }
@@ -157,7 +189,14 @@
 
 - 每个匹配的文件对应一个分片
 - 分片数量等于匹配到的文件数量
-- 字段名从第一个文件的文件头解析，或从配置中获取
+- Schema 配置必须与文件列数一致
+- CSV 数据会根据 Schema 中定义的类型自动转换
+
+#### 类型转换规则
+
+- 空字符串或 null 值转换为 null
+- 数值类型解析失败会抛出 `TypeConversionException`
+- 布尔类型支持 `true/false`、`1/0`、`yes/no` 等格式
 
 ---
 
@@ -376,7 +415,15 @@
     "config": {
       "path": "/data/input/*.csv",
       "format": "csv",
-      "header": true
+      "skipHeader": true,
+      "schema": {
+        "fields": [
+          {"name": "id", "type": "long"},
+          {"name": "name", "type": "string"},
+          {"name": "age", "type": "int"},
+          {"name": "email", "type": "string"}
+        ]
+      }
     }
   },
   "sink": {

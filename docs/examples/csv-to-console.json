@@ -12,7 +12,15 @@
       "recursive": false,
       "encoding": "UTF-8",
       "delimiter": ",",
-      "header": true
+      "skipHeader": true,
+      "schema": {
+        "fields": [
+          {"name": "id", "type": "long"},
+          {"name": "name", "type": "string"},
+          {"name": "age", "type": "int"},
+          {"name": "email", "type": "string"}
+        ]
+      }
     }
   },
   "sink": {
