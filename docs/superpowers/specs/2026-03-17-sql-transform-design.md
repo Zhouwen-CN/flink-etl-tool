@@ -201,15 +201,16 @@ public class SqlTransformPlugin implements TransformPlugin {
 }
 ```
 
-### 7. SinkPlugin 接口（不变）
+### 7. SinkPlugin 接口（强化类型约束）
 
-Sink 保持消费 DataStream，接口不变：
+Sink 保持消费 DataStream，返回类型明确为 `SinkFunction<Row>`：
 
 ```java
 package com.etl.core.spi;
 
 import com.etl.core.config.SinkConfig;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
+import org.apache.flink.types.Row;
 
 public interface SinkPlugin {
     String getType();
@@ -217,17 +218,22 @@ public interface SinkPlugin {
     /**
      * 创建 Sink
      * @param config Sink 配置
-     * @return Flink SinkFunction
+     * @return Flink SinkFunction，强制消费 Row 类型
      */
-    SinkFunction<?> createSink(SinkConfig config);
+    SinkFunction<Row> createSink(SinkConfig config);
 }
 ```
+
+**变更说明**：
+- 返回类型从 `SinkFunction<?>` 改为 `SinkFunction<Row>`
+- 明确 Sink 消费 Row 类型数据
+- 现有 Sink 实现需要调整泛型参数
 
 **原因**：DataStream 和 Table 的作业启动方式不同：
 - DataStream: `env.execute("job name")`
 - Table API: `table.executeInsert(...)` 或 `stEnv.executeSql(...)`
 
-保持 Sink 消费 DataStream，作业启动方式统一用 `env.execute()`。
+保持 Sink 消费 DataStream<Row>，作业启动方式统一用 `env.execute()`。
 
 ### 8. JobBuilder 改造
 
@@ -313,7 +319,7 @@ public class JobBuilder {
 
         // 4. Sink 消费 DataStream
         SinkPlugin sinkPlugin = pluginLoader.loadSinkPlugin(config.getSink().getType());
-        SinkFunction<?> sink = sinkPlugin.createSink(config.getSink());
+        SinkFunction<Row> sink = sinkPlugin.createSink(config.getSink());
         resultStream.addSink(sink);
         log.info("Sink 创建成功");
 
@@ -348,7 +354,10 @@ public class JobBuilder {
 | `SchemaParser.java` | `com.etl.core.schema` | 解析并校验 `tableName` |
 | `TransformConfig.java` | `com.etl.core.config` | 新增 `getString()` 方法 |
 | `TransformPlugin.java` | `com.etl.core.spi` | 接口方法改为 `transform(Table, TransformConfig, StreamTableEnvironment)` |
+| `SinkPlugin.java` | `com.etl.core.spi` | 返回类型改为 `SinkFunction<Row>` |
 | `JobBuilder.java` | `com.etl.core.job` | 集成 Table API，注册表、执行 SQL、转回 DataStream |
+| `ConsoleSinkPlugin.java` | `com.etl.sink.console` | 返回类型改为 `SinkFunction<Row>` |
+| `MySQLSinkPlugin.java` | `com.etl.sink.mysql` | 返回类型改为 `SinkFunction<Row>` |
 
 ### 新增文件
 
@@ -367,14 +376,6 @@ public class JobBuilder {
 | 模块 | 新增依赖 |
 |------|----------|
 | `flink-etl-core` | `flink-table-api-java-bridge` |
-
-### 不变文件
-
-| 文件 | 说明 |
-|------|------|
-| `SinkPlugin.java` | 接口不变，仍返回 `SinkFunction<?>` |
-| `ConsoleSinkPlugin.java` | 无需修改 |
-| `MySQLSinkPlugin.java` | 无需修改 |
 
 ## 迁移指南
 
