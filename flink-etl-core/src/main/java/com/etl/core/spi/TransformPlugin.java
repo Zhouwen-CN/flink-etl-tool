@@ -1,7 +1,8 @@
 package com.etl.core.spi;
 
 import com.etl.core.config.TransformConfig;
-import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.table.api.Table;
+import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 
 /**
  * Transform 插件接口
@@ -17,10 +18,12 @@ public interface TransformPlugin {
     String getType();
 
     /**
-     * 创建转换函数
+     * 执行转换
      *
-     * @param config Transform 配置
-     * @return Flink MapFunction
+     * @param inputTable 输入表
+     * @param config 转换配置
+     * @param stEnv Table 环境
+     * @return 转换后的表
      */
-    MapFunction<?, ?> createTransform(TransformConfig config);
+    Table transform(Table inputTable, TransformConfig config, StreamTableEnvironment stEnv);
 }
