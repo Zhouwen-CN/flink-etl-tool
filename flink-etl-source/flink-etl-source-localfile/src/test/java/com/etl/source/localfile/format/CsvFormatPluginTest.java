@@ -163,6 +163,7 @@ class CsvFormatPluginTest {
      */
     private SourceConfig createConfigWithSchema() {
         Map<String, Object> schemaMap = new HashMap<>();
+        schemaMap.put("tableName", "test_table");
         schemaMap.put("fields", Arrays.asList(
             Map.of("name", "id", "type", "long"),
             Map.of("name", "name", "type", "string"),
@@ -189,6 +190,7 @@ class CsvFormatPluginTest {
      */
     private SourceConfig createConfigWithSchemaAndDelimiter(String delimiter) {
         Map<String, Object> schemaMap = new HashMap<>();
+        schemaMap.put("tableName", "test_table");
         schemaMap.put("fields", Arrays.asList(
             Map.of("name", "id", "type", "long"),
             Map.of("name", "name", "type", "string")
@@ -206,6 +208,7 @@ class CsvFormatPluginTest {
      */
     private SourceConfig createConfigWithSingleField() {
         Map<String, Object> schemaMap = new HashMap<>();
+        schemaMap.put("tableName", "test_table");
         schemaMap.put("fields", Arrays.asList(
             Map.of("name", "id", "type", "string")
         ));
