@@ -34,6 +34,9 @@ public class SchemaParser {
 
         List<Map<String, Object>> fieldsConfig = (List<Map<String, Object>>) fieldsObj;
 
+        // 解析 tableName（可选）
+        String tableName = (String) schemaMap.get("tableName");
+
         List<EtlField> fields = new ArrayList<>();
         for (int i = 0; i < fieldsConfig.size(); i++) {
             Map<String, Object> fieldConfig = fieldsConfig.get(i);
@@ -65,6 +68,6 @@ public class SchemaParser {
             fields.add(new EtlField(name, type));
         }
 
-        return new EtlSchema(fields);
+        return new EtlSchema(tableName, fields);
     }
 }

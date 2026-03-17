@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 
 /**
  * ETL Schema 容器
- * 包含字段列表定义
+ * 包含表名和字段列表定义
  */
 @Data
 @NoArgsConstructor
@@ -18,6 +18,11 @@ import java.util.stream.Collectors;
 public class EtlSchema implements Serializable {
 
     private static final long serialVersionUID = 1L;
+
+    /**
+     * 表名，用于注册 Flink Table
+     */
+    private String tableName;
 
     /**
      * 字段列表

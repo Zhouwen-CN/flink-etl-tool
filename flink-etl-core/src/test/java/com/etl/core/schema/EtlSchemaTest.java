@@ -9,7 +9,7 @@ class EtlSchemaTest {
 
     @Test
     void getField_byIndex_shouldReturnCorrectField() {
-        EtlSchema schema = new EtlSchema(Arrays.asList(
+        EtlSchema schema = new EtlSchema(null, Arrays.asList(
             new EtlField("id", EtlFieldType.LONG),
             new EtlField("name", EtlFieldType.STRING)
         ));
@@ -20,7 +20,7 @@ class EtlSchemaTest {
 
     @Test
     void getField_byName_shouldReturnCorrectField() {
-        EtlSchema schema = new EtlSchema(Arrays.asList(
+        EtlSchema schema = new EtlSchema(null, Arrays.asList(
             new EtlField("id", EtlFieldType.LONG),
             new EtlField("name", EtlFieldType.STRING)
         ));
@@ -31,7 +31,7 @@ class EtlSchemaTest {
 
     @Test
     void getField_byName_shouldReturnNull_whenNotFound() {
-        EtlSchema schema = new EtlSchema(Arrays.asList(
+        EtlSchema schema = new EtlSchema(null, Arrays.asList(
             new EtlField("id", EtlFieldType.LONG)
         ));
 
@@ -40,7 +40,7 @@ class EtlSchemaTest {
 
     @Test
     void getFieldNames_shouldReturnAllNames() {
-        EtlSchema schema = new EtlSchema(Arrays.asList(
+        EtlSchema schema = new EtlSchema(null, Arrays.asList(
             new EtlField("id", EtlFieldType.LONG),
             new EtlField("name", EtlFieldType.STRING)
         ));
@@ -49,5 +49,29 @@ class EtlSchemaTest {
         assertEquals(2, names.size());
         assertEquals("id", names.get(0));
         assertEquals("name", names.get(1));
+    }
+
+    @Test
+    void getTableName_shouldReturnCorrectValue() {
+        EtlSchema schema = new EtlSchema();
+        schema.setTableName("users");
+        schema.setFields(Arrays.asList(
+            new EtlField("id", EtlFieldType.LONG)
+        ));
+
+        assertEquals("users", schema.getTableName());
+    }
+
+    @Test
+    void constructor_withTableName_shouldSetAllFields() {
+        EtlSchema schema = new EtlSchema();
+        schema.setTableName("orders");
+        schema.setFields(Arrays.asList(
+            new EtlField("order_id", EtlFieldType.LONG),
+            new EtlField("amount", EtlFieldType.DOUBLE)
+        ));
+
+        assertEquals("orders", schema.getTableName());
+        assertEquals(2, schema.getFields().size());
     }
 }

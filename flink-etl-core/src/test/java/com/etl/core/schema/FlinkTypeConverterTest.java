@@ -9,7 +9,7 @@ class FlinkTypeConverterTest {
 
     @Test
     void toRowType_shouldReturnCorrectRowType() {
-        EtlSchema schema = new EtlSchema(Arrays.asList(
+        EtlSchema schema = new EtlSchema(null, Arrays.asList(
             new EtlField("id", EtlFieldType.LONG),
             new EtlField("name", EtlFieldType.STRING),
             new EtlField("age", EtlFieldType.INT),
@@ -39,7 +39,7 @@ class FlinkTypeConverterTest {
 
     @Test
     void toRowType_shouldHandleSingleField() {
-        EtlSchema schema = new EtlSchema(Arrays.asList(
+        EtlSchema schema = new EtlSchema(null, Arrays.asList(
             new EtlField("id", EtlFieldType.INT)
         ));
 
