@@ -12,17 +12,21 @@
       "username": "root",
       "password": "Zw$8rb8*",
       "splitColumn": "id",
-      "fetchSize": 1
+      "fetchSize": 1,
+      "schema": {
+        "tableName": "users",
+        "fields": [
+          { "name": "id", "type": "LONG" },
+          { "name": "name", "type": "STRING" }
+        ]
+      }
     }
   },
   "transforms": [
     {
-      "type": "field-mapping",
+      "type": "sql",
       "config": {
-        "mappings": [
-          { "from": "id", "to": "user_id" },
-          { "from": "name", "to": "user_name" }
-        ]
+        "sql": "SELECT id AS user_id, name FROM users WHERE id > 0"
       }
     }
   ],
