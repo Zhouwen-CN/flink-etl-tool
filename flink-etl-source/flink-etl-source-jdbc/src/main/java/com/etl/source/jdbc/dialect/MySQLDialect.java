@@ -86,7 +86,9 @@ public class MySQLDialect implements JdbcDialect {
             EtlFieldType type = inferFieldType(metaData.getColumnType(i));
             fields.add(new EtlField(name, type));
         }
-        return new EtlSchema(fields);
+        EtlSchema schema = new EtlSchema();
+        schema.setFields(fields);
+        return schema;
     }
 
     @Override
