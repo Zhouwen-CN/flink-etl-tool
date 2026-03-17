@@ -1,5 +1,6 @@
 package com.etl.core.job;
 
+import com.etl.core.schema.EtlSchema;
 import com.etl.core.config.JobConfig;
 import com.etl.core.config.TransformConfig;
 import com.etl.core.spi.PluginLoader;
@@ -8,11 +9,15 @@ import com.etl.core.spi.SourcePlugin;
 import com.etl.core.spi.TransformPlugin;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
-import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.connector.source.Source;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
+import org.apache.flink.table.api.Table;
+import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
+import org.apache.flink.types.Row;
+
+import java.util.List;
 
 /**
  * Job 构建器
@@ -37,35 +42,56 @@ public class JobBuilder {
     public void build(StreamExecutionEnvironment env, JobConfig config) {
         log.info("开始构建 Flink Job: {}", config.getJob().getName());
 
-        // 1. 加载 Source 插件
+        // 创建 Table 环境
+        StreamTableEnvironment stEnv = StreamTableEnvironment.create(env);
+
+        // 1. Source -> DataStream -> 注册 Table
         SourcePlugin sourcePlugin = pluginLoader.loadSourcePlugin(config.getSource().getType());
         Source source = sourcePlugin.createSource(config.getSource());
+        DataStream<Row> sourceStream = env.fromSource(source, WatermarkStrategy.noWatermarks(), "source");
 
-        // 2. 创建 DataStream
-        DataStream stream = env.fromSource(
-                source,
-                WatermarkStrategy.noWatermarks(),
-                "source-" + config.getSource().getType()
-        );
+        // 强制校验 Schema
+        EtlSchema schema = config.getSource().getSchema();
+        if (schema == null) {
+            throw new IllegalArgumentException("Source 必须配置 schema");
+        }
+        if (schema.getTableName() == null || schema.getTableName().trim().isEmpty()) {
+            throw new IllegalArgumentException("Source 的 schema.tableName 不能为空");
+        }
 
-        log.info("Source 创建成功");
+        // 注册为 Table
+        stEnv.createTemporaryView(schema.getTableName(), sourceStream);
+        log.info("注册 Table: {}", schema.getTableName());
 
-        // 3. 依次应用 Transform 列表（如果配置）
-        if (config.getTransforms() != null && !config.getTransforms().isEmpty()) {
-            for (TransformConfig transformConfig : config.getTransforms()) {
+        // 2. Transform 链式处理
+        Table resultTable = stEnv.from(schema.getTableName());
+
+        List<TransformConfig> transforms = config.getTransforms();
+        if (transforms != null && !transforms.isEmpty()) {
+            for (int i = 0; i < transforms.size(); i++) {
+                TransformConfig transformConfig = transforms.get(i);
                 TransformPlugin transformPlugin = pluginLoader.loadTransformPlugin(transformConfig.getType());
-                MapFunction transform = transformPlugin.createTransform(transformConfig);
-                stream = stream.map(transform);
+                resultTable = transformPlugin.transform(resultTable, transformConfig, stEnv);
+
+                // 将 Transform 结果注册为中间表，供后续 SQL 引用
+                String intermediateTableName = "transform_result_" + i;
+                stEnv.createTemporaryView(intermediateTableName, resultTable);
+                log.info("注册中间表: {}", intermediateTableName);
+
                 log.info("Transform 应用成功: {}", transformConfig.getType());
             }
         }
 
-        // 4. 加载 Sink 插件并写入
-        SinkPlugin sinkPlugin = pluginLoader.loadSinkPlugin(config.getSink().getType());
-        SinkFunction sink = sinkPlugin.createSink(config.getSink());
-        stream.addSink(sink);
+        // 3. Table -> DataStream<Row>
+        DataStream<Row> resultStream = stEnv.toDataStream(resultTable);
+        log.info("Table 转换为 DataStream");
 
+        // 4. Sink 消费 DataStream
+        SinkPlugin sinkPlugin = pluginLoader.loadSinkPlugin(config.getSink().getType());
+        SinkFunction<Row> sink = sinkPlugin.createSink(config.getSink());
+        resultStream.addSink(sink);
         log.info("Sink 创建成功");
+
         log.info("Flink Job 构建完成");
     }
 }
