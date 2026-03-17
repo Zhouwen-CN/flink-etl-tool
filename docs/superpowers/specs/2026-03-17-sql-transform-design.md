@@ -8,7 +8,7 @@
 
 1. 强制 Source 配置 Schema（包含 tableName），将 Source 注册为 Flink Table
 2. 支持 SQL Transform，用户可直接编写 SQL 处理数据
-3. Sink 统一消费 Table，由 Sink 决定如何处理
+3. Sink 保持消费 DataStream<Row>，作业启动方式统一
 
 ## 设计
 
@@ -17,7 +17,7 @@
 新增 `tableName` 字段，使 Schema 成为完整的表定义：
 
 ```java
-package com.etl.core.schema;  // 包路径
+package com.etl.core.schema;
 
 @Data
 public class EtlSchema implements Serializable {
@@ -46,12 +46,14 @@ Schema 配置变为必填，包含 tableName：
       }
     }
   },
-  "transform": {
-    "type": "sql",
-    "config": {
-      "sql": "SELECT id, name FROM users WHERE id > 10"
+  "transforms": [
+    {
+      "type": "sql",
+      "config": {
+        "sql": "SELECT id, name FROM users WHERE id > 10"
+      }
     }
-  },
+  ],
   "sink": {
     "type": "console",
     "config": { "format": "json" }
@@ -64,7 +66,7 @@ Schema 配置变为必填，包含 tableName：
 解析时读取 `tableName` 字段，并进行校验：
 
 ```java
-package com.etl.core.schema;  // 包路径
+package com.etl.core.schema;
 
 public class SchemaParser {
 
@@ -199,113 +201,42 @@ public class SqlTransformPlugin implements TransformPlugin {
 }
 ```
 
-### 7. SinkPlugin 接口变更
+### 7. SinkPlugin 接口（不变）
 
-统一消费 Table：
+Sink 保持消费 DataStream，接口不变：
 
 ```java
 package com.etl.core.spi;
 
 import com.etl.core.config.SinkConfig;
-import org.apache.flink.table.api.Table;
-import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
+import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 
 public interface SinkPlugin {
     String getType();
 
     /**
-     * 消费 Table
-     * @param table 结果表
+     * 创建 Sink
      * @param config Sink 配置
-     * @param stEnv Table 环境
+     * @return Flink SinkFunction
      */
-    void sink(Table table, SinkConfig config, StreamTableEnvironment stEnv);
+    SinkFunction<?> createSink(SinkConfig config);
 }
 ```
 
-**注意**：这是一个**破坏性变更**。现有 `createSink()` 方法将被移除。
+**原因**：DataStream 和 Table 的作业启动方式不同：
+- DataStream: `env.execute("job name")`
+- Table API: `table.executeInsert(...)` 或 `stEnv.executeSql(...)`
 
-### 8. ConsoleSinkPlugin 适配
+保持 Sink 消费 DataStream，作业启动方式统一用 `env.execute()`。
 
-```java
-package com.etl.sink.console;
+### 8. JobBuilder 改造
 
-import com.etl.core.config.SinkConfig;
-import com.etl.core.spi.SinkPlugin;
-import com.google.auto.service.AutoService;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.flink.streaming.api.datastream.DataStream;
-import org.apache.flink.table.api.Table;
-import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
-import org.apache.flink.types.Row;
-
-import java.util.List;
-
-@Slf4j
-@AutoService(SinkPlugin.class)
-public class ConsoleSinkPlugin implements SinkPlugin {
-
-    @Override
-    public String getType() {
-        return "console";
-    }
-
-    @Override
-    public void sink(Table table, SinkConfig config, StreamTableEnvironment stEnv) {
-        String format = config.getString("format");
-        DataStream<Row> stream = stEnv.toDataStream(table);
-
-        if ("json".equals(format)) {
-            stream.map(this::toJsonString).print();
-        } else {
-            stream.print();
-        }
-    }
-
-    /**
-     * 将 Row 转换为 JSON 字符串
-     * 处理 null 值和特殊字符
-     */
-    private String toJsonString(Row row) {
-        List<String> fieldNames = row.getFieldNames(true);
-        StringBuilder sb = new StringBuilder("{");
-        for (int i = 0; i < fieldNames.size(); i++) {
-            if (i > 0) sb.append(", ");
-            String name = fieldNames.get(i);
-            Object value = row.getField(name);
-            sb.append("\"").append(escapeJson(name)).append("\": ");
-            if (value == null) {
-                sb.append("null");
-            } else if (value instanceof String) {
-                sb.append("\"").append(escapeJson((String) value)).append("\"");
-            } else {
-                sb.append(value);
-            }
-        }
-        return sb.append("}").toString();
-    }
-
-    /**
-     * 转义 JSON 字符串中的特殊字符
-     */
-    private String escapeJson(String s) {
-        return s.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r")
-                .replace("\t", "\\t");
-    }
-}
-```
-
-### 9. JobBuilder 改造
-
-集成 Table API，支持多 Transform 链式处理：
+集成 Table API，在调用 Sink 前将 Table 转回 DataStream：
 
 ```java
 package com.etl.core.job;
 
-import com.etl.core.config.EtlSchema;
+import com.etl.core.schema.EtlSchema;
 import com.etl.core.config.JobConfig;
 import com.etl.core.config.TransformConfig;
 import com.etl.core.spi.PluginLoader;
@@ -317,6 +248,7 @@ import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.connector.source.Source;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.types.Row;
@@ -367,7 +299,6 @@ public class JobBuilder {
                 resultTable = transformPlugin.transform(resultTable, transformConfig, stEnv);
 
                 // 将 Transform 结果注册为中间表，供后续 SQL 引用
-                // 命名规则: transform_result_0, transform_result_1, ...
                 String intermediateTableName = "transform_result_" + i;
                 stEnv.createTemporaryView(intermediateTableName, resultTable);
                 log.info("注册中间表: {}", intermediateTableName);
@@ -376,9 +307,14 @@ public class JobBuilder {
             }
         }
 
-        // 3. Sink 消费 Table
+        // 3. Table -> DataStream<Row>
+        DataStream<Row> resultStream = stEnv.toDataStream(resultTable);
+        log.info("Table 转换为 DataStream");
+
+        // 4. Sink 消费 DataStream
         SinkPlugin sinkPlugin = pluginLoader.loadSinkPlugin(config.getSink().getType());
-        sinkPlugin.sink(resultTable, config.getSink(), stEnv);
+        SinkFunction<?> sink = sinkPlugin.createSink(config.getSink());
+        resultStream.addSink(sink);
         log.info("Sink 创建成功");
 
         log.info("Flink Job 构建完成");
@@ -396,15 +332,10 @@ public class JobBuilder {
                                                               │
                     ┌─────────────────────────────────────────┘
                     ▼
-             ┌─────────────┐         ┌─────────┐
-             │ Transform N │────────>│  Table  │
-             │   (SQL)     │         └────┬────┘
-             └─────────────┘              │
-                                          ▼
-                                    ┌─────────┐
-                                    │  Sink   │
-                                    │ Plugin  │
-                                    └─────────┘
+             ┌─────────────┐    ┌──────────────────┐    ┌─────────┐
+             │ Transform N │───>│ Table 转回       │───>│  Sink   │
+             │   (SQL)     │    │ DataStream<Row>  │    │ Plugin  │
+             └─────────────┘    └──────────────────┘    └─────────┘
 ```
 
 ## 变更清单
@@ -417,10 +348,7 @@ public class JobBuilder {
 | `SchemaParser.java` | `com.etl.core.schema` | 解析并校验 `tableName` |
 | `TransformConfig.java` | `com.etl.core.config` | 新增 `getString()` 方法 |
 | `TransformPlugin.java` | `com.etl.core.spi` | 接口方法改为 `transform(Table, TransformConfig, StreamTableEnvironment)` |
-| `SinkPlugin.java` | `com.etl.core.spi` | 接口方法改为 `sink(Table, SinkConfig, StreamTableEnvironment)` |
-| `JobBuilder.java` | `com.etl.core.job` | 集成 Table API，注册表、执行 SQL、调用 Sink |
-| `ConsoleSinkPlugin.java` | `com.etl.sink.console` | 适配新 SinkPlugin 接口 |
-| `MySQLSinkPlugin.java` | `com.etl.sink.mysql` | 适配新 SinkPlugin 接口 |
+| `JobBuilder.java` | `com.etl.core.job` | 集成 Table API，注册表、执行 SQL、转回 DataStream |
 
 ### 新增文件
 
@@ -440,6 +368,14 @@ public class JobBuilder {
 |------|----------|
 | `flink-etl-core` | `flink-table-api-java-bridge` |
 
+### 不变文件
+
+| 文件 | 说明 |
+|------|------|
+| `SinkPlugin.java` | 接口不变，仍返回 `SinkFunction<?>` |
+| `ConsoleSinkPlugin.java` | 无需修改 |
+| `MySQLSinkPlugin.java` | 无需修改 |
+
 ## 迁移指南
 
 ### 配置迁移
@@ -453,7 +389,6 @@ public class JobBuilder {
     "config": {
       "url": "jdbc:mysql://...",
       "table": "user_table"
-      // 无 schema 配置
     }
   },
   "transforms": [
@@ -581,11 +516,11 @@ public class JobBuilder {
 当前设计为单 Source 单 Sink，后续可扩展：
 
 1. **多 Source**：配置改为数组，注册多个 Table，SQL 可 JOIN
-2. **多 Sink**：配置改为数组，每个 Sink 消费同一 Table 或不同 SQL 结果
+2. **多 Sink**：配置改为数组，每个 Sink 消费同一 DataStream 或不同结果
 
 ## 风险点
 
 1. **类型兼容性**：Source 输出的 Row 需要与 Schema 定义一致，否则注册 Table 会失败
 2. **SQL 语法限制**：用户需了解 Flink SQL 语法限制
 3. **性能考量**：DataStream <-> Table 转换有一定开销
-4. **破坏性变更**：此版本不兼容旧配置，用户需要迁移
+4. **破坏性变更**：TransformPlugin 接口变更，旧插件需要重写
