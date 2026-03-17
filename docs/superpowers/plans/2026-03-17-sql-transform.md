@@ -16,7 +16,7 @@
 | 文件 | 职责 |
 |------|------|
 | `flink-etl-transform/src/main/java/com/etl/transform/SqlTransformPlugin.java` | SQL Transform 插件实现 |
-| `flink-etl-core/src/test/java/com/etl/core/transform/SqlTransformPluginTest.java` | SQL Transform 单元测试 |
+| `flink-etl-transform/src/test/java/com/etl/transform/SqlTransformPluginTest.java` | SQL Transform 单元测试 |
 
 ### 修改文件
 | 文件 | 变更内容 |
@@ -30,7 +30,6 @@
 | `flink-etl-core/pom.xml` | 新增 `flink-table-api-java-bridge` 依赖 |
 | `flink-etl-sink-console/.../ConsoleSinkPlugin.java` | 返回类型改为 `SinkFunction<Row>` |
 | `flink-etl-sink-mysql/.../MySQLSinkPlugin.java` | 返回类型改为 `SinkFunction<Row>` |
-| `flink-etl-sink-mysql/.../MySQLSinkFunction.java` | 类型参数改为 `Row` |
 
 ### 删除文件
 | 文件 | 原因 |
@@ -996,19 +995,9 @@ public class MySQLSinkPlugin implements SinkPlugin {
 }
 ```
 
-- [ ] **Step 2: 修改 MySQLSinkFunction 类型参数**
+- [ ] **Step 2: 验证 MySQLSinkFunction 无需修改**
 
-```java
-// 文件: flink-etl-sink/flink-etl-sink-mysql/src/main/java/com/etl/sink/mysql/MySQLSinkFunction.java
-// 修改类声明，将泛型参数从 Object 改为固定使用 Row
-
-// 找到类声明行，修改为：
-public class MySQLSinkFunction extends RichSinkFunction<Row> {
-    // ... 其余代码保持不变，只需确保 invoke 方法参数类型为 Row
-}
-```
-
-需要完整查看 MySQLSinkFunction 文件进行精确修改。主要变更是将 `RichSinkFunction<Object>` 改为 `RichSinkFunction<Row>`，以及 `invoke(Object value, ...)` 改为 `invoke(Row value, ...)`。
+MySQLSinkFunction 已经是 `RichSinkFunction<Row>` 类型，无需修改。只需修改 MySQLSinkPlugin 的返回类型即可。
 
 - [ ] **Step 3: 验证编译**
 
@@ -1018,7 +1007,7 @@ Expected: 编译通过
 - [ ] **Step 4: 提交**
 
 ```bash
-git add flink-etl-sink/flink-etl-sink-mysql/src/main/java/com/etl/sink/mysql/MySQLSinkPlugin.java flink-etl-sink/flink-etl-sink-mysql/src/main/java/com/etl/sink/mysql/MySQLSinkFunction.java
+git add flink-etl-sink/flink-etl-sink-mysql/src/main/java/com/etl/sink/mysql/MySQLSinkPlugin.java
 git commit -m "feat: MySQLSinkPlugin 适配 SinkFunction<Row>"
 ```
 
