@@ -18,12 +18,26 @@ public class TransformConfig {
     private Map<String, Object> config;
 
     /**
+     * 获取字符串类型的配置值
+     *
+     * @param key 配置键
+     * @return 配置值
+     */
+    public String getString(String key) {
+        if (config == null) {
+            return null;
+        }
+        Object value = config.get(key);
+        return value != null ? String.valueOf(value) : null;
+    }
+
+    /**
      * 获取配置值
      *
      * @param key 配置键
      * @return 配置值
      */
     public Object get(String key) {
-        return config.get(key);
+        return config != null ? config.get(key) : null;
     }
 }
