@@ -1,5 +1,7 @@
 package com.etl.core.config;
 
+import com.etl.core.schema.EtlSchema;
+import com.etl.core.schema.SchemaParser;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -106,5 +108,17 @@ public class SourceConfig implements Serializable {
             return (List<String>) value;
         }
         throw new IllegalArgumentException("配置项 " + key + " 不是列表类型");
+    }
+
+    /**
+     * 获取 Schema 配置
+     *
+     * @return EtlSchema 对象，如果未配置则返回 null
+     */
+    public EtlSchema getSchema() {
+        if (config == null) {
+            return null;
+        }
+        return SchemaParser.parse(config.get("schema"));
     }
 }
