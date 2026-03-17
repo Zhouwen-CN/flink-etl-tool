@@ -26,11 +26,10 @@ public class ConsoleSinkPlugin implements SinkPlugin {
 
     @Override
     public RichSinkFunction<Row> createSink(SinkConfig config) {
-        String format = config.getString("format");
         boolean showSubtask = config.getBoolean("showSubtask", true);
-        log.info("创建 Console Sink, format={}, showSubtask={}", format, showSubtask);
+        log.info("创建 Console Sink, showSubtask={}", showSubtask);
 
-        return new ConsoleSinkFunction(format, showSubtask);
+        return new ConsoleSinkFunction(showSubtask);
     }
 
     /**
@@ -39,15 +38,13 @@ public class ConsoleSinkPlugin implements SinkPlugin {
      */
     private static class ConsoleSinkFunction extends RichSinkFunction<Row> {
         private static final long serialVersionUID = 1L;
-        private final String format;
         private final boolean showSubtask;
 
         // 缓存分片信息，避免每次 invoke 都调用
         private transient int subtaskIndex = -1;
         private transient int totalSubtasks = -1;
 
-        public ConsoleSinkFunction(String format, boolean showSubtask) {
-            this.format = format != null ? format : "json";
+        public ConsoleSinkFunction(boolean showSubtask) {
             this.showSubtask = showSubtask;
         }
 

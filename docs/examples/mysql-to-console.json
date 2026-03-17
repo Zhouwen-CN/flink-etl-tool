@@ -32,8 +32,6 @@
   ],
   "sink": {
     "type": "console",
-    "config": {
-      "format": "json"
-    }
+    "config": {}
   }
 }

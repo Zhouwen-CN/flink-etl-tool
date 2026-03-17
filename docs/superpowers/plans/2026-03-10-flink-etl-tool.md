@@ -1545,10 +1545,7 @@ git commit -m "feat: 添加字段映射转换插件"
     }
   },
   "sink": {
-    "type": "console",
-    "config": {
-      "format": "json"
-    }
+    "type": "console"
   }
 }
 ```
@@ -1572,10 +1569,7 @@ git commit -m "feat: 添加字段映射转换插件"
     }
   },
   "sink": {
-    "type": "console",
-    "config": {
-      "format": "json"
-    }
+    "type": "console"
   }
 }
 ```

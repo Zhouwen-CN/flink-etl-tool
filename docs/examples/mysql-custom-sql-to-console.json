@@ -16,9 +16,6 @@
     }
   },
   "sink": {
-    "type": "console",
-    "config": {
-      "format": "json"
-    }
+    "type": "console"
   }
 }
