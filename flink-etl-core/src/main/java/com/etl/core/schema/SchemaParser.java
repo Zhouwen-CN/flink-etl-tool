@@ -22,6 +22,14 @@ public class SchemaParser {
         }
 
         Map<String, Object> schemaMap = (Map<String, Object>) schemaConfig;
+
+        // 解析并校验 tableName
+        String tableName = (String) schemaMap.get("tableName");
+        if (tableName == null || tableName.trim().isEmpty()) {
+            throw new SchemaConfigException("schema.tableName 不能为空");
+        }
+
+        // 解析 fields
         Object fieldsObj = schemaMap.get("fields");
 
         if (fieldsObj == null) {
@@ -65,6 +73,6 @@ public class SchemaParser {
             fields.add(new EtlField(name, type));
         }
 
-        return new EtlSchema(null, fields);
+        return new EtlSchema(tableName, fields);
     }
 }

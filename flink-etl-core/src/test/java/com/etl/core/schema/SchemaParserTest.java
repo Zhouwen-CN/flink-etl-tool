@@ -19,11 +19,13 @@ class SchemaParserTest {
         field2.put("type", "string");
 
         Map<String, Object> schemaConfig = new HashMap<>();
+        schemaConfig.put("tableName", "users");
         schemaConfig.put("fields", List.of(field1, field2));
 
         EtlSchema schema = SchemaParser.parse(schemaConfig);
 
         assertNotNull(schema);
+        assertEquals("users", schema.getTableName());
         assertEquals(2, schema.getFields().size());
         assertEquals("id", schema.getField(0).getName());
         assertEquals(EtlFieldType.LONG, schema.getField(0).getType());
@@ -44,12 +46,14 @@ class SchemaParserTest {
     @Test
     void parse_shouldThrowException_whenFieldsMissing() {
         Map<String, Object> schemaConfig = new HashMap<>();
+        schemaConfig.put("tableName", "users");
         assertThrows(SchemaConfigException.class, () -> SchemaParser.parse(schemaConfig));
     }
 
     @Test
     void parse_shouldThrowException_whenFieldsNotList() {
         Map<String, Object> schemaConfig = new HashMap<>();
+        schemaConfig.put("tableName", "users");
         schemaConfig.put("fields", "not a list");
         assertThrows(SchemaConfigException.class, () -> SchemaParser.parse(schemaConfig));
     }
@@ -60,6 +64,7 @@ class SchemaParserTest {
         field.put("type", "string");
 
         Map<String, Object> schemaConfig = new HashMap<>();
+        schemaConfig.put("tableName", "users");
         schemaConfig.put("fields", List.of(field));
 
         SchemaConfigException ex = assertThrows(SchemaConfigException.class,
@@ -73,6 +78,7 @@ class SchemaParserTest {
         field.put("name", "id");
 
         Map<String, Object> schemaConfig = new HashMap<>();
+        schemaConfig.put("tableName", "users");
         schemaConfig.put("fields", List.of(field));
 
         SchemaConfigException ex = assertThrows(SchemaConfigException.class,
@@ -87,6 +93,7 @@ class SchemaParserTest {
         field.put("type", "unsupported");
 
         Map<String, Object> schemaConfig = new HashMap<>();
+        schemaConfig.put("tableName", "users");
         schemaConfig.put("fields", List.of(field));
 
         SchemaConfigException ex = assertThrows(SchemaConfigException.class,
@@ -101,9 +108,56 @@ class SchemaParserTest {
         field.put("type", "LONG"); // 大写
 
         Map<String, Object> schemaConfig = new HashMap<>();
+        schemaConfig.put("tableName", "users");
         schemaConfig.put("fields", List.of(field));
 
         EtlSchema schema = SchemaParser.parse(schemaConfig);
         assertEquals(EtlFieldType.LONG, schema.getField(0).getType());
+    }
+
+    @Test
+    void parse_shouldParseTableName() {
+        Map<String, Object> field = new HashMap<>();
+        field.put("name", "id");
+        field.put("type", "long");
+
+        Map<String, Object> schemaConfig = new HashMap<>();
+        schemaConfig.put("tableName", "users");
+        schemaConfig.put("fields", List.of(field));
+
+        EtlSchema schema = SchemaParser.parse(schemaConfig);
+
+        assertNotNull(schema);
+        assertEquals("users", schema.getTableName());
+    }
+
+    @Test
+    void parse_shouldThrowException_whenTableNameMissing() {
+        Map<String, Object> field = new HashMap<>();
+        field.put("name", "id");
+        field.put("type", "long");
+
+        Map<String, Object> schemaConfig = new HashMap<>();
+        schemaConfig.put("fields", List.of(field));
+        // 不设置 tableName
+
+        SchemaConfigException ex = assertThrows(SchemaConfigException.class,
+            () -> SchemaParser.parse(schemaConfig));
+        assertTrue(ex.getMessage().contains("tableName"));
+    }
+
+    @Test
+    void parse_shouldThrowException_whenTableNameEmpty() {
+        Map<String, Object> field = new HashMap<>();
+        field.put("name", "id");
+        field.put("type", "long");
+
+        Map<String, Object> schemaConfig = new HashMap<>();
+        schemaConfig.put("tableName", "   "); // 空白字符串
+        schemaConfig.put("fields", List.of(field));
+
+        SchemaConfigException ex = assertThrows(SchemaConfigException.class,
+            () -> SchemaParser.parse(schemaConfig));
+        assertTrue(ex.getMessage().contains("tableName"));
     }
 }
