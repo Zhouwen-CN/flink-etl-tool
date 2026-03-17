@@ -1,6 +1,7 @@
 package com.etl.source.jdbc;
 
 import com.etl.core.config.SourceConfig;
+import com.etl.core.schema.EtlSchema;
 import com.etl.core.source.AbstractRangeSplitSource;
 import com.etl.core.source.RangeEnumCheckpoint;
 import com.etl.core.source.RangeSplit;
@@ -53,6 +54,9 @@ public class JdbcSource extends AbstractRangeSplitSource<Row> {
         this.queryTimeout = config.getInteger("queryTimeout");
         this.dialect = dialect;
 
+        // 解析 schema（可选）
+        this.schema = config.getSchema();
+
         log.info("创建 JdbcSource: table={}, sql={}, splitColumn={}",
                 table, sql, splitColumn);
     }
@@ -87,10 +91,32 @@ public class JdbcSource extends AbstractRangeSplitSource<Row> {
     public SplitEnumerator<RangeSplit, RangeEnumCheckpoint>
     createEnumerator(SplitEnumeratorContext<RangeSplit> enumContext) {
         log.info("创建 SplitEnumerator");
+
+        // 如果没有配置 schema，尝试从数据库推断
+        if (schema == null) {
+            schema = inferSchemaFromDatabase();
+        }
+
         Range<Long> range = getSplitColumnRange();
         int parallelism = enumContext.currentParallelism();
         List<RangeSplit> splits = calculateSplits(range, parallelism);
         return new JdbcSplitEnumerator(splits, enumContext);
+    }
+
+    /**
+     * 从数据库推断 Schema
+     */
+    private EtlSchema inferSchemaFromDatabase() {
+        String sampleQuery = dialect.buildSampleQuery(table, sql);
+        log.info("推断 Schema: {}", sampleQuery);
+
+        try (Connection conn = DriverManager.getConnection(url, username, password);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sampleQuery)) {
+            return dialect.inferSchema(rs.getMetaData());
+        } catch (SQLException e) {
+            throw new RuntimeException("从数据库推断 Schema 失败: " + e.getMessage(), e);
+        }
     }
 
     @Override
