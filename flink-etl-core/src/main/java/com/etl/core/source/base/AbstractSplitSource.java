@@ -60,7 +60,7 @@ public abstract class AbstractSplitSource<SplitT extends SourceSplit, Checkpoint
 
         // 构建 RowTypeInfo 用于 Flink Table API
         TypeInformation<?>[] typeInfos = fields.stream()
-                .map(f -> FlinkTypeConverter.toTypeInfo(f.getType()))
+                .map(f -> FlinkTypeConverter.fromEtlType(f.getType()))
                 .toArray(TypeInformation<?>[]::new);
         String[] names = fieldNames.toArray(new String[0]);
         return Types.ROW_NAMED(names, typeInfos);

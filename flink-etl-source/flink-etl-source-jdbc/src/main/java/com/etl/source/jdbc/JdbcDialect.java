@@ -1,6 +1,8 @@
 package com.etl.source.jdbc;
 
-import com.etl.core.schema.EtlSchema;
+import com.etl.core.schema.FlinkTypeConverter;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.types.Row;
 
 import java.io.Serializable;
@@ -61,7 +63,19 @@ public interface JdbcDialect extends Serializable {
      * @return 推断的 EtlSchema
      * @throws SQLException SQL 异常
      */
-    EtlSchema inferSchema(ResultSetMetaData metaData) throws SQLException;
+    default TypeInformation<Row> inferType(ResultSetMetaData metaData) throws SQLException {
+        int columnCount = metaData.getColumnCount();
+        String[] names = new String[columnCount];
+        TypeInformation<?>[] types = new TypeInformation<?>[columnCount];
+
+        for (int i = 1; i <= columnCount; i++) {
+            int index = i - 1;
+            names[index] = metaData.getColumnLabel(i);
+            types[index] = FlinkTypeConverter.fromSqlType(metaData.getColumnType(i));
+        }
+
+        return Types.ROW_NAMED(names, types);
+    }
 
     /**
      * 构建示例查询（用于推断 Schema）

@@ -56,7 +56,7 @@ public class ConsoleSinkPlugin implements SinkPlugin {
             TaskInfo taskInfo = ctx.getTaskInfo();
             this.subtaskIndex = taskInfo.getIndexOfThisSubtask() + 1;
             this.totalSubtasks = taskInfo.getNumberOfParallelSubtasks();
-            log.info("ConsoleSinkFunction 初始化, subtask[{}/{}]", subtaskIndex, totalSubtasks);
+            log.info("ConsoleSinkFunction 初始化, subtask[{}/{}]", taskInfo.getIndexOfThisSubtask(), totalSubtasks);
         }
 
         @Override
