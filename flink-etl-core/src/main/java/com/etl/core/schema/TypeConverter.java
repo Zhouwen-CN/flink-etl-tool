@@ -1,7 +1,6 @@
 package com.etl.core.schema;
 
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -12,8 +11,7 @@ import java.time.format.DateTimeParseException;
  */
 public class TypeConverter {
 
-    private static final DateTimeFormatter DEFAULT_TIMESTAMP_FORMAT =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter DEFAULT_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     /**
      * 将原始值转换为目标类型
@@ -31,7 +29,7 @@ public class TypeConverter {
 
         // 处理字符串类型：检查空字符串
         if (value instanceof String) {
-            String strValue = ((String) value).trim();
+            String strValue = ((String) value);
             if (strValue.isEmpty()) {
                 return null;
             }
@@ -42,7 +40,7 @@ public class TypeConverter {
             return value;
         }
 
-        String strValue = String.valueOf(value).trim();
+        String strValue = String.valueOf(value);
         if (strValue.isEmpty()) {
             return null;
         }
@@ -63,8 +61,6 @@ public class TypeConverter {
                     return new BigDecimal(strValue);
                 case TIMESTAMP:
                     return LocalDateTime.parse(strValue, DEFAULT_TIMESTAMP_FORMAT);
-                case BYTES:
-                    return parseBytes(value, strValue);
                 default:
                     throw new IllegalArgumentException("不支持的类型: " + targetType);
             }
@@ -89,8 +85,6 @@ public class TypeConverter {
                 return value instanceof BigDecimal;
             case TIMESTAMP:
                 return value instanceof LocalDateTime || value instanceof java.sql.Timestamp;
-            case BYTES:
-                return value instanceof byte[];
             default:
                 return false;
         }
@@ -105,14 +99,5 @@ public class TypeConverter {
             return false;
         }
         throw new NumberFormatException("无法解析为布尔值: " + value);
-    }
-
-    private static byte[] parseBytes(Object value, String strValue) {
-        // 如果已经是字节数组，直接返回
-        if (value instanceof byte[]) {
-            return (byte[]) value;
-        }
-        // 字符串转字节数组
-        return strValue.getBytes(StandardCharsets.UTF_8);
     }
 }

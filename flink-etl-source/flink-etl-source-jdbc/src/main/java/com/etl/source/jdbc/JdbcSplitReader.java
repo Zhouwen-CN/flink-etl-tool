@@ -199,11 +199,6 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
     }
 
     @Override
-    public void wakeUp() {
-        // JDBC 读取是同步阻塞的，不需要唤醒机制
-    }
-
-    @Override
     public void close() throws Exception {
         closeCurrentSplit();
         log.info("JdbcSplitReader 关闭");

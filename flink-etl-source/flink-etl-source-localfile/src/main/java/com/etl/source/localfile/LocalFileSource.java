@@ -2,7 +2,7 @@ package com.etl.source.localfile;
 
 import com.etl.core.config.SourceConfig;
 import com.etl.core.exception.SourceConfigException;
-import com.etl.core.source.AbstractSplitSource;
+import com.etl.core.source.base.AbstractSplitSource;
 import com.etl.core.source.base.BaseSplitReader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.*;

@@ -1,4 +1,4 @@
-package com.etl.core.source;
+package com.etl.core.source.base;
 
 import com.etl.core.config.SourceConfig;
 import com.etl.core.schema.EtlField;
@@ -9,7 +9,6 @@ import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.connector.source.*;
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
-import org.apache.flink.table.runtime.typeutils.ExternalTypeInfo;
 import org.apache.flink.types.Row;
 
 import java.util.List;
@@ -61,7 +60,7 @@ public abstract class AbstractSplitSource<SplitT extends SourceSplit, Checkpoint
 
         // 构建 RowTypeInfo 用于 Flink Table API
         TypeInformation<?>[] typeInfos = fields.stream()
-                .map(f -> ExternalTypeInfo.of(FlinkTypeConverter.toDataType(f.getType())))
+                .map(f -> FlinkTypeConverter.toTypeInfo(f.getType()))
                 .toArray(TypeInformation<?>[]::new);
         String[] names = fieldNames.toArray(new String[0]);
         return Types.ROW_NAMED(names, typeInfos);

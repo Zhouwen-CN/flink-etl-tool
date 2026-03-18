@@ -19,7 +19,6 @@ import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
-import org.apache.flink.table.runtime.typeutils.ExternalTypeInfo;
 import org.apache.flink.types.Row;
 
 import java.util.List;
@@ -70,7 +69,7 @@ public class JobBuilder {
 
         // 构建 RowTypeInfo 用于 Flink Table API
         TypeInformation<?>[] typeInfos = fields.stream()
-                .map(f -> ExternalTypeInfo.of(FlinkTypeConverter.toDataType(f.getType())))
+                .map(f -> FlinkTypeConverter.toTypeInfo(f.getType()))
                 .toArray(TypeInformation<?>[]::new);
         String[] names = fieldNames.toArray(new String[0]);
         RowTypeInfo rowTypeInfo = new RowTypeInfo(typeInfos, names);

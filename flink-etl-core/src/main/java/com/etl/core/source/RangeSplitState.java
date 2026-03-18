@@ -47,15 +47,6 @@ public class RangeSplitState extends BaseSplitState<RangeSplit> {
         this.recordsRead += count;
     }
 
-    /**
-     * 判断分片是否读取完成
-     *
-     * @return 是否完成
-     */
-    public boolean isFinished() {
-        return currentPosition > getSplit().getEnd();
-    }
-
     @Override
     public String toString() {
         return "RangeSplitState{" +

@@ -44,7 +44,9 @@ public interface BaseSplitReader<E, SplitT extends BaseSourceSplit> extends Spli
      * 用于在关闭或检查点时唤醒阻塞中的 fetch() 操作
      */
     @Override
-    void wakeUp();
+    default void wakeUp() {
+        // 默认空实现，子类可覆盖
+    }
 
     /**
      * 关闭读取器，释放资源

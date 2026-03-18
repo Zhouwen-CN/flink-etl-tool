@@ -1,6 +1,7 @@
 package com.etl.core.source;
 
 import com.etl.core.config.SourceConfig;
+import com.etl.core.source.base.AbstractSplitSource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.Range;
 

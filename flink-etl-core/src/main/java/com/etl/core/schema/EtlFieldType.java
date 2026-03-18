@@ -11,8 +11,7 @@ public enum EtlFieldType {
     LONG,
     DOUBLE,
     DECIMAL,
-    TIMESTAMP,
-    BYTES;
+    TIMESTAMP;
 
     /**
      * 从字符串解析类型（大小写不敏感）
@@ -21,13 +20,10 @@ public enum EtlFieldType {
      * @return 对应的枚举值，无效时返回 null
      */
     public static EtlFieldType fromString(String typeName) {
-        if (typeName == null || typeName.isEmpty()) {
-            return null;
-        }
         try {
             return EtlFieldType.valueOf(typeName.toUpperCase());
         } catch (IllegalArgumentException e) {
-            return null;
+            return STRING;
         }
     }
 }

@@ -12,13 +12,7 @@ import org.apache.flink.types.Row;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.ArrayDeque;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Queue;
-import java.util.ServiceLoader;
-import java.util.Set;
+import java.util.*;
 
 /**
  * 本地文件分片读取器
@@ -169,11 +163,6 @@ public class LocalFileSplitReader implements BaseSplitReader<Row, LocalFileSplit
     public void handleSplitsChanges(SplitsChange<LocalFileSplit> splitsChanges) {
         pendingSplits.addAll(splitsChanges.splits());
         log.debug("接收到 {} 个新文件分片", splitsChanges.splits().size());
-    }
-
-    @Override
-    public void wakeUp() {
-        // 文件读取是同步阻塞的，不需要唤醒机制
     }
 
     @Override
