@@ -6,6 +6,7 @@
   },
   "source": {
     "type": "localfile",
+    "outputTable": "csv_data",
     "config": {
       "path": "docs/examples/data/*.csv",
       "format": "csv",
@@ -13,18 +14,17 @@
       "encoding": "UTF-8",
       "delimiter": ",",
       "skipHeader": true,
-      "schema": {
-        "fields": [
-          {"name": "id", "type": "long"},
-          {"name": "name", "type": "string"},
-          {"name": "age", "type": "int"},
-          {"name": "email", "type": "string"}
-        ]
-      }
+      "schema": [
+        { "name": "id", "type": "LONG" },
+        { "name": "name", "type": "STRING" },
+        { "name": "age", "type": "INT" },
+        { "name": "email", "type": "STRING" }
+      ]
     }
   },
   "sink": {
     "type": "console",
+    "inputTable": "csv_data",
     "config": {}
   }
 }
