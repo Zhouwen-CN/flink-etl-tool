@@ -11,55 +11,36 @@ import java.util.Map;
 public class SchemaParser {
 
     @SuppressWarnings("unchecked")
-    public static EtlSchema parse(Object schemaConfig) {
+    public static EtlSchema parse(Object schemaConfig, String tableName) {
         if (schemaConfig == null) {
             return null;
         }
 
-        // 类型校验
-        if (!(schemaConfig instanceof Map)) {
-            throw new SchemaConfigException("schema 必须是一个对象");
+        // 新格式：schema 直接是字段数组
+        if (!(schemaConfig instanceof List)) {
+            throw new SchemaConfigException("schema 必须是一个数组");
         }
 
-        Map<String, Object> schemaMap = (Map<String, Object>) schemaConfig;
-
-        // 解析并校验 tableName
-        String tableName = (String) schemaMap.get("tableName");
-        if (tableName == null || tableName.trim().isEmpty()) {
-            throw new SchemaConfigException("schema.tableName 不能为空");
-        }
-
-        // 解析 fields
-        Object fieldsObj = schemaMap.get("fields");
-
-        if (fieldsObj == null) {
-            throw new SchemaConfigException("schema 缺少 'fields' 字段");
-        }
-
-        if (!(fieldsObj instanceof List)) {
-            throw new SchemaConfigException("'fields' 必须是数组");
-        }
-
-        List<Map<String, Object>> fieldsConfig = (List<Map<String, Object>>) fieldsObj;
-
+        List<Map<String, Object>> fieldsConfig = (List<Map<String, Object>>) schemaConfig;
         List<EtlField> fields = new ArrayList<>();
+
         for (int i = 0; i < fieldsConfig.size(); i++) {
             Map<String, Object> fieldConfig = fieldsConfig.get(i);
 
             Object nameObj = fieldConfig.get("name");
             if (nameObj == null) {
-                throw new SchemaConfigException("字段[" + i + "] 缺少 'name'");
+                throw new SchemaConfigException("字段 [" + i + "] 缺少 'name'");
             }
             if (!(nameObj instanceof String)) {
-                throw new SchemaConfigException("字段[" + i + "] 的 'name' 必须是字符串");
+                throw new SchemaConfigException("字段 [" + i + "] 的 'name' 必须是字符串");
             }
 
             Object typeObj = fieldConfig.get("type");
             if (typeObj == null) {
-                throw new SchemaConfigException("字段[" + i + "] 缺少 'type'");
+                throw new SchemaConfigException("字段 [" + i + "] 缺少 'type'");
             }
             if (!(typeObj instanceof String)) {
-                throw new SchemaConfigException("字段[" + i + "] 的 'type' 必须是字符串");
+                throw new SchemaConfigException("字段 [" + i + "] 的 'type' 必须是字符串");
             }
 
             String name = (String) nameObj;
@@ -67,7 +48,7 @@ public class SchemaParser {
             EtlFieldType type = EtlFieldType.fromString(typeName);
             if (type == null) {
                 throw new SchemaConfigException(
-                    "字段[" + i + "] '" + name + "' 的类型 '" + typeName + "' 不支持");
+                    "字段 [" + i + "] '" + name + "' 的类型 '" + typeName + "' 不支持");
             }
 
             fields.add(new EtlField(name, type));

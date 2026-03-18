@@ -22,6 +22,7 @@ public class SourceConfig implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private String type;
+    private String outputTable;
     private Map<String, Object> config;
 
     /**
@@ -119,6 +120,11 @@ public class SourceConfig implements Serializable {
         if (config == null) {
             return null;
         }
-        return SchemaParser.parse(config.get("schema"));
+        Object schemaConfig = config.get("schema");
+        if (schemaConfig == null) {
+            return null;
+        }
+        // 新格式：schema 直接是字段数组
+        return SchemaParser.parse(schemaConfig, outputTable);
     }
 }
