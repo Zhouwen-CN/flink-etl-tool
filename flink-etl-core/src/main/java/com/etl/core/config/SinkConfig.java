@@ -15,6 +15,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class SinkConfig {
     private String type;
+    private String inputTable;
     private Map<String, Object> config;
 
     /**

@@ -15,6 +15,8 @@ import java.util.Map;
 @AllArgsConstructor
 public class TransformConfig {
     private String type;
+    private String inputTable;
+    private String outputTable;
     private Map<String, Object> config;
 
     /**
