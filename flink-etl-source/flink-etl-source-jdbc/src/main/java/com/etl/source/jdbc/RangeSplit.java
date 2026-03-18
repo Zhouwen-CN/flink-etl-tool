@@ -1,6 +1,6 @@
-package com.etl.core.source;
+package com.etl.source.jdbc;
 
-import com.etl.core.source.base.BaseSourceSplit;
+import com.etl.core.source.BaseSourceSplit;
 import lombok.Getter;
 
 import java.io.Serializable;

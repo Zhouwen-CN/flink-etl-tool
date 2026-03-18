@@ -391,7 +391,7 @@ git commit -m "feat: 添加 MySQLDialect 实现"
 package com.etl.source.jdbc;
 
 import com.etl.core.source.PendingSplitsCheckpoint;
-import com.etl.core.source.RangeSplit;
+import com.etl.source.jdbc.RangeSplit;
 import org.apache.flink.api.connector.source.SplitEnumerator;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 import org.slf4j.Logger;
@@ -475,7 +475,7 @@ git commit -m "feat: 添加 JdbcSplitEnumerator 实现"
 ```java
 package com.etl.source.jdbc;
 
-import com.etl.core.source.RangeSplit;
+import com.etl.source.jdbc.RangeSplit;
 import org.apache.flink.api.connector.source.ReaderOutput;
 import org.apache.flink.api.connector.source.SourceReader;
 import org.apache.flink.api.connector.source.SourceReaderContext;
@@ -654,9 +654,9 @@ git commit -m "feat: 添加 JdbcSourceReader 实现"
 package com.etl.source.jdbc;
 
 import com.etl.core.config.SourceConfig;
-import com.etl.core.source.AbstractRangeSplitSource;
+import com.etl.source.jdbc.AbstractRangeSplitSource;
 import com.etl.core.source.PendingSplitsCheckpoint;
-import com.etl.core.source.RangeSplit;
+import com.etl.source.jdbc.RangeSplit;
 import org.apache.commons.lang3.Range;
 import org.apache.flink.api.connector.source.SplitEnumerator;
 import org.apache.flink.api.connector.source.SourceReader;

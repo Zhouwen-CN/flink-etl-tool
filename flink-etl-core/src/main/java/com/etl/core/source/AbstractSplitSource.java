@@ -1,4 +1,4 @@
-package com.etl.core.source.base;
+package com.etl.core.source;
 
 import com.etl.core.config.SourceConfig;
 import com.etl.core.schema.EtlField;

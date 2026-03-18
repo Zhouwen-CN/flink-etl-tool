@@ -1,6 +1,6 @@
-package com.etl.core.source;
+package com.etl.source.jdbc;
 
-import com.etl.core.source.base.BaseEnumCheckpoint;
+import com.etl.core.source.BaseEnumCheckpoint;
 
 import java.util.Collection;
 

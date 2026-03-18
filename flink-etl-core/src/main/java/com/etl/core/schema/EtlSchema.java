@@ -1,8 +1,8 @@
 package com.etl.core.schema;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 import java.io.Serializable;
 import java.util.List;
@@ -20,11 +20,6 @@ public class EtlSchema implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * 表名，用于注册 Flink Table
-     */
-    private String tableName;
-
-    /**
      * 字段列表
      */
     private List<EtlField> fields;
@@ -34,16 +29,6 @@ public class EtlSchema implements Serializable {
      */
     public EtlField getField(int index) {
         return fields.get(index);
-    }
-
-    /**
-     * 按名称获取字段
-     */
-    public EtlField getField(String name) {
-        return fields.stream()
-            .filter(f -> f.getName().equals(name))
-            .findFirst()
-            .orElse(null);
     }
 
     /**

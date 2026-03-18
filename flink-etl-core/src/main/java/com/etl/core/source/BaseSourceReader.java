@@ -1,4 +1,4 @@
-package com.etl.core.source.base;
+package com.etl.core.source;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SourceReaderContext;
@@ -113,7 +113,7 @@ public abstract class BaseSourceReader<E, T, SplitT extends BaseSourceSplit, Sta
         // 分片完成时请求新分片
         log.info("分片完成: {}", finishedSplitIds.keySet());
         context.sendSplitRequest();
-    };
+    }
 
     /**
      * 初始化分片状态

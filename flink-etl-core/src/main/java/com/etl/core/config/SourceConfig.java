@@ -2,12 +2,11 @@ package com.etl.core.config;
 
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.SchemaParser;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 import java.io.Serializable;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -104,6 +103,6 @@ public class SourceConfig implements Serializable {
             return null;
         }
         // 新格式：schema 直接是字段数组
-        return SchemaParser.parse(schemaConfig, outputTable);
+        return SchemaParser.parse(schemaConfig);
     }
 }

@@ -1,6 +1,6 @@
 package com.etl.source.localfile;
 
-import com.etl.core.source.base.BaseSplitState;
+import com.etl.core.source.BaseSplitState;
 import lombok.Getter;
 import lombok.Setter;
 

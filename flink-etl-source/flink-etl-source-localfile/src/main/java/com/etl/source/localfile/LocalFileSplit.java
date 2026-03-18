@@ -1,6 +1,6 @@
 package com.etl.source.localfile;
 
-import com.etl.core.source.base.BaseSourceSplit;
+import com.etl.core.source.BaseSourceSplit;
 import lombok.Getter;
 
 import java.io.File;

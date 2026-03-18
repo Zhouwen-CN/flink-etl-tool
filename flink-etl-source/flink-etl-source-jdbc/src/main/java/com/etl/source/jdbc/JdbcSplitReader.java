@@ -1,7 +1,6 @@
 package com.etl.source.jdbc;
 
-import com.etl.core.source.RangeSplit;
-import com.etl.core.source.base.BaseSplitReader;
+import com.etl.core.source.BaseSplitReader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
 import org.apache.flink.connector.base.source.reader.RecordsWithSplitIds;

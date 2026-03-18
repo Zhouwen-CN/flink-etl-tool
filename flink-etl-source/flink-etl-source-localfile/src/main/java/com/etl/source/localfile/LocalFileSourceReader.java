@@ -1,7 +1,7 @@
 package com.etl.source.localfile;
 
-import com.etl.core.source.base.BaseSourceReader;
-import com.etl.core.source.base.BaseSplitReader;
+import com.etl.core.source.BaseSourceReader;
+import com.etl.core.source.BaseSplitReader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.configuration.Configuration;

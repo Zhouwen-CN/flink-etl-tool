@@ -1,7 +1,7 @@
 package com.etl.source.localfile;
 
 import com.etl.core.config.SourceConfig;
-import com.etl.core.source.base.BaseSplitReader;
+import com.etl.core.source.BaseSplitReader;
 import com.etl.source.localfile.format.FileFormatPlugin;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;

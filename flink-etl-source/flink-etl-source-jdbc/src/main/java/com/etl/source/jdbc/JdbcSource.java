@@ -1,12 +1,9 @@
 package com.etl.source.jdbc;
 
 import com.etl.core.config.SourceConfig;
-import com.etl.core.source.AbstractRangeSplitSource;
-import com.etl.core.source.RangeEnumCheckpoint;
-import com.etl.core.source.RangeSplit;
-import com.etl.core.source.base.BaseSplitReader;
-import com.etl.core.source.base.serde.DefaultCheckpointSerializer;
-import com.etl.core.source.base.serde.DefaultSplitSerializer;
+import com.etl.core.source.BaseSplitReader;
+import com.etl.core.source.serde.DefaultCheckpointSerializer;
+import com.etl.core.source.serde.DefaultSplitSerializer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.Range;
 import org.apache.flink.api.common.typeinfo.TypeInformation;

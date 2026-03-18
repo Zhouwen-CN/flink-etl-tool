@@ -11,7 +11,7 @@ import java.util.Map;
 public class SchemaParser {
 
     @SuppressWarnings("unchecked")
-    public static EtlSchema parse(Object schemaConfig, String tableName) {
+    public static EtlSchema parse(Object schemaConfig) {
         if (schemaConfig == null) {
             return null;
         }
@@ -54,6 +54,6 @@ public class SchemaParser {
             fields.add(new EtlField(name, type));
         }
 
-        return new EtlSchema(tableName, fields);
+        return new EtlSchema(fields);
     }
 }

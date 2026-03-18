@@ -1,4 +1,4 @@
-package com.etl.core.source.base;
+package com.etl.core.source;
 
 import org.apache.flink.api.connector.source.SourceSplit;
 

@@ -1,8 +1,6 @@
 package com.etl.source.jdbc;
 
-import com.etl.core.source.RangeEnumCheckpoint;
-import com.etl.core.source.RangeSplit;
-import com.etl.core.source.base.BaseSplitEnumerator;
+import com.etl.core.source.BaseSplitEnumerator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 

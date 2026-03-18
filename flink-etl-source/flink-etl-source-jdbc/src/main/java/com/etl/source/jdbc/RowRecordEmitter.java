@@ -1,6 +1,5 @@
 package com.etl.source.jdbc;
 
-import com.etl.core.source.RangeSplitState;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SourceOutput;
 import org.apache.flink.connector.base.source.reader.RecordEmitter;
