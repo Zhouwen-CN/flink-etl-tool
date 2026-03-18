@@ -8,14 +8,7 @@ import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
  * Transform 插件接口
  * 所有数据转换插件必须实现此接口
  */
-public interface TransformPlugin {
-
-    /**
-     * 获取插件类型标识
-     *
-     * @return 插件类型标识
-     */
-    String getType();
+public interface TransformPlugin extends Plugin {
 
     /**
      * 执行转换

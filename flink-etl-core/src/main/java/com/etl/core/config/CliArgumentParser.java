@@ -64,7 +64,6 @@ public class CliArgumentParser {
     private static JobConfig loadFromFile(String filePath) {
         if (filePath == null || filePath.trim().isEmpty()) {
             log.error("--file 参数值不能为空");
-            System.err.println("错误: --file 参数值不能为空");
             return null;
         }
 
@@ -93,7 +92,6 @@ public class CliArgumentParser {
     private static JobConfig loadFromJsonString(String json) {
         if (json == null || json.trim().isEmpty()) {
             log.error("--config 参数值不能为空");
-            System.err.println("错误: --config 参数值不能为空");
             return null;
         }
 

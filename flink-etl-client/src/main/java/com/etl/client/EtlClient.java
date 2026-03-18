@@ -26,13 +26,10 @@ public class EtlClient {
             System.exit(0);
         } catch (IllegalArgumentException e) {
             log.error("配置错误：{}", e.getMessage());
-            System.err.println("配置错误：" + e.getMessage());
             CliArgumentParser.printUsage();
             System.exit(1);
         } catch (Exception e) {
             log.error("Job 执行失败", e);
-            System.err.println("Job 执行失败：" + e.getMessage());
-            CliArgumentParser.printUsage();
             System.exit(1);
         }
     }
