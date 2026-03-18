@@ -28,12 +28,6 @@ import java.util.List;
 @Slf4j
 public class JobBuilder {
 
-    private final PluginLoader pluginLoader;
-
-    public JobBuilder(PluginLoader pluginLoader) {
-        this.pluginLoader = pluginLoader;
-    }
-
     /**
      * 构建 Flink Job
      *
@@ -41,7 +35,7 @@ public class JobBuilder {
      * @param config Job 配置
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
-    public void build(StreamExecutionEnvironment env, JobConfig config) {
+    public static void build(StreamExecutionEnvironment env, JobConfig config) {
         log.info("开始构建 Flink Job: {}", config.getJob().getName());
         // 创建 Table 环境
         StreamTableEnvironment stEnv = StreamTableEnvironment.create(env);
@@ -49,7 +43,7 @@ public class JobBuilder {
         // 1. Source -> DataStream
         SourceConfig sourceConfig = config.getSource();
         String sourceType = sourceConfig.getType();
-        SourcePlugin sourcePlugin = pluginLoader.loadSourcePlugin(sourceType);
+        SourcePlugin sourcePlugin = PluginLoader.loadSourcePlugin(sourceType);
         Source source = sourcePlugin.createSource(sourceConfig);
         DataStream<Row> sourceStream = env.fromSource(source, WatermarkStrategy.noWatermarks(), sourceType);
 
@@ -63,15 +57,15 @@ public class JobBuilder {
         List<TransformConfig> transforms = config.getTransforms();
         if (transforms != null && !transforms.isEmpty()) {
             for (TransformConfig transformConfig : transforms) {
-                TransformPlugin transformPlugin = pluginLoader.loadTransformPlugin(transformConfig.getType());
+                TransformPlugin transformPlugin = PluginLoader.loadTransformPlugin(transformConfig.getType());
                 Table transformed = transformPlugin.transform(transformConfig, stEnv);
 
                 // 将 Transform 结果注册为中间表，供后续 SQL 引用
                 String transformOutputTable = transformConfig.getOutputTable();
                 stEnv.createTemporaryView(transformOutputTable, transformed);
-                log.info("注册中间表: {}", transformOutputTable);
+                log.info("注册中间表：{}", transformOutputTable);
 
-                log.info("Transform 应用成功: {}", transformConfig.getType());
+                log.info("Transform 应用成功：{}", transformConfig.getType());
             }
         }
 
@@ -82,7 +76,7 @@ public class JobBuilder {
         log.info("Table 转换为 DataStream");
 
         // 5. Sink 消费 DataStream
-        SinkPlugin sinkPlugin = pluginLoader.loadSinkPlugin(sinkConfig.getType());
+        SinkPlugin sinkPlugin = PluginLoader.loadSinkPlugin(sinkConfig.getType());
         SinkFunction<Row> sink = sinkPlugin.createSink(sinkConfig);
         resultStream.addSink(sink);
         log.info("Sink 创建成功");

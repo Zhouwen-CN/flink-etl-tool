@@ -3,7 +3,6 @@ package com.etl.client;
 import com.etl.core.config.CliArgumentParser;
 import com.etl.core.config.JobConfig;
 import com.etl.core.job.JobExecutor;
-import com.etl.core.spi.PluginLoader;
 import lombok.extern.slf4j.Slf4j;
 
 /**
@@ -21,8 +20,7 @@ public class EtlClient {
                 System.exit(1);
             }
 
-            PluginLoader pluginLoader = new PluginLoader();
-            JobExecutor executor = new JobExecutor(pluginLoader);
+            JobExecutor executor = new JobExecutor();
             executor.execute(config);
 
             System.exit(0);
