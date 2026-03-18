@@ -10,6 +10,7 @@ import com.etl.core.source.base.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.base.serde.DefaultSplitSerializer;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.Range;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.connector.source.*;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
@@ -32,33 +33,32 @@ import java.util.function.Supplier;
  * </ul>
  */
 @Slf4j
-public class JdbcSource extends AbstractRangeSplitSource<Row> {
+public class JdbcSource extends AbstractRangeSplitSource {
 
     private final String url;
     private final String username;
     private final String password;
     private final String table;
     private final String sql;
+    private final String splitColumn;
     private final Integer fetchSize;
     private final Integer queryTimeout;
     private final JdbcDialect dialect;
 
     public JdbcSource(SourceConfig config, JdbcDialect dialect) {
-        super(config.getString("splitColumn"));
+        super(config);
+
         this.url = config.getString("url");
         this.username = config.getString("username");
         this.password = config.getString("password");
         this.table = config.getString("table");
+        this.splitColumn = config.getString("splitColumn");
         this.sql = config.getString("sql");
         this.fetchSize = config.getInteger("fetchSize");
         this.queryTimeout = config.getInteger("queryTimeout");
         this.dialect = dialect;
 
-        // 解析 schema（可选）
-        this.schema = config.getSchema();
-
-        log.info("创建 JdbcSource: table={}, sql={}, splitColumn={}",
-                table, sql, splitColumn);
+        log.info("创建 JdbcSource: table={}, sql={}, splitColumn={}", table, sql, splitColumn);
     }
 
     @Override
@@ -92,14 +92,9 @@ public class JdbcSource extends AbstractRangeSplitSource<Row> {
     createEnumerator(SplitEnumeratorContext<RangeSplit> enumContext) {
         log.info("创建 SplitEnumerator");
 
-        // 如果没有配置 schema，尝试从数据库推断
-        if (schema == null) {
-            schema = inferSchemaFromDatabase();
-        }
-
         Range<Long> range = getSplitColumnRange();
         int parallelism = enumContext.currentParallelism();
-        List<RangeSplit> splits = calculateSplits(range, parallelism);
+        List<RangeSplit> splits = calculateSplits(splitColumn, range, parallelism);
         return new JdbcSplitEnumerator(splits, enumContext);
     }
 
@@ -154,5 +149,10 @@ public class JdbcSource extends AbstractRangeSplitSource<Row> {
     public SimpleVersionedSerializer<RangeEnumCheckpoint> getEnumeratorCheckpointSerializer() {
         // 使用默认序列化器
         return new DefaultCheckpointSerializer<>();
+    }
+
+    @Override
+    public TypeInformation<Row> getProducedType() {
+        return super.getProducedType();
     }
 }

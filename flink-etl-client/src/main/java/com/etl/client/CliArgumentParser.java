@@ -66,8 +66,6 @@ public class CliArgumentParser {
             return null;
         }
 
-        log.info("从文件加载配置: {}", filePath);
-
         if (!Files.exists(Paths.get(filePath))) {
             String errorMsg = String.format("配置文件不存在: %s", filePath);
             log.error(errorMsg);
@@ -80,6 +78,7 @@ public class CliArgumentParser {
             throw new IllegalArgumentException(errorMsg);
         }
 
+        log.info("从文件加载配置: {}", filePath);
         return ConfigParser.parse(filePath);
     }
 

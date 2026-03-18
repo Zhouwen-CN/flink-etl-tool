@@ -28,12 +28,13 @@ import java.util.function.Supplier;
  * <p>格式插件动态加载，避免序列化问题。
  */
 @Slf4j
-public class LocalFileSource extends AbstractSplitSource<Row, LocalFileSplit, LocalFileEnumCheckpoint> {
+public class LocalFileSource extends AbstractSplitSource<LocalFileSplit, LocalFileEnumCheckpoint> {
 
     private final SourceConfig config;
     private final String format;
 
     public LocalFileSource(SourceConfig config) {
+        super(config);
         this.config = config;
 
         // 验证必要配置项
