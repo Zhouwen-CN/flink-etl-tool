@@ -1,7 +1,5 @@
-package com.etl.client;
+package com.etl.core.config;
 
-import com.etl.core.config.ConfigParser;
-import com.etl.core.config.JobConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.java.utils.ParameterTool;
 
@@ -17,13 +15,17 @@ import java.nio.file.Paths;
 @Slf4j
 public class CliArgumentParser {
 
+    private CliArgumentParser() {
+        // 私有构造函数，防止实例化
+    }
+
     /**
      * 解析命令行参数并返回 Job 配置
      *
      * @param args 命令行参数
      * @return Job 配置，如果参数无效则返回 null
      */
-    public JobConfig parse(String[] args) {
+    public static JobConfig parse(String[] args) {
         ParameterTool params = ParameterTool.fromArgs(args);
 
         if (params.has("file")) {
@@ -38,7 +40,7 @@ public class CliArgumentParser {
     /**
      * 打印使用说明
      */
-    public void printUsage() {
+    public static void printUsage() {
         System.err.println("用法:");
         System.err.println("  java -jar flink-etl-tool.jar --file <config.json>");
         System.err.println("  java -jar flink-etl-tool.jar --config '<json-string>'");
@@ -59,7 +61,7 @@ public class CliArgumentParser {
      * @param filePath 配置文件路径
      * @return Job 配置对象，参数无效时返回 null
      */
-    private JobConfig loadFromFile(String filePath) {
+    private static JobConfig loadFromFile(String filePath) {
         if (filePath == null || filePath.trim().isEmpty()) {
             log.error("--file 参数值不能为空");
             System.err.println("错误: --file 参数值不能为空");
@@ -88,7 +90,7 @@ public class CliArgumentParser {
      * @param json JSON 字符串
      * @return Job 配置对象，参数无效时返回 null
      */
-    private JobConfig loadFromJsonString(String json) {
+    private static JobConfig loadFromJsonString(String json) {
         if (json == null || json.trim().isEmpty()) {
             log.error("--config 参数值不能为空");
             System.err.println("错误: --config 参数值不能为空");
