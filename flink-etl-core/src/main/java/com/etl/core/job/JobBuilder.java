@@ -1,6 +1,8 @@
 package com.etl.core.job;
 
 import com.etl.core.config.JobConfig;
+import com.etl.core.config.SinkConfig;
+import com.etl.core.config.SourceConfig;
 import com.etl.core.config.TransformConfig;
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.spi.PluginLoader;
@@ -41,48 +43,47 @@ public class JobBuilder {
     @SuppressWarnings({"unchecked", "rawtypes"})
     public void build(StreamExecutionEnvironment env, JobConfig config) {
         log.info("开始构建 Flink Job: {}", config.getJob().getName());
-
         // 创建 Table 环境
         StreamTableEnvironment stEnv = StreamTableEnvironment.create(env);
 
-        // 1. Source -> DataStream -> 注册 Table
-        SourcePlugin sourcePlugin = pluginLoader.loadSourcePlugin(config.getSource().getType());
-        Source source = sourcePlugin.createSource(config.getSource());
-        DataStream<Row> sourceStream = env.fromSource(source, WatermarkStrategy.noWatermarks(), "source");
+        // 1. Source -> DataStream
+        SourceConfig sourceConfig = config.getSource();
+        String sourceType = sourceConfig.getType();
+        SourcePlugin sourcePlugin = pluginLoader.loadSourcePlugin(sourceType);
+        Source source = sourcePlugin.createSource(sourceConfig);
+        DataStream<Row> sourceStream = env.fromSource(source, WatermarkStrategy.noWatermarks(), sourceType);
 
-        // 强制校验 Schema
-        EtlSchema schema = config.getSource().getSchema();
+        // 2. DataStream<Row> -> Table
+        String sourceOutputTable = sourceConfig.getOutputTable();
+        stEnv.createTemporaryView(sourceOutputTable, sourceStream);
+        log.info("注册 Table: {}", sourceOutputTable);
 
-        // 注册为 Table
-        stEnv.createTemporaryView(schema.getTableName(), sourceStream);
-        log.info("注册 Table: {}", schema.getTableName());
 
-        // 2. Transform 链式处理
-        Table resultTable = stEnv.from(schema.getTableName());
-
+        // 3. Transform 链式处理
         List<TransformConfig> transforms = config.getTransforms();
         if (transforms != null && !transforms.isEmpty()) {
-            for (int i = 0; i < transforms.size(); i++) {
-                TransformConfig transformConfig = transforms.get(i);
+            for (TransformConfig transformConfig : transforms) {
                 TransformPlugin transformPlugin = pluginLoader.loadTransformPlugin(transformConfig.getType());
-                resultTable = transformPlugin.transform(resultTable, transformConfig, stEnv);
+                Table transformed = transformPlugin.transform(transformConfig, stEnv);
 
                 // 将 Transform 结果注册为中间表，供后续 SQL 引用
-                String intermediateTableName = "transform_result_" + i;
-                stEnv.createTemporaryView(intermediateTableName, resultTable);
-                log.info("注册中间表: {}", intermediateTableName);
+                String transformOutputTable = transformConfig.getOutputTable();
+                stEnv.createTemporaryView(transformOutputTable, transformed);
+                log.info("注册中间表: {}", transformOutputTable);
 
                 log.info("Transform 应用成功: {}", transformConfig.getType());
             }
         }
 
-        // 3. Table -> DataStream<Row>
-        DataStream<Row> resultStream = stEnv.toDataStream(resultTable);
+        // 4. Table -> DataStream<Row>
+        SinkConfig sinkConfig = config.getSink();
+        Table sinkTable = stEnv.from(sinkConfig.getInputTable());
+        DataStream<Row> resultStream = stEnv.toDataStream(sinkTable);
         log.info("Table 转换为 DataStream");
 
-        // 4. Sink 消费 DataStream
-        SinkPlugin sinkPlugin = pluginLoader.loadSinkPlugin(config.getSink().getType());
-        SinkFunction<Row> sink = sinkPlugin.createSink(config.getSink());
+        // 5. Sink 消费 DataStream
+        SinkPlugin sinkPlugin = pluginLoader.loadSinkPlugin(sinkConfig.getType());
+        SinkFunction<Row> sink = sinkPlugin.createSink(sinkConfig);
         resultStream.addSink(sink);
         log.info("Sink 创建成功");
 

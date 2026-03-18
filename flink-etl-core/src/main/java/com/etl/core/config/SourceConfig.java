@@ -91,27 +91,6 @@ public class SourceConfig implements Serializable {
     }
 
     /**
-     * 获取字符串列表类型的配置值
-     *
-     * @param key 配置键
-     * @return 配置值列表，如果不存在返回 null
-     */
-    @SuppressWarnings("unchecked")
-    public List<String> getList(String key) {
-        if (config == null) {
-            return null;
-        }
-        Object value = config.get(key);
-        if (value == null) {
-            return null;
-        }
-        if (value instanceof List) {
-            return (List<String>) value;
-        }
-        throw new IllegalArgumentException("配置项 " + key + " 不是列表类型");
-    }
-
-    /**
      * 获取 Schema 配置
      *
      * @return EtlSchema 对象，如果未配置则返回 null

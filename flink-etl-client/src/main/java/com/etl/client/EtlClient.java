@@ -26,7 +26,6 @@ public class EtlClient {
             JobExecutor executor = new JobExecutor(pluginLoader);
             executor.execute(config);
 
-            log.info("Job 执行成功");
             System.exit(0);
         } catch (IllegalArgumentException e) {
             log.error("配置错误: {}", e.getMessage());

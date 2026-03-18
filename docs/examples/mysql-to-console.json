@@ -2,7 +2,7 @@
   "job": {
     "name": "mysql-to-console",
     "mode": "batch",
-    "parallelism": 1
+    "parallelism": 2
   },
   "source": {
     "type": "mysql",
@@ -23,7 +23,6 @@
   "transforms": [
     {
       "type": "sql",
-      "inputTable": "users",
       "outputTable": "users_transformed",
       "config": {
         "sql": "SELECT * FROM users WHERE id > 0"

@@ -1,8 +1,8 @@
 package com.etl.core.config;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 import java.util.Map;
 

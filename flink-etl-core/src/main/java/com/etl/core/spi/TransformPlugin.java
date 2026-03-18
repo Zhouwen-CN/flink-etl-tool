@@ -20,10 +20,9 @@ public interface TransformPlugin {
     /**
      * 执行转换
      *
-     * @param inputTable 输入表
      * @param config 转换配置
-     * @param stEnv Table 环境
+     * @param stEnv  Table 环境
      * @return 转换后的表
      */
-    Table transform(Table inputTable, TransformConfig config, StreamTableEnvironment stEnv);
+    Table transform(TransformConfig config, StreamTableEnvironment stEnv);
 }
