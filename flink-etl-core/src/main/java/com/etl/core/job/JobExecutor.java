@@ -1,7 +1,7 @@
 package com.etl.core.job;
 
 import com.etl.core.config.JobConfig;
-import com.etl.core.spi.PluginLoader;
+import com.etl.core.config.JobMeta;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.configuration.Configuration;
@@ -23,15 +23,16 @@ public class JobExecutor {
      * @param config Job 配置对象
      */
     public void execute(JobConfig config) {
-        log.info("开始执行 Job: {}", config.getJob().getName());
+        JobMeta jobConfig = config.getJob();
+        log.info("开始执行 Job: {}", jobConfig.getName());
 
         try {
-            StreamExecutionEnvironment env = createExecutionEnvironment(config);
+            StreamExecutionEnvironment env = createExecutionEnvironment(jobConfig);
 
             JobBuilder.build(env, config);
 
             log.info("提交 Job 到 Flink 执行引擎");
-            env.execute(config.getJob().getName());
+            env.execute(jobConfig.getName());
 
             log.info("Job 执行成功");
         } catch (Exception e) {
@@ -44,12 +45,12 @@ public class JobExecutor {
     /**
      * 根据配置创建执行环境
      *
-     * @param config Job 配置
+     * @param jobConfig Job 配置
      * @return Flink 执行环境
      */
-    StreamExecutionEnvironment createExecutionEnvironment(JobConfig config) {
-        String mode = config.getJob().getMode();
-        Integer parallelism = config.getJob().getParallelism();
+    StreamExecutionEnvironment createExecutionEnvironment(JobMeta jobConfig) {
+        String mode = jobConfig.getMode();
+        Integer parallelism = jobConfig.getParallelism();
         log.info("创建 Flink 执行环境：mode={}, parallelism={}", mode, parallelism);
 
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
