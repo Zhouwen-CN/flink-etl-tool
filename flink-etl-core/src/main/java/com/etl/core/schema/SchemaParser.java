@@ -1,5 +1,7 @@
 package com.etl.core.schema;
 
+import com.etl.core.exception.SchemaConfigException;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

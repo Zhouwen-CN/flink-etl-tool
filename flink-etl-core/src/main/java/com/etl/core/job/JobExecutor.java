@@ -1,5 +1,6 @@
 package com.etl.core.job;
 
+import com.etl.core.config.ExecutionMode;
 import com.etl.core.config.JobConfig;
 import com.etl.core.config.JobMeta;
 import lombok.extern.slf4j.Slf4j;
@@ -49,19 +50,17 @@ public class JobExecutor {
      * @return Flink 执行环境
      */
     StreamExecutionEnvironment createExecutionEnvironment(JobMeta jobConfig) {
-        String mode = jobConfig.getMode();
+        ExecutionMode mode = jobConfig.getMode();
         Integer parallelism = jobConfig.getParallelism();
         log.info("创建 Flink 执行环境：mode={}, parallelism={}", mode, parallelism);
 
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         Configuration configuration = new Configuration();
 
-        if ("batch".equalsIgnoreCase(mode)) {
+        if (mode == ExecutionMode.BATCH) {
             configuration.set(ExecutionOptions.RUNTIME_MODE, RuntimeExecutionMode.BATCH);
-        } else if ("stream".equalsIgnoreCase(mode)) {
+        } else if (mode == ExecutionMode.STREAM) {
             configuration.set(ExecutionOptions.RUNTIME_MODE, RuntimeExecutionMode.STREAMING);
-        } else {
-            throw new IllegalArgumentException("job.mode 仅支持 batch | stream");
         }
 
         if (parallelism != null) {

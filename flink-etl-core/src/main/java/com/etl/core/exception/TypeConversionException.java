@@ -1,5 +1,6 @@
-package com.etl.core.schema;
+package com.etl.core.exception;
 
+import com.etl.core.schema.EtlFieldType;
 import lombok.Getter;
 
 /**

@@ -1387,7 +1387,7 @@ Expected: BUILD SUCCESS
 package com.etl.source.localfile.format;
 
 import com.etl.core.config.SourceConfig;
-import com.etl.core.schema.SchemaConfigException;
+import com.etl.core.exception.SchemaConfigException;
 import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;

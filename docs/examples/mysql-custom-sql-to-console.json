@@ -13,7 +13,6 @@
       "username": "root",
       "password": "Zw$8rb8*",
       "splitColumn": "id",
-      "queryTimeout": 300,
       "schema": [
         { "name": "id", "type": "INT" },
         { "name": "name", "type": "STRING" },

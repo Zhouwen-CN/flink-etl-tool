@@ -1,6 +1,7 @@
 package com.etl.source.localfile.format;
 
 import com.etl.core.config.SourceConfig;
+import com.etl.core.exception.SchemaConfigException;
 import com.etl.core.schema.*;
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
@@ -96,7 +97,7 @@ public class CsvFormatPlugin implements FileFormatPlugin {
 
         @Override
         public Iterator<Row> iterator() {
-            return new Iterator<Row>() {
+            return new Iterator<>() {
                 private final Iterator<CSVRecord> csvIterator = parser.iterator();
                 private boolean headerSkipped = false;
 

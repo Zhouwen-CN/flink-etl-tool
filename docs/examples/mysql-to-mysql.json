@@ -21,20 +21,6 @@
       ]
     }
   },
-  "transforms": [
-    {
-      "type": "field-mapping",
-      "inputTable": "source_data",
-      "outputTable": "mapped_data",
-      "config": {
-        "mappings": [
-          { "from": "id", "to": "id" },
-          { "from": "name", "to": "name" },
-          { "from": "age", "to": "age" }
-        ]
-      }
-    }
-  ],
   "sink": {
     "type": "mysql",
     "inputTable": "mapped_data",

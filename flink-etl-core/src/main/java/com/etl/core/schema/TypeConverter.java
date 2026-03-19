@@ -1,5 +1,7 @@
 package com.etl.core.schema;
 
+import com.etl.core.exception.TypeConversionException;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

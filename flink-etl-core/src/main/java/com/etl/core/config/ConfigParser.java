@@ -66,7 +66,7 @@ public class ConfigParser {
         if (config.getJob().getName() == null || config.getJob().getName().isEmpty()) {
             throw new IllegalArgumentException("缺少 job.name 配置");
         }
-        if (config.getJob().getMode() == null || config.getJob().getMode().isEmpty()) {
+        if (config.getJob().getMode() == null) {
             throw new IllegalArgumentException("缺少 job.mode 配置");
         }
         if (config.getSource() == null) {

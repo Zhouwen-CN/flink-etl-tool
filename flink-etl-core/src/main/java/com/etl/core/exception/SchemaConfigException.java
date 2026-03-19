@@ -1,4 +1,4 @@
-package com.etl.core.schema;
+package com.etl.core.exception;
 
 /**
  * Schema 配置异常
