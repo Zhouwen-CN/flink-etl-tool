@@ -1,37 +1,29 @@
 package com.etl.source.jdbc;
 
 import com.etl.core.config.SourceConfig;
+import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseSplitReader;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
 import com.etl.source.jdbc.dialect.MySQLDialect;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.Range;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.connector.source.*;
-import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Preconditions;
 
 import java.sql.*;
-import java.util.List;
 import java.util.function.Supplier;
 
 /**
  * JDBC Source 实现
  * 支持主键范围分片读取关系型数据库
  *
- * <p>优化后使用新的抽象类：
- * <ul>
- *   <li>{@link JdbcSplitEnumerator} - 继承 BaseSplitEnumerator</li>
- *   <li>{@link JdbcSourceReader} - 继承 BaseSourceReader</li>
- *   <li>默认序列化器 - 无需手写</li>
- *   <li>直接输出 Flink Row 类型</li>
- * </ul>
+ * <p>直接继承 AbstractSplitSource，分片逻辑由 JdbcSplitEnumerator 处理。
  */
 @Slf4j
-public class JdbcSource extends AbstractRangeSplitSource {
+public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpoint> {
 
     private final String url;
     private final String username;
@@ -65,32 +57,11 @@ public class JdbcSource extends AbstractRangeSplitSource {
         this.splitColumn = config.getString("splitColumn");
         Preconditions.checkNotNull(this.splitColumn, "splitColumn is null");
         this.sql = config.getString("sql");
-        this.batchSize = config.getInteger("batchSize", super.getDefaultBatchSize());
+        this.batchSize = config.getInteger("batchSize", getDefaultBatchSize());
         this.queryTimeout = config.getInteger("queryTimeout");
         this.dialect = dialect;
 
         log.info("创建 JdbcSource: table={}, sql={}, splitColumn={}", table, sql, splitColumn);
-    }
-
-    @Override
-    protected Range<Long> getSplitColumnRange() {
-        String querySql = dialect.buildRangeQuery(table, sql, splitColumn);
-        log.info("查询分片范围: {}", querySql);
-
-        try (Connection conn = DriverManager.getConnection(url, username, password);
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(querySql)) {
-
-            if (rs.next()) {
-                long min = rs.getLong(1);
-                long max = rs.getLong(2);
-                log.info("分片范围: [{}, {}]", min, max);
-                return Range.between(min, max);
-            }
-            return Range.between(0L, 0L);
-        } catch (SQLException e) {
-            throw new RuntimeException("获取分片范围失败: " + e.getMessage(), e);
-        }
     }
 
     @Override
@@ -165,6 +136,12 @@ public class JdbcSource extends AbstractRangeSplitSource {
 
     @Override
     public TypeInformation<Row> getProducedType() {
+        // 如果配置了 schema，使用父类实现
+        if (getConfig().getSchema() != null) {
+            return super.getProducedType();
+        }
+
+        // 否则从数据库推断
         String sampleQuery = dialect.buildSampleQuery(table, sql);
         log.info("推断 Schema: {}", sampleQuery);
 
