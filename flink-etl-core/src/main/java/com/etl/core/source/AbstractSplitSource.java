@@ -39,6 +39,10 @@ public abstract class AbstractSplitSource<SplitT extends SourceSplit, Checkpoint
         return config;
     }
 
+    protected int getDefaultBatchSize() {
+        return 100;
+    }
+
     @Override
     public abstract SplitEnumerator<SplitT, CheckpointT> createEnumerator(SplitEnumeratorContext<SplitT> enumContext);
 

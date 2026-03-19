@@ -28,10 +28,9 @@ public class JdbcSourceReader extends BaseSourceReader<Row, Row, RangeSplit, Ran
 
     public JdbcSourceReader(
             Supplier<BaseSplitReader<Row, RangeSplit>> splitReaderSupplier,
-            Configuration config,
             SourceReaderContext context
     ) {
-        super(splitReaderSupplier, new RowRecordEmitter(), config, context);
+        super(splitReaderSupplier, new RowRecordEmitter(), new Configuration(), context);
     }
 
     @Override

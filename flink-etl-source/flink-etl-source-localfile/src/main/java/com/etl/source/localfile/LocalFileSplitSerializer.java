@@ -7,8 +7,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * LocalFileSplit 序列化器
@@ -16,7 +14,7 @@ import java.util.List;
  */
 public class LocalFileSplitSerializer implements SimpleVersionedSerializer<LocalFileSplit> {
 
-    private static final int VERSION = 1;
+    private static final int VERSION = 2;
 
     @Override
     public int getVersion() {
@@ -27,21 +25,7 @@ public class LocalFileSplitSerializer implements SimpleVersionedSerializer<Local
     public byte[] serialize(LocalFileSplit split) throws IOException {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
              DataOutputStream dos = new DataOutputStream(baos)) {
-
-            // 写入文件路径
             dos.writeUTF(split.getFilePath());
-
-            // 写入字段数量
-            List<String> fields = split.getFields();
-            if (fields == null) {
-                dos.writeInt(0);
-            } else {
-                dos.writeInt(fields.size());
-                for (String field : fields) {
-                    dos.writeUTF(field);
-                }
-            }
-
             dos.flush();
             return baos.toByteArray();
         }
@@ -49,24 +33,14 @@ public class LocalFileSplitSerializer implements SimpleVersionedSerializer<Local
 
     @Override
     public LocalFileSplit deserialize(int version, byte[] serialized) throws IOException {
-        if (version != VERSION) {
-            throw new IOException("版本不匹配，期望版本: " + VERSION + "，实际版本: " + version);
+        if (version > VERSION) {
+            throw new IOException("无法读取未来版本的数据，当前版本: " + VERSION + "，数据版本: " + version);
         }
 
         try (ByteArrayInputStream bais = new ByteArrayInputStream(serialized);
              DataInputStream dis = new DataInputStream(bais)) {
-
-            // 读取文件路径
             String filePath = dis.readUTF();
-
-            // 读取字段列表
-            int fieldCount = dis.readInt();
-            List<String> fields = new ArrayList<>(fieldCount);
-            for (int i = 0; i < fieldCount; i++) {
-                fields.add(dis.readUTF());
-            }
-
-            return new LocalFileSplit(filePath, fields);
+            return new LocalFileSplit(filePath);
         }
     }
 }

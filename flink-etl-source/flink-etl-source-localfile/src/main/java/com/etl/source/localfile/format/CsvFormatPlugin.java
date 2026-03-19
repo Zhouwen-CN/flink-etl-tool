@@ -21,7 +21,7 @@ import java.util.List;
 
 /**
  * CSV 格式解析插件
- * 要求配置 schema 定义字段名和类型
+ * 字段名和类型从 source.schema 配置中获取
  */
 @Slf4j
 @AutoService(FileFormatPlugin.class)
@@ -33,17 +33,7 @@ public class CsvFormatPlugin implements FileFormatPlugin {
     }
 
     @Override
-    public List<String> resolveFields(SourceConfig config, InputStream firstFile) {
-        // 字段名从 schema 获取
-        EtlSchema schema = config.getSchema();
-        if (schema == null) {
-            throw new SchemaConfigException("CSV Source 必须配置 schema");
-        }
-        return schema.getFieldNames();
-    }
-
-    @Override
-    public Iterable<Row> parse(SourceConfig config, InputStream inputStream, List<String> fields) {
+    public Iterable<Row> parse(SourceConfig config, InputStream inputStream) {
         EtlSchema schema = config.getSchema();
         if (schema == null) {
             throw new SchemaConfigException("CSV Source 必须配置 schema");

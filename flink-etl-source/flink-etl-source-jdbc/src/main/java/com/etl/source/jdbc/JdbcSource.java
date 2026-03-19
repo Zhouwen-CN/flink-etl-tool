@@ -65,7 +65,7 @@ public class JdbcSource extends AbstractRangeSplitSource {
         this.splitColumn = config.getString("splitColumn");
         Preconditions.checkNotNull(this.splitColumn, "splitColumn is null");
         this.sql = config.getString("sql");
-        this.batchSize = config.getInteger("batchSize", 100);
+        this.batchSize = config.getInteger("batchSize", super.getDefaultBatchSize());
         this.queryTimeout = config.getInteger("queryTimeout");
         this.dialect = dialect;
 
@@ -129,7 +129,6 @@ public class JdbcSource extends AbstractRangeSplitSource {
         // 创建 Reader
         return new JdbcSourceReader(
                 splitReaderSupplier,
-                new Configuration(),
                 readerContext
         );
     }

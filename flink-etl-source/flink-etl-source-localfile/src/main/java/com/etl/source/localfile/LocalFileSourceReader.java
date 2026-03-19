@@ -18,10 +18,9 @@ public class LocalFileSourceReader extends BaseSourceReader<Row, Row, LocalFileS
 
     public LocalFileSourceReader(
             Supplier<BaseSplitReader<Row, LocalFileSplit>> splitReaderSupplier,
-            Configuration config,
             SourceReaderContext context
     ) {
-        super(splitReaderSupplier, new LocalFileRecordEmitter(), config, context);
+        super(splitReaderSupplier, new LocalFileRecordEmitter(), new Configuration(), context);
     }
 
     @Override

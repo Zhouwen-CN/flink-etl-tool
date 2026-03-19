@@ -8,13 +8,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ServiceLoader;
 import java.util.stream.Stream;
 
 /**
@@ -24,36 +21,29 @@ import java.util.stream.Stream;
  * <p>职责：
  * <ul>
  *   <li>扫描文件系统，匹配通配符路径</li>
- *   <li>调用 FileFormatPlugin 解析字段名</li>
  *   <li>创建文件分片并分配给 Reader</li>
  * </ul>
+ *
+ * <p>注意：字段名和类型从 source.schema 配置中获取，无需从文件推断
  */
 @Slf4j
 public class LocalFileSplitEnumerator extends BaseSplitEnumerator<LocalFileSplit, LocalFileEnumCheckpoint> {
 
     private final String pathPattern;
     private final boolean recursive;
-    private final String format;
-    private final SourceConfig config;
-
-    private List<String> fields;
 
     /**
      * 构造函数
      *
      * @param context 枚举器上下文
      * @param config  配置
-     * @param format  格式类型
      */
     public LocalFileSplitEnumerator(
             SplitEnumeratorContext<LocalFileSplit> context,
-            SourceConfig config,
-            String format) {
+            SourceConfig config) {
         super(context);
-        this.config = config;
         this.pathPattern = config.getString("path");
         this.recursive = config.getBoolean("recursive", false);
-        this.format = format;
     }
 
     /**
@@ -62,18 +52,14 @@ public class LocalFileSplitEnumerator extends BaseSplitEnumerator<LocalFileSplit
      * @param context    枚举器上下文
      * @param checkpoint 检查点
      * @param config     配置
-     * @param format     格式类型
      */
     public LocalFileSplitEnumerator(
             SplitEnumeratorContext<LocalFileSplit> context,
             LocalFileEnumCheckpoint checkpoint,
-            SourceConfig config,
-            String format) {
+            SourceConfig config) {
         super(context, checkpoint);
-        this.config = config;
         this.pathPattern = config.getString("path");
         this.recursive = config.getBoolean("recursive", false);
-        this.format = format;
     }
 
     /**
@@ -99,13 +85,10 @@ public class LocalFileSplitEnumerator extends BaseSplitEnumerator<LocalFileSplit
 
         log.info("找到 {} 个匹配的文件", matchedFiles.size());
 
-        // 解析字段名（使用第一个文件）
-        resolveFields(matchedFiles.get(0));
-
         // 创建分片
         List<LocalFileSplit> splits = new ArrayList<>();
         for (File file : matchedFiles) {
-            splits.add(new LocalFileSplit(file.getAbsolutePath(), fields));
+            splits.add(new LocalFileSplit(file.getAbsolutePath()));
         }
 
         // 添加到待处理队列
@@ -199,35 +182,6 @@ public class LocalFileSplitEnumerator extends BaseSplitEnumerator<LocalFileSplit
         }
 
         return pathPattern.substring(lastSeparatorIndex + 1);
-    }
-
-    /**
-     * 解析字段名
-     */
-    private void resolveFields(File firstFile) {
-        // 动态加载格式插件
-        FileFormatPlugin formatPlugin = loadFormatPlugin(format);
-
-        try (InputStream inputStream = new FileInputStream(firstFile)) {
-            fields = formatPlugin.resolveFields(config, inputStream);
-            log.info("解析到 {} 个字段: {}", fields.size(), fields);
-        } catch (IOException e) {
-            throw new SourceConfigException("解析字段名失败: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 加载格式插件
-     */
-    private FileFormatPlugin loadFormatPlugin(String format) {
-        ServiceLoader<FileFormatPlugin> loader = ServiceLoader.load(FileFormatPlugin.class);
-        for (FileFormatPlugin plugin : loader) {
-            if (plugin.getType().equalsIgnoreCase(format)) {
-                log.info("加载格式插件: {}", plugin.getClass().getName());
-                return plugin;
-            }
-        }
-        throw new SourceConfigException("未找到格式插件: " + format);
     }
 
     @Override
