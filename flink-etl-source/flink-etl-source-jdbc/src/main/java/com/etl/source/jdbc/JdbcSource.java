@@ -103,10 +103,17 @@ public class JdbcSource extends AbstractRangeSplitSource {
     createEnumerator(SplitEnumeratorContext<RangeSplit> enumContext) {
         log.info("创建 SplitEnumerator");
 
-        Range<Long> range = getSplitColumnRange();
-        int parallelism = enumContext.currentParallelism();
-        List<RangeSplit> splits = calculateSplits(splitColumn, range, parallelism);
-        return new JdbcSplitEnumerator(splits, enumContext);
+        JdbcSplitConfig splitConfig = JdbcSplitConfig.builder()
+                .url(url)
+                .username(username)
+                .password(password)
+                .table(table)
+                .sql(sql)
+                .splitColumn(splitColumn)
+                .dialect(dialect)
+                .build();
+
+        return new JdbcSplitEnumerator(enumContext, splitConfig);
     }
 
     @Override
@@ -114,7 +121,18 @@ public class JdbcSource extends AbstractRangeSplitSource {
     restoreEnumerator(SplitEnumeratorContext<RangeSplit> enumContext,
                       RangeEnumCheckpoint checkpoint) {
         log.info("从检查点恢复 SplitEnumerator");
-        return new JdbcSplitEnumerator(enumContext, checkpoint);
+
+        JdbcSplitConfig splitConfig = JdbcSplitConfig.builder()
+                .url(url)
+                .username(username)
+                .password(password)
+                .table(table)
+                .sql(sql)
+                .splitColumn(splitColumn)
+                .dialect(dialect)
+                .build();
+
+        return new JdbcSplitEnumerator(enumContext, checkpoint, splitConfig);
     }
 
     @Override
