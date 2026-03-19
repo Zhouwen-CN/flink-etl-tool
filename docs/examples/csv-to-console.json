@@ -10,7 +10,6 @@
     "config": {
       "path": "docs/examples/data/*.csv",
       "format": "csv",
-      "recursive": false,
       "encoding": "UTF-8",
       "delimiter": ",",
       "skipHeader": true,

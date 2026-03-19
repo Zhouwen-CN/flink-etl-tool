@@ -71,9 +71,15 @@ public class JobBuilder {
 
         // 4. Table -> DataStream<Row>
         SinkConfig sinkConfig = config.getSink();
-        Table sinkTable = stEnv.from(sinkConfig.getInputTable());
-        DataStream<Row> resultStream = stEnv.toDataStream(sinkTable);
-        log.info("Table 转换为 DataStream");
+        String sinkInputTable = sinkConfig.getInputTable();
+        DataStream<Row> resultStream;
+        try {
+            Table sinkTable = stEnv.from(sinkInputTable);
+            resultStream = stEnv.toDataStream(sinkTable);
+            log.info("Table 转换为 DataStream");
+        } catch (Exception e) {
+            throw new IllegalArgumentException("无法从表 '" + sinkInputTable + "' 读取数据，请检查 inputTable 配置是否正确，或上游 source.outputTable / transform.outputTable 是否已正确配置", e);
+        }
 
         // 5. Sink 消费 DataStream
         SinkPlugin sinkPlugin = PluginLoader.loadSinkPlugin(sinkConfig.getType());

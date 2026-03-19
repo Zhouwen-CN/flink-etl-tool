@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
+import java.util.List;
 
 /**
  * 配置文件解析器
@@ -75,11 +76,30 @@ public class ConfigParser {
         if (config.getSource().getType() == null || config.getSource().getType().isEmpty()) {
             throw new IllegalArgumentException("缺少 source.type 配置");
         }
+        if (config.getSource().getOutputTable() == null || config.getSource().getOutputTable().isEmpty()) {
+            throw new IllegalArgumentException("缺少 source.outputTable 配置");
+        }
         if (config.getSink() == null) {
             throw new IllegalArgumentException("缺少 sink 配置");
         }
         if (config.getSink().getType() == null || config.getSink().getType().isEmpty()) {
             throw new IllegalArgumentException("缺少 sink.type 配置");
+        }
+        if (config.getSink().getInputTable() == null || config.getSink().getInputTable().isEmpty()) {
+            throw new IllegalArgumentException("缺少 sink.inputTable 配置");
+        }
+
+        // 校验 transforms
+        if (config.getTransforms() != null) {
+            for (int i = 0; i < config.getTransforms().size(); i++) {
+                TransformConfig transform = config.getTransforms().get(i);
+                if (transform.getType() == null || transform.getType().isEmpty()) {
+                    throw new IllegalArgumentException("缺少 transforms[" + i + "].type 配置");
+                }
+                if (transform.getOutputTable() == null || transform.getOutputTable().isEmpty()) {
+                    throw new IllegalArgumentException("缺少 transforms[" + i + "].outputTable 配置");
+                }
+            }
         }
     }
 }

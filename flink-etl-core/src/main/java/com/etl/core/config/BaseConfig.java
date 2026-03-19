@@ -61,7 +61,11 @@ public abstract class BaseConfig implements Serializable {
         if (value instanceof Integer) {
             return (Integer) value;
         }
-        return Integer.parseInt(String.valueOf(value));
+        try {
+            return Integer.parseInt(String.valueOf(value));
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("配置项 '" + key + "' 的值 '" + value + "' 无法转换为整数", e);
+        }
     }
 
     /**

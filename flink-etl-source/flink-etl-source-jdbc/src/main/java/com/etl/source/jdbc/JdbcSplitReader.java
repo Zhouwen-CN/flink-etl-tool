@@ -54,6 +54,9 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
                            String table, String sql, String splitColumn,
                            int batchSize, Integer queryTimeout,
                            JdbcDialect dialect) {
+        if (batchSize <= 0) {
+            throw new IllegalArgumentException("batchSize 必须大于 0，当前值: " + batchSize);
+        }
         this.url = url;
         this.username = username;
         this.password = password;

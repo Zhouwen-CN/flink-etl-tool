@@ -50,9 +50,11 @@ public class DefaultCheckpointSerializer<SplitT extends BaseSourceSplit,
     @Override
     @SuppressWarnings("unchecked")
     public CheckpointT deserialize(int version, byte[] serialized) throws IOException {
-        if (version != VERSION) {
-            throw new IOException("版本不匹配，期望版本: " + VERSION + "，实际版本: " + version);
+        if (version > VERSION) {
+            throw new IOException("无法读取未来版本的数据，当前版本: " + VERSION + "，数据版本: " + version);
         }
+        // 允许向后兼容：尝试直接反序列化
+        // 注意：如果序列化格式发生变化，需要在此添加版本迁移逻辑
         Kryo kryo = KRYO_THREAD_LOCAL.get();
         try (Input input = new Input(serialized)) {
             return (CheckpointT) kryo.readClassAndObject(input);

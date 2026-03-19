@@ -101,7 +101,7 @@ public class MySQLSinkFunction extends RichSinkFunction<Row> {
 
     private String buildSql() {
         String colList = Arrays.stream(columns)
-                .map(c -> "`" + c + "`")
+                .map(this::quoteIdentifier)
                 .collect(Collectors.joining(", "));
         String placeholders = Arrays.stream(columns)
                 .map(c -> "?")
@@ -109,13 +109,20 @@ public class MySQLSinkFunction extends RichSinkFunction<Row> {
 
         if ("upsert".equalsIgnoreCase(writeMode)) {
             String updateClause = Arrays.stream(columns)
-                    .map(c -> "`" + c + "` = VALUES(`" + c + "`)")
+                    .map(c -> quoteIdentifier(c) + " = VALUES(" + quoteIdentifier(c) + ")")
                     .collect(Collectors.joining(", "));
-            return String.format("INSERT INTO `%s` (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s",
-                    table, colList, placeholders, updateClause);
+            return String.format("INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s",
+                    quoteIdentifier(table), colList, placeholders, updateClause);
         } else {
-            return String.format("INSERT INTO `%s` (%s) VALUES (%s)",
-                    table, colList, placeholders);
+            return String.format("INSERT INTO %s (%s) VALUES (%s)",
+                    quoteIdentifier(table), colList, placeholders);
         }
+    }
+
+    /**
+     * 转义 MySQL 标识符（列名、表名）中的反引号，防止 SQL 注入
+     */
+    private String quoteIdentifier(String name) {
+        return "`" + name + "`";
     }
 }

@@ -15,6 +15,7 @@ import java.nio.file.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.stream.Stream;
 
 /**
  * 本地文件分片枚举器
@@ -41,8 +42,8 @@ public class LocalFileSplitEnumerator extends BaseSplitEnumerator<LocalFileSplit
      * 构造函数
      *
      * @param context 枚举器上下文
-     * @param config 配置
-     * @param format 格式类型
+     * @param config  配置
+     * @param format  格式类型
      */
     public LocalFileSplitEnumerator(
             SplitEnumeratorContext<LocalFileSplit> context,
@@ -58,10 +59,10 @@ public class LocalFileSplitEnumerator extends BaseSplitEnumerator<LocalFileSplit
     /**
      * 从检查点恢复的构造函数
      *
-     * @param context 枚举器上下文
+     * @param context    枚举器上下文
      * @param checkpoint 检查点
-     * @param config 配置
-     * @param format 格式类型
+     * @param config     配置
+     * @param format     格式类型
      */
     public LocalFileSplitEnumerator(
             SplitEnumeratorContext<LocalFileSplit> context,
@@ -73,6 +74,17 @@ public class LocalFileSplitEnumerator extends BaseSplitEnumerator<LocalFileSplit
         this.pathPattern = config.getString("path");
         this.recursive = config.getBoolean("recursive", false);
         this.format = format;
+    }
+
+    /**
+     * 查找路径中第一个通配符（* 或 ?）的位置
+     */
+    private static int findWildcardIndex(String pathPattern) {
+        int starIndex = pathPattern.indexOf('*');
+        int questionIndex = pathPattern.indexOf('?');
+        if (starIndex == -1) return questionIndex;
+        if (questionIndex == -1) return starIndex;
+        return Math.min(starIndex, questionIndex);
     }
 
     @Override
@@ -113,22 +125,28 @@ public class LocalFileSplitEnumerator extends BaseSplitEnumerator<LocalFileSplit
 
         log.debug("基础路径: {}, glob 模式: {}", basePath, globPattern);
 
+        if (basePath == null) {
+            throw new SourceConfigException("无法确定文件扫描的基础路径: " + pathPattern);
+        }
+
         // 创建 PathMatcher
         PathMatcher matcher = FileSystems.getDefault().getPathMatcher("glob:" + globPattern);
 
         try {
             if (recursive) {
                 // 递归遍历
-                Files.walk(basePath)
-                        .filter(Files::isRegularFile)
-                        .filter(path -> matcher.matches(basePath.relativize(path)))
-                        .forEach(path -> result.add(path.toFile()));
+                try (Stream<Path> pathStream = Files.walk(basePath)) {
+                    pathStream.filter(Files::isRegularFile)
+                            .filter(path -> matcher.matches(basePath.relativize(path)))
+                            .forEach(path -> result.add(path.toFile()));
+                }
             } else {
                 // 非递归遍历
-                Files.list(basePath)
-                        .filter(Files::isRegularFile)
-                        .filter(path -> matcher.matches(basePath.relativize(path)))
-                        .forEach(path -> result.add(path.toFile()));
+                try (Stream<Path> pathStream = Files.list(basePath)) {
+                    pathStream.filter(Files::isRegularFile)
+                            .filter(path -> matcher.matches(basePath.relativize(path)))
+                            .forEach(path -> result.add(path.toFile()));
+                }
             }
         } catch (IOException e) {
             throw new SourceConfigException("扫描文件失败: " + e.getMessage(), e);
@@ -142,21 +160,19 @@ public class LocalFileSplitEnumerator extends BaseSplitEnumerator<LocalFileSplit
      */
     private Path getBasePath(String pathPattern) {
         // 找到第一个通配符的位置
-        int wildcardIndex = pathPattern.indexOf('*');
-        if (wildcardIndex == -1) {
-            wildcardIndex = pathPattern.indexOf('?');
-        }
+        int wildcardIndex = findWildcardIndex(pathPattern);
 
         if (wildcardIndex == -1) {
-            // 没有通配符，直接返回路径
-            return Paths.get(pathPattern).getParent();
+            // 没有通配符，返回路径的父目录，为 null 时使用当前目录
+            Path parent = Paths.get(pathPattern).getParent();
+            return parent != null ? parent : Paths.get(".");
         }
 
         // 截取通配符之前的部分
         String basePath = pathPattern.substring(0, wildcardIndex);
         Path path = Paths.get(basePath);
 
-        // 如果路径以分隔符结尾，获取其父目录
+        // 如果路径以分隔符结尾，返回该路径
         if (basePath.endsWith("/") || basePath.endsWith("\\")) {
             return path;
         }
@@ -169,10 +185,7 @@ public class LocalFileSplitEnumerator extends BaseSplitEnumerator<LocalFileSplit
      */
     private String getGlobPattern(String pathPattern) {
         // 找到第一个通配符的位置
-        int wildcardIndex = pathPattern.indexOf('*');
-        if (wildcardIndex == -1) {
-            wildcardIndex = pathPattern.indexOf('?');
-        }
+        int wildcardIndex = findWildcardIndex(pathPattern);
 
         if (wildcardIndex == -1) {
             // 没有通配符，匹配文件名
@@ -215,13 +228,6 @@ public class LocalFileSplitEnumerator extends BaseSplitEnumerator<LocalFileSplit
             }
         }
         throw new SourceConfigException("未找到格式插件: " + format);
-    }
-
-    /**
-     * 获取字段名列表
-     */
-    public List<String> getFields() {
-        return fields;
     }
 
     @Override

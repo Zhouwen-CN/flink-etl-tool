@@ -135,7 +135,13 @@ public class CsvFormatPlugin implements FileFormatPlugin {
                         }
 
                         EtlField field = schema.getField(i);
-                        Object converted = TypeConverter.convert(value, field.getName(), field.getType());
+                        Object converted;
+                        try {
+                            converted = TypeConverter.convert(value, field.getName(), field.getType());
+                        } catch (Exception e) {
+                            throw new RuntimeException("CSV 字段类型转换失败: 字段名=" + field.getName()
+                                    + ", 字段类型=" + field.getType() + ", 原始值=" + value, e);
+                        }
                         row.setField(i, converted);
                     }
 
