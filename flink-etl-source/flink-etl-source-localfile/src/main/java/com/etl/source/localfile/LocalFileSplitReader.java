@@ -24,7 +24,7 @@ import java.util.*;
  *   <li>通过 FileFormatPlugin 解析文件内容</li>
  *   <li>直接返回 Flink Row 类型</li>
  *   <li>字段名从 Split 中获取，支持分布式环境</li>
- *   <li>格式插件动态加载，避免序列化问题</li>
+ *   <li>格式插件在构造时加载一次并缓存，避免重复 ServiceLoader 开销</li>
  * </ul>
  */
 @Slf4j
@@ -34,7 +34,7 @@ public class LocalFileSplitReader implements BaseSplitReader<Row, LocalFileSplit
     private static final int DEFAULT_BATCH_SIZE = 1000;
 
     private final SourceConfig config;
-    private final String format;
+    private final FileFormatPlugin formatPlugin;
     private final int batchSize;
 
     private final Queue<LocalFileSplit> pendingSplits = new ArrayDeque<>();
@@ -48,7 +48,7 @@ public class LocalFileSplitReader implements BaseSplitReader<Row, LocalFileSplit
 
     public LocalFileSplitReader(SourceConfig config, String format) {
         this.config = config;
-        this.format = format;
+        this.formatPlugin = loadFormatPlugin(format);
         Integer configBatchSize = config.getInteger("batchSize");
         this.batchSize = configBatchSize != null ? configBatchSize : DEFAULT_BATCH_SIZE;
     }
@@ -83,8 +83,7 @@ public class LocalFileSplitReader implements BaseSplitReader<Row, LocalFileSplit
             currentInputStream = new FileInputStream(split.getFilePath());
             currentFields = split.getFields();
 
-            // 动态加载格式插件
-            FileFormatPlugin formatPlugin = loadFormatPlugin(format);
+            // 使用构造时缓存的格式插件
             Iterable<Row> rows = formatPlugin.parse(config, currentInputStream, currentFields);
             currentRowIterator = rows.iterator();
             currentSplit = split;

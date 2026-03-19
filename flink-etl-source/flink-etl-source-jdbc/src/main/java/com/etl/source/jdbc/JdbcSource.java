@@ -64,7 +64,7 @@ public class JdbcSource extends AbstractRangeSplitSource {
         this.table = config.getString("table");
         this.splitColumn = config.getString("splitColumn");
         this.sql = config.getString("sql");
-        this.batchSize = config.getInteger("batchSize", 500);
+        this.batchSize = config.getInteger("batchSize", 100);
         this.queryTimeout = config.getInteger("queryTimeout");
         this.dialect = dialect;
 

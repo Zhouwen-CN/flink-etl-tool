@@ -99,7 +99,7 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
                     ResultSet.CONCUR_READ_ONLY
             );
 
-            // 设置 fetchSize（用于流式读取，MySQL 需设置为 Integer.MIN_VALUE）
+            // 设置 fetchSize
             currentStatement.setFetchSize(batchSize);
             if (queryTimeout != null) {
                 currentStatement.setQueryTimeout(queryTimeout);

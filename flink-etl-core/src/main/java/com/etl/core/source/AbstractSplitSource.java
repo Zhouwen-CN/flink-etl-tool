@@ -29,6 +29,16 @@ public abstract class AbstractSplitSource<SplitT extends SourceSplit, Checkpoint
         this.config = config;
     }
 
+    /**
+     * 获取 Source 配置
+     * 子类可通过此方法访问配置
+     *
+     * @return Source 配置
+     */
+    protected SourceConfig getConfig() {
+        return config;
+    }
+
     @Override
     public abstract SplitEnumerator<SplitT, CheckpointT> createEnumerator(SplitEnumeratorContext<SplitT> enumContext);
 

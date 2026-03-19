@@ -20,6 +20,9 @@ public abstract class BaseSplitState<SplitT extends BaseSourceSplit> implements 
     /** 关联的分片 */
     protected SplitT split;
 
+    /** 已读取的记录数 */
+    protected long recordsRead;
+
     /**
      * 构造函数
      *
@@ -27,12 +30,23 @@ public abstract class BaseSplitState<SplitT extends BaseSourceSplit> implements 
      */
     public BaseSplitState(SplitT split) {
         this.split = split;
+        this.recordsRead = 0;
+    }
+
+    /**
+     * 增加已读取记录数
+     *
+     * @param count 增加的数量
+     */
+    public void addRecordsRead(long count) {
+        this.recordsRead += count;
     }
 
     @Override
     public String toString() {
         return "BaseSplitState{" +
                 "split=" + split +
+                ", recordsRead=" + recordsRead +
                 '}';
     }
 }

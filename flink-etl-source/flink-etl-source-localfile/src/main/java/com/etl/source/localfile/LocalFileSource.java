@@ -30,12 +30,10 @@ import java.util.function.Supplier;
 @Slf4j
 public class LocalFileSource extends AbstractSplitSource<LocalFileSplit, LocalFileEnumCheckpoint> {
 
-    private final SourceConfig config;
     private final String format;
 
     public LocalFileSource(SourceConfig config) {
         super(config);
-        this.config = config;
 
         // 验证必要配置项
         validateConfig(config);
@@ -72,7 +70,7 @@ public class LocalFileSource extends AbstractSplitSource<LocalFileSplit, LocalFi
     public SplitEnumerator<LocalFileSplit, LocalFileEnumCheckpoint>
     createEnumerator(SplitEnumeratorContext<LocalFileSplit> enumContext) {
         log.info("创建 SplitEnumerator");
-        return new LocalFileSplitEnumerator(enumContext, config, format);
+        return new LocalFileSplitEnumerator(enumContext, getConfig(), format);
     }
 
     @Override
@@ -80,7 +78,7 @@ public class LocalFileSource extends AbstractSplitSource<LocalFileSplit, LocalFi
     restoreEnumerator(SplitEnumeratorContext<LocalFileSplit> enumContext,
                       LocalFileEnumCheckpoint checkpoint) {
         log.info("从检查点恢复 SplitEnumerator");
-        return new LocalFileSplitEnumerator(enumContext, checkpoint, config, format);
+        return new LocalFileSplitEnumerator(enumContext, checkpoint, getConfig(), format);
     }
 
     @Override
@@ -91,7 +89,7 @@ public class LocalFileSource extends AbstractSplitSource<LocalFileSplit, LocalFi
         // 字段名从 Split 中获取，支持分布式环境
         // 格式插件动态加载，避免序列化问题
         var splitReaderSupplier = (Supplier<BaseSplitReader<Row, LocalFileSplit>>) () ->
-                new LocalFileSplitReader(config, format);
+                new LocalFileSplitReader(getConfig(), format);
 
         // 创建 Reader
         return new LocalFileSourceReader(

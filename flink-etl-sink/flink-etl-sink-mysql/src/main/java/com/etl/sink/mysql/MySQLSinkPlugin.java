@@ -15,7 +15,6 @@ import org.apache.flink.types.Row;
 @Slf4j
 @AutoService(SinkPlugin.class)
 public class MySQLSinkPlugin implements SinkPlugin {
-    private static final long serialVersionUID = 1L;
 
     @Override
     public String getType() {
@@ -28,8 +27,8 @@ public class MySQLSinkPlugin implements SinkPlugin {
         String username = config.getString("username");
         String password = config.getString("password");
         String table = config.getString("table");
-        int batchSize = config.getInteger("batchSize") != null ? config.getInteger("batchSize") : 100;
-        String writeMode = config.getString("writeMode") != null ? config.getString("writeMode") : "insert";
+        int batchSize = config.getInteger("batchSize", 100);
+        String writeMode = config.getString("writeMode", "insert");
 
         if (url == null || username == null || password == null || table == null) {
             throw new IllegalArgumentException("MySQL Sink 缺少必要配置: url, username, password, table");
