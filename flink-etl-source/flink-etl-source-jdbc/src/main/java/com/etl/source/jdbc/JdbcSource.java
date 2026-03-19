@@ -4,6 +4,7 @@ import com.etl.core.config.SourceConfig;
 import com.etl.core.source.BaseSplitReader;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
+import com.etl.source.jdbc.dialect.MySQLDialect;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.Range;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -11,6 +12,7 @@ import org.apache.flink.api.connector.source.*;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
 import org.apache.flink.types.Row;
+import org.apache.flink.util.Preconditions;
 
 import java.sql.*;
 import java.util.List;
@@ -43,8 +45,20 @@ public class JdbcSource extends AbstractRangeSplitSource {
 
     public JdbcSource(SourceConfig config, JdbcDialect dialect) {
         super(config);
+        String url = config.getString("url");
+        Preconditions.checkNotNull(url, "url is null");
 
-        this.url = config.getString("url");
+        // mysql 需要加上这个参数，batchSize 参数才能生效
+        if (dialect instanceof MySQLDialect) {
+            if(!url.contains("useCursorFetch=true")){
+                if(url.contains("?")){
+                    url += "&useCursorFetch=true";
+                }else{
+                    url += "?useCursorFetch=true";
+                }
+            }
+        }
+        this.url = url;
         this.username = config.getString("username");
         this.password = config.getString("password");
         this.table = config.getString("table");
