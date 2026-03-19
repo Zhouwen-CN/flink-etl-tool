@@ -13,7 +13,7 @@
       "username": "root",
       "password": "Zw$8rb8*",
       "splitColumn": "id",
-      "fetchSize": 1000,
+      "batchSize": 1000,
       "schema": [
         { "name": "id", "type": "INT" },
         { "name": "name", "type": "STRING" },

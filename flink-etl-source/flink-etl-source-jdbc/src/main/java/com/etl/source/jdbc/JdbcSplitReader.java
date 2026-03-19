@@ -21,8 +21,8 @@ import java.util.Set;
  * <p>设计说明：
  * <ul>
  *   <li>每个分片创建独立的数据库连接</li>
- *   <li>支持分批读取，每批最多 fetchSize 条记录</li>
- *   <li>支持流式读取（MySQL 需设置 fetchSize=Integer.MIN_VALUE）</li>
+ *   <li>支持分批读取，每批最多 batchSize 条记录</li>
+ *   <li>支持流式读取（MySQL 需设置 batchSize=Integer.MIN_VALUE）</li>
  *   <li>直接返回 Flink Row 类型，无需额外包装</li>
  * </ul>
  */
@@ -35,7 +35,7 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
     private final String table;
     private final String sql;
     private final String splitColumn;
-    private final Integer fetchSize;
+    private final int batchSize;
     private final Integer queryTimeout;
     private final JdbcDialect dialect;
 
@@ -52,7 +52,7 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
 
     public JdbcSplitReader(String url, String username, String password,
                            String table, String sql, String splitColumn,
-                           Integer fetchSize, Integer queryTimeout,
+                           int batchSize, Integer queryTimeout,
                            JdbcDialect dialect) {
         this.url = url;
         this.username = username;
@@ -60,7 +60,7 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
         this.table = table;
         this.sql = sql;
         this.splitColumn = splitColumn;
-        this.fetchSize = fetchSize;
+        this.batchSize = batchSize;
         this.queryTimeout = queryTimeout;
         this.dialect = dialect;
     }
@@ -99,10 +99,8 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
                     ResultSet.CONCUR_READ_ONLY
             );
 
-            // 设置 fetchSize（MySQL 流式读取需要设置为 Integer.MIN_VALUE）
-            if (fetchSize != null) {
-                currentStatement.setFetchSize(fetchSize);
-            }
+            // 设置 fetchSize（用于流式读取，MySQL 需设置为 Integer.MIN_VALUE）
+            currentStatement.setFetchSize(batchSize);
             if (queryTimeout != null) {
                 currentStatement.setQueryTimeout(queryTimeout);
             }
@@ -133,7 +131,6 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
 
         try {
             int recordsInBatch = 0;
-            int batchSize = (fetchSize != null && fetchSize > 0) ? fetchSize : Integer.MAX_VALUE;
 
             // 读取一批记录
             while (hasNextRecord && recordsInBatch < batchSize) {

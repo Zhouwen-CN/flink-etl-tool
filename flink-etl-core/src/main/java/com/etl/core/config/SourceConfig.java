@@ -59,6 +59,18 @@ public class SourceConfig implements Serializable {
     }
 
     /**
+     * 获取整数类型的配置值，支持默认值
+     *
+     * @param key 配置键
+     * @param defaultValue 默认值
+     * @return 配置值
+     */
+    public int getInteger(String key, int defaultValue) {
+        Integer value = getInteger(key);
+        return value != null ? value : defaultValue;
+    }
+
+    /**
      * 获取配置值
      *
      * @param key 配置键
