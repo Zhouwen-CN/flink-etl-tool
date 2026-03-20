@@ -1,17 +1,13 @@
 package com.etl.core.source;
 
 import com.etl.core.config.SourceConfig;
-import com.etl.core.schema.EtlField;
 import com.etl.core.schema.EtlSchema;
-import com.etl.core.schema.FlinkTypeConverter;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.connector.source.*;
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
 import org.apache.flink.types.Row;
-
-import java.util.List;
 
 /**
  * 支持分片的 Source 抽象基类
@@ -73,14 +69,10 @@ public abstract class AbstractSplitSource<SplitT extends SourceSplit, Checkpoint
         }
 
         // 使用 schema 字段名重建 Row，确保 Flink Table API 能识别列名
-        List<String> fieldNames = schema.getFieldNames();
-        List<EtlField> fields = schema.getFields();
+        String[] fieldNames = schema.getFieldNames();
+        TypeInformation<?>[] fieldTypes = schema.getFieldTypes();
 
         // 构建 RowTypeInfo 用于 Flink Table API
-        TypeInformation<?>[] typeInfos = fields.stream()
-                .map(f -> FlinkTypeConverter.fromEtlType(f.getType()))
-                .toArray(TypeInformation<?>[]::new);
-        String[] names = fieldNames.toArray(new String[0]);
-        return Types.ROW_NAMED(names, typeInfos);
+        return Types.ROW_NAMED(fieldNames, fieldTypes);
     }
 }

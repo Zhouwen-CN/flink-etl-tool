@@ -1,6 +1,7 @@
 package com.etl.core.schema;
 
 import com.etl.core.exception.SchemaConfigException;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +25,8 @@ public class SchemaParser {
         }
 
         List<Map<String, Object>> fieldsConfig = (List<Map<String, Object>>) schemaConfig;
-        List<EtlField> fields = new ArrayList<>();
+        String[] fieldNames = new String[fieldsConfig.size()];
+        TypeInformation<?>[] fieldTypes = new TypeInformation<?>[fieldsConfig.size()];
 
         for (int i = 0; i < fieldsConfig.size(); i++) {
             Map<String, Object> fieldConfig = fieldsConfig.get(i);
@@ -53,9 +55,10 @@ public class SchemaParser {
                     "字段 [" + i + "] '" + name + "' 的类型 '" + typeName + "' 不支持");
             }
 
-            fields.add(new EtlField(name, type));
+            fieldNames[i] = name;
+            fieldTypes[i] = FlinkTypeConverter.fromEtlType(type);
         }
 
-        return new EtlSchema(fields);
+        return new EtlSchema(fieldNames, fieldTypes);
     }
 }
