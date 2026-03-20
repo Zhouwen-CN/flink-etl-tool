@@ -37,7 +37,7 @@ flink-etl-tool/
 ├── flink-etl-core/               # 核心框架（SPI 接口、配置解析、Job 编排、Source 抽象层）
 ├── flink-etl-client/             # 客户端启动器（打包入口）
 ├── flink-etl-source/             # Source 插件父模块
-│   ├── flink-etl-source-jdbc/    # JDBC 通用实现（含 AbstractRangeSplitSource）
+│   ├── flink-etl-source-jdbc/    # JDBC 通用实现
 │   ├── flink-etl-source-mysql/   # MySQL Source 插件
 │   └── flink-etl-source-localfile/  # 本地文件 Source 插件
 ├── flink-etl-sink/               # Sink 插件父模块
@@ -77,7 +77,6 @@ flink-etl-tool/
 
 **核心抽象类层次：**
 - `AbstractSplitSource<SplitT, CheckpointT>` - Source 基类（core 模块）
-  - `AbstractRangeSplitSource` - 范围分片 Source（jdbc 模块，适用于关系型数据库）
 
 **base 包组件（core 模块）：**
 - `BaseSourceSplit` - 分片接口
@@ -99,7 +98,7 @@ flink-etl-tool/
 2. 实现 `SourcePlugin` 接口
 3. 添加 `@AutoService(SourcePlugin.class)` 注解（自动生成 SPI 配置）
 4. 继承 `AbstractSplitSource` 实现分片读取
-   - 关系型数据库：继承 `AbstractRangeSplitSource`（jdbc 模块），实现 `getSplitColumnRange()` 方法
+   - 关系型数据库：直接继承 `AbstractSplitSource`，分片逻辑在 `JdbcSplitEnumerator` 中
    - 文件类：参考 `LocalFileSource` 实现
 5. 在 `flink-etl-client/pom.xml` 添加新模块依赖
 
@@ -193,9 +192,6 @@ public class MySourcePlugin implements SourcePlugin {
 
 **Source 抽象层：**
 - `AbstractSplitSource<SplitT, CheckpointT>`: Source 基类，封装 Flink FLIP-27 Source API
-- `AbstractRangeSplitSource`: 范围分片 Source（jdbc 模块），子类只需实现 `getSplitColumnRange()` 方法
-  - 自动根据并行度计算分片数量
-  - 自动处理分片大小均衡
 
 **Base 组件：**
 - `BaseSplitEnumerator`: 分片枚举器基类，自动处理分片分配和回收
@@ -208,7 +204,7 @@ public class MySourcePlugin implements SourcePlugin {
 - `RangeEnumCheckpoint`: 枚举器检查点
 
 **JDBC 实现：**
-- `JdbcSource`: JDBC Source 实现，继承 `AbstractRangeSplitSource`
+- `JdbcSource`: JDBC Source 实现，直接继承 `AbstractSplitSource`，分片逻辑由 `JdbcSplitEnumerator` 处理
 - `JdbcDialect`: 数据库方言接口
 - `MySQLDialect`: MySQL 方言实现
 
