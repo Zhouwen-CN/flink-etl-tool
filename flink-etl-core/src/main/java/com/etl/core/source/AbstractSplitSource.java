@@ -68,11 +68,7 @@ public abstract class AbstractSplitSource<SplitT extends SourceSplit, Checkpoint
             return null;
         }
 
-        // 使用 schema 字段名重建 Row，确保 Flink Table API 能识别列名
-        String[] fieldNames = schema.getFieldNames();
-        TypeInformation<?>[] fieldTypes = schema.getFieldTypes();
-
-        // 构建 RowTypeInfo 用于 Flink Table API
-        return Types.ROW_NAMED(fieldNames, fieldTypes);
+        // 直接使用 EtlSchema 中的字段名和类型
+        return Types.ROW_NAMED(schema.getFieldNames(), schema.getFieldTypes());
     }
 }
