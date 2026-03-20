@@ -59,14 +59,11 @@ public class LocalFileSplitEnumerator extends BaseSplitEnumerator<LocalFileSplit
     }
 
     /**
-     * 查找路径中第一个通配符（* 或 ?）的位置
+     * 查找路径中第一个通配符（*）的位置
+     * 支持 * 和 ** 通配符，不支持 ? 通配符
      */
     private static int findWildcardIndex(String pathPattern) {
-        int starIndex = pathPattern.indexOf('*');
-        int questionIndex = pathPattern.indexOf('?');
-        if (starIndex == -1) return questionIndex;
-        if (questionIndex == -1) return starIndex;
-        return Math.min(starIndex, questionIndex);
+        return pathPattern.indexOf('*');
     }
 
     @Override
