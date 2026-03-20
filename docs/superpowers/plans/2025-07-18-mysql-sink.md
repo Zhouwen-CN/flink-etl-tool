@@ -40,7 +40,7 @@ pom.xml                           # 确认 mysql-connector-java 已在 dependenc
 
 ## 配置参数
 
-Sink 配置中 `type: "mysql"`，`config` 字段支持：
+Sink 配置中 `type: "mysql"`，`localFileSourceConfig` 字段支持：
 
 | 参数 | 必填 | 说明 |
 |---|---|---|
@@ -208,8 +208,8 @@ public class MySQLSinkPlugin implements SinkPlugin {
     }
 
     @Override
-    public SinkFunction<?> createSink(SinkConfig config) {
-        return new MySQLSinkFunction(config);
+    public SinkFunction<?> createSink(SinkConfig localFileSourceConfig) {
+        return new MySQLSinkFunction(localFileSourceConfig);
     }
 }
 ```
@@ -241,7 +241,7 @@ com.etl.sink.mysql.MySQLSinkPlugin
   },
   "source": {
     "type": "mysql",
-    "config": {
+    "localFileSourceConfig": {
       "url": "jdbc:mysql://source-host:3306/source_db",
       "table": "source_table",
       "username": "root",
@@ -251,7 +251,7 @@ com.etl.sink.mysql.MySQLSinkPlugin
   },
   "sink": {
     "type": "mysql",
-    "config": {
+    "localFileSourceConfig": {
       "url": "jdbc:mysql://target-host:3306/target_db",
       "table": "target_table",
       "username": "root",

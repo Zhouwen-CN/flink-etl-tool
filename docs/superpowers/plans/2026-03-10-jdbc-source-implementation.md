@@ -653,7 +653,7 @@ git commit -m "feat: 添加 JdbcSourceReader 实现"
 ```java
 package com.etl.source.jdbc;
 
-import com.etl.core.config.SourceConfig;
+import com.etl.core.localFileSourceConfig.SourceConfig;
 import com.etl.source.jdbc.AbstractRangeSplitSource;
 import com.etl.core.source.PendingSplitsCheckpoint;
 import com.etl.source.jdbc.RangeSplit;
@@ -686,18 +686,18 @@ public class JdbcSource extends AbstractRangeSplitSource<Row> {
     private final Integer queryTimeout;
     private final JdbcDialect dialect;
 
-    public JdbcSource(SourceConfig config, JdbcDialect dialect) {
+    public JdbcSource(SourceConfig localFileSourceConfig, JdbcDialect dialect) {
         super(
-                config.getString("splitColumn"),
-                config.getInteger("splitSize")
+                localFileSourceConfig.getString("splitColumn"),
+                localFileSourceConfig.getInteger("splitSize")
         );
-        this.url = config.getString("url");
-        this.username = config.getString("username");
-        this.password = config.getString("password");
-        this.table = config.getString("table");
-        this.sql = config.getString("sql");
-        this.fetchSize = config.getInteger("fetchSize");
-        this.queryTimeout = config.getInteger("queryTimeout");
+        this.url = localFileSourceConfig.getString("url");
+        this.username = localFileSourceConfig.getString("username");
+        this.password = localFileSourceConfig.getString("password");
+        this.table = localFileSourceConfig.getString("table");
+        this.sql = localFileSourceConfig.getString("sql");
+        this.fetchSize = localFileSourceConfig.getInteger("fetchSize");
+        this.queryTimeout = localFileSourceConfig.getInteger("queryTimeout");
         this.dialect = dialect;
 
         logger.info("创建 JdbcSource: table={}, sql={}, splitColumn={}, splitSize={}",
@@ -836,7 +836,7 @@ git commit -m "feat: 添加 JdbcSource 核心实现"
 ```java
 package com.etl.source.mysql;
 
-import com.etl.core.config.SourceConfig;
+import com.etl.core.localFileSourceConfig.SourceConfig;
 import com.etl.core.spi.SourcePlugin;
 import com.etl.core.spi.SplitStrategy;
 import com.etl.source.jdbc.JdbcSource;
@@ -859,10 +859,10 @@ public class MySQLSourcePlugin implements SourcePlugin {
     }
 
     @Override
-    public Source<?, ?, ?> createSource(SourceConfig config) {
+    public Source<?, ?, ?> createSource(SourceConfig localFileSourceConfig) {
         logger.info("创建 MySQL Source");
         MySQLDialect dialect = new MySQLDialect();
-        return new JdbcSource(config, dialect);
+        return new JdbcSource(localFileSourceConfig, dialect);
     }
 
     @Override

@@ -59,7 +59,7 @@
 {
   "source": {
     "type": "mysql",
-    "config": {
+    "localFileSourceConfig": {
       "url": "jdbc:mysql://localhost:3306/mydb",
       "username": "root",
       "password": "password",
@@ -77,7 +77,7 @@
 {
   "source": {
     "type": "mysql",
-    "config": {
+    "localFileSourceConfig": {
       "url": "jdbc:mysql://localhost:3306/mydb",
       "username": "root",
       "password": "password",
@@ -137,7 +137,7 @@
 {
   "source": {
     "type": "localfile",
-    "config": {
+    "localFileSourceConfig": {
       "path": "/data/input/*.csv",
       "format": "csv",
       "encoding": "UTF-8",
@@ -162,7 +162,7 @@
 {
   "source": {
     "type": "localfile",
-    "config": {
+    "localFileSourceConfig": {
       "path": "/data/**/*.csv",
       "format": "csv",
       "recursive": true,
@@ -218,7 +218,7 @@
 {
   "sink": {
     "type": "console",
-    "config": {
+    "localFileSourceConfig": {
       "format": "json"
     }
   }
@@ -250,7 +250,7 @@
 {
   "sink": {
     "type": "mysql",
-    "config": {
+    "localFileSourceConfig": {
       "url": "jdbc:mysql://localhost:3306/mydb",
       "username": "root",
       "password": "password",
@@ -267,7 +267,7 @@
 {
   "sink": {
     "type": "mysql",
-    "config": {
+    "localFileSourceConfig": {
       "url": "jdbc:mysql://localhost:3306/mydb",
       "username": "root",
       "password": "password",
@@ -321,7 +321,7 @@
   "transforms": [
     {
       "type": "field-mapping",
-      "config": {
+      "localFileSourceConfig": {
         "mappings": [
           { "from": "id", "to": "user_id" },
           { "from": "name", "to": "user_name" }
@@ -339,7 +339,7 @@
   "transforms": [
     {
       "type": "field-mapping",
-      "config": {
+      "localFileSourceConfig": {
         "mappings": [
           { "from": "id", "to": "id" },
           { "from": "name", "to": "name" },
@@ -372,7 +372,7 @@
   },
   "source": {
     "type": "mysql",
-    "config": {
+    "localFileSourceConfig": {
       "url": "jdbc:mysql://localhost:3306/mydb",
       "username": "root",
       "password": "password",
@@ -384,7 +384,7 @@
   "transforms": [
     {
       "type": "field-mapping",
-      "config": {
+      "localFileSourceConfig": {
         "mappings": [
           { "from": "id", "to": "user_id" },
           { "from": "name", "to": "user_name" }
@@ -394,7 +394,7 @@
   ],
   "sink": {
     "type": "console",
-    "config": {
+    "localFileSourceConfig": {
       "format": "json"
     }
   }
@@ -412,7 +412,7 @@
   },
   "source": {
     "type": "localfile",
-    "config": {
+    "localFileSourceConfig": {
       "path": "/data/input/*.csv",
       "format": "csv",
       "skipHeader": true,
@@ -428,7 +428,7 @@
   },
   "sink": {
     "type": "mysql",
-    "config": {
+    "localFileSourceConfig": {
       "url": "jdbc:mysql://localhost:3306/mydb",
       "username": "root",
       "password": "password",
@@ -451,7 +451,7 @@
   },
   "source": {
     "type": "mysql",
-    "config": {
+    "localFileSourceConfig": {
       "url": "jdbc:mysql://source-host:3306/source_db",
       "username": "root",
       "password": "password",
@@ -463,7 +463,7 @@
   "transforms": [
     {
       "type": "field-mapping",
-      "config": {
+      "localFileSourceConfig": {
         "mappings": [
           { "from": "id", "to": "id" },
           { "from": "name", "to": "name" },
@@ -474,7 +474,7 @@
   ],
   "sink": {
     "type": "mysql",
-    "config": {
+    "localFileSourceConfig": {
       "url": "jdbc:mysql://target-host:3306/target_db",
       "username": "root",
       "password": "password",

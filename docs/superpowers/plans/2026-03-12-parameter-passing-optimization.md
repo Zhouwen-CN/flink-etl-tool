@@ -13,14 +13,16 @@
 ## 文件结构
 
 **新增文件：**
-- `flink-etl-core/src/main/java/com/etl/core/config/ConfigLoader.java` - 配置加载器，支持文件和 JSON 字符串两种方式
-- `flink-etl-core/src/test/java/com/etl/core/config/ConfigLoaderTest.java` - ConfigLoader 单元测试
-- `flink-etl-core/src/test/java/com/etl/core/config/ConfigParserTest.java` - ConfigParser 单元测试
+
+- `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/ConfigLoader.java` - 配置加载器，支持文件和 JSON
+  字符串两种方式
+- `flink-etl-core/src/test/java/com/etl/core/localFileSourceConfig/ConfigLoaderTest.java` - ConfigLoader 单元测试
+- `flink-etl-core/src/test/java/com/etl/core/localFileSourceConfig/ConfigParserTest.java` - ConfigParser 单元测试
 
 **修改文件：**
 - `flink-etl-client/src/main/java/com/etl/client/EtlClient.java` - 使用 ParameterTool 解析参数
 - `flink-etl-core/src/main/java/com/etl/core/job/JobExecutor.java` - 接受 JobConfig 对象
-- `flink-etl-core/src/main/java/com/etl/core/config/ConfigParser.java` - 添加 parseFromString 方法
+- `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/ConfigParser.java` - 添加 parseFromString 方法
 
 ---
 
@@ -29,15 +31,16 @@
 ### Task 1: 为 ConfigParser 添加 parseFromString 方法
 
 **Files:**
-- Create: `flink-etl-core/src/test/java/com/etl/core/config/ConfigParserTest.java`
-- Modify: `flink-etl-core/src/main/java/com/etl/core/config/ConfigParser.java`
+
+- Create: `flink-etl-core/src/test/java/com/etl/core/localFileSourceConfig/ConfigParserTest.java`
+- Modify: `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/ConfigParser.java`
 
 - [ ] **Step 1: 编写测试 - testParseFromString**
 
-创建测试文件 `flink-etl-core/src/test/java/com/etl/core/config/ConfigParserTest.java`：
+创建测试文件 `flink-etl-core/src/test/java/com/etl/core/localFileSourceConfig/ConfigParserTest.java`：
 
 ```java
-package com.etl.core.config;
+package com.etl.core.localFileSourceConfig;
 
 import org.junit.jupiter.api.Test;
 
@@ -57,21 +60,21 @@ class ConfigParserTest {
                 "  },\n" +
                 "  \"source\": {\n" +
                 "    \"type\": \"mysql\",\n" +
-                "    \"config\": {}\n" +
+                "    \"localFileSourceConfig\": {}\n" +
                 "  },\n" +
                 "  \"sink\": {\n" +
                 "    \"type\": \"console\",\n" +
-                "    \"config\": {}\n" +
+                "    \"localFileSourceConfig\": {}\n" +
                 "  }\n" +
                 "}";
 
-        JobConfig config = ConfigParser.parseFromString(json);
+        JobConfig localFileSourceConfig = ConfigParser.parseFromString(json);
 
-        assertNotNull(config);
-        assertEquals("test-job", config.getJob().getName());
-        assertEquals("batch", config.getJob().getMode());
-        assertEquals("mysql", config.getSource().getType());
-        assertEquals("console", config.getSink().getType());
+        assertNotNull(localFileSourceConfig);
+        assertEquals("test-job", localFileSourceConfig.getJob().getName());
+        assertEquals("batch", localFileSourceConfig.getJob().getMode());
+        assertEquals("mysql", localFileSourceConfig.getSource().getType());
+        assertEquals("console", localFileSourceConfig.getSink().getType());
     }
 
     @Test
@@ -92,7 +95,7 @@ Expected: FAIL - 方法 `parseFromString` 不存在
 
 - [ ] **Step 3: 实现 parseFromString 方法**
 
-修改 `flink-etl-core/src/main/java/com/etl/core/config/ConfigParser.java`，在第 35 行后添加：
+修改 `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/ConfigParser.java`，在第 35 行后添加：
 
 ```java
 /**
@@ -105,10 +108,10 @@ public static JobConfig parseFromString(String json) {
     logger.info("从字符串解析配置");
 
     try {
-        JobConfig config = mapper.readValue(json, JobConfig.class);
-        validate(config);
+        JobConfig localFileSourceConfig = mapper.readValue(json, JobConfig.class);
+        validate(localFileSourceConfig);
         logger.info("配置解析成功");
-        return config;
+        return localFileSourceConfig;
     } catch (Exception e) {
         String errorMsg = String.format("配置解析失败: %s", e.getMessage());
         logger.error(errorMsg, e);
@@ -125,7 +128,7 @@ Expected: PASS - 两个测试都通过
 - [ ] **Step 5: 提交**
 
 ```bash
-git add flink-etl-core/src/main/java/com/etl/core/config/ConfigParser.java flink-etl-core/src/test/java/com/etl/core/config/ConfigParserTest.java
+git add flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/ConfigParser.java flink-etl-core/src/test/java/com/etl/core/localFileSourceConfig/ConfigParserTest.java
 git commit -m "feat: 为 ConfigParser 添加 parseFromString 方法"
 ```
 
@@ -134,15 +137,16 @@ git commit -m "feat: 为 ConfigParser 添加 parseFromString 方法"
 ### Task 2: 创建 ConfigLoader 类
 
 **Files:**
-- Create: `flink-etl-core/src/main/java/com/etl/core/config/ConfigLoader.java`
-- Create: `flink-etl-core/src/test/java/com/etl/core/config/ConfigLoaderTest.java`
+
+- Create: `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/ConfigLoader.java`
+- Create: `flink-etl-core/src/test/java/com/etl/core/localFileSourceConfig/ConfigLoaderTest.java`
 
 - [ ] **Step 1: 编写 ConfigLoader 测试**
 
-创建 `flink-etl-core/src/test/java/com/etl/core/config/ConfigLoaderTest.java`：
+创建 `flink-etl-core/src/test/java/com/etl/core/localFileSourceConfig/ConfigLoaderTest.java`：
 
 ```java
-package com.etl.core.config;
+package com.etl.core.localFileSourceConfig;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -163,7 +167,7 @@ class ConfigLoaderTest {
 
     @Test
     void testLoadFromFile() throws Exception {
-        File configFile = tempDir.resolve("test-config.json").toFile();
+        File configFile = tempDir.resolve("test-localFileSourceConfig.json").toFile();
         String jsonContent = "{\n" +
                 "  \"job\": {\n" +
                 "    \"name\": \"test-job\",\n" +
@@ -171,27 +175,27 @@ class ConfigLoaderTest {
                 "  },\n" +
                 "  \"source\": {\n" +
                 "    \"type\": \"mysql\",\n" +
-                "    \"config\": {}\n" +
+                "    \"localFileSourceConfig\": {}\n" +
                 "  },\n" +
                 "  \"sink\": {\n" +
                 "    \"type\": \"console\",\n" +
-                "    \"config\": {}\n" +
+                "    \"localFileSourceConfig\": {}\n" +
                 "  }\n" +
                 "}";
         try (FileWriter writer = new FileWriter(configFile)) {
             writer.write(jsonContent);
         }
 
-        JobConfig config = ConfigLoader.loadFromFile(configFile.getAbsolutePath());
+        JobConfig localFileSourceConfig = ConfigLoader.loadFromFile(configFile.getAbsolutePath());
 
-        assertNotNull(config);
-        assertEquals("test-job", config.getJob().getName());
-        assertEquals("batch", config.getJob().getMode());
+        assertNotNull(localFileSourceConfig);
+        assertEquals("test-job", localFileSourceConfig.getJob().getName());
+        assertEquals("batch", localFileSourceConfig.getJob().getMode());
     }
 
     @Test
     void testLoadFromFileNotFound() {
-        String nonExistentPath = "/non/existent/path/config.json";
+        String nonExistentPath = "/non/existent/path/localFileSourceConfig.json";
 
         assertThrows(IllegalArgumentException.class, () -> {
             ConfigLoader.loadFromFile(nonExistentPath);
@@ -207,18 +211,18 @@ class ConfigLoaderTest {
                 "  },\n" +
                 "  \"source\": {\n" +
                 "    \"type\": \"mysql\",\n" +
-                "    \"config\": {}\n" +
+                "    \"localFileSourceConfig\": {}\n" +
                 "  },\n" +
                 "  \"sink\": {\n" +
                 "    \"type\": \"console\",\n" +
-                "    \"config\": {}\n" +
+                "    \"localFileSourceConfig\": {}\n" +
                 "  }\n" +
                 "}";
 
-        JobConfig config = ConfigLoader.loadFromJsonString(json);
+        JobConfig localFileSourceConfig = ConfigLoader.loadFromJsonString(json);
 
-        assertNotNull(config);
-        assertEquals("test-job", config.getJob().getName());
+        assertNotNull(localFileSourceConfig);
+        assertEquals("test-job", localFileSourceConfig.getJob().getName());
     }
 
     @Test
@@ -239,10 +243,10 @@ Expected: FAIL - 类 `ConfigLoader` 不存在
 
 - [ ] **Step 3: 实现 ConfigLoader 类**
 
-创建 `flink-etl-core/src/main/java/com/etl/core/config/ConfigLoader.java`：
+创建 `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/ConfigLoader.java`：
 
 ```java
-package com.etl.core.config;
+package com.etl.core.localFileSourceConfig;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -306,7 +310,7 @@ Expected: PASS - 四个测试都通过
 - [ ] **Step 5: 提交**
 
 ```bash
-git add flink-etl-core/src/main/java/com/etl/core/config/ConfigLoader.java flink-etl-core/src/test/java/com/etl/core/config/ConfigLoaderTest.java
+git add flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/ConfigLoader.java flink-etl-core/src/test/java/com/etl/core/localFileSourceConfig/ConfigLoaderTest.java
 git commit -m "feat: 创建 ConfigLoader 支持文件和 JSON 字符串加载"
 ```
 
@@ -327,19 +331,19 @@ git commit -m "feat: 创建 ConfigLoader 支持文件和 JSON 字符串加载"
 /**
  * 执行 Job（使用 JobConfig 对象）
  *
- * @param config Job 配置对象
+ * @param localFileSourceConfig Job 配置对象
  */
-public void execute(JobConfig config) {
-    logger.info("开始执行 Job: {}", config.getJob().getName());
+public void execute(JobConfig localFileSourceConfig) {
+    logger.info("开始执行 Job: {}", localFileSourceConfig.getJob().getName());
 
     try {
-        StreamExecutionEnvironment env = createExecutionEnvironment(config);
+        StreamExecutionEnvironment env = createExecutionEnvironment(localFileSourceConfig);
 
         JobBuilder jobBuilder = new JobBuilder(pluginLoader);
-        jobBuilder.build(env, config);
+        jobBuilder.build(env, localFileSourceConfig);
 
         logger.info("提交 Job 到 Flink 执行引擎");
-        env.execute(config.getJob().getName());
+        env.execute(localFileSourceConfig.getJob().getName());
 
         logger.info("Job 执行成功");
     } catch (Exception e) {
@@ -366,8 +370,8 @@ public void execute(String configPath) {
     logger.info("开始执行 Job（从文件: {}）", configPath);
 
     try {
-        JobConfig config = ConfigParser.parse(configPath);
-        execute(config);
+        JobConfig localFileSourceConfig = ConfigParser.parse(configPath);
+        execute(localFileSourceConfig);
     } catch (Exception e) {
         String errorMsg = String.format("Job 执行失败: %s", e.getMessage());
         logger.error(errorMsg, e);
@@ -403,7 +407,7 @@ git commit -m "refactor: JobExecutor 支持 JobConfig 对象参数"
 package com.etl.client;
 
 import com.etl.client.ConfigLoader;
-import com.etl.core.config.JobConfig;
+import com.etl.core.localFileSourceConfig.JobConfig;
 import com.etl.core.job.JobExecutor;
 import com.etl.core.spi.PluginLoader;
 import org.apache.flink.api.java.utils.ParameterTool;
@@ -422,21 +426,21 @@ public class EtlClient {
         try {
             ParameterTool params = ParameterTool.fromArgs(args);
 
-            JobConfig config = null;
+            JobConfig localFileSourceConfig = null;
 
             if (params.has("file")) {
                 String filePath = params.get("file");
                 logger.info("从文件加载配置: {}", filePath);
-                config = ConfigLoader.loadFromFile(filePath);
-            } else if (params.has("config")) {
-                String jsonString = params.get("config");
+                localFileSourceConfig = ConfigLoader.loadFromFile(filePath);
+            } else if (params.has("localFileSourceConfig")) {
+                String jsonString = params.get("localFileSourceConfig");
                 logger.info("从命令行 JSON 字符串加载配置");
-                config = ConfigLoader.loadFromJsonString(jsonString);
+                localFileSourceConfig = ConfigLoader.loadFromJsonString(jsonString);
             } else if (args.length == 1 && !args[0].startsWith("--")) {
-                logger.warn("使用已弃用的参数格式，建议使用 --file 或 --config 参数");
+                logger.warn("使用已弃用的参数格式，建议使用 --file 或 --localFileSourceConfig 参数");
                 String configPath = args[0];
                 logger.info("从文件加载配置: {}", configPath);
-                config = ConfigLoader.loadFromFile(configPath);
+                localFileSourceConfig = ConfigLoader.loadFromFile(configPath);
             } else {
                 printUsage();
                 System.exit(1);
@@ -445,7 +449,7 @@ public class EtlClient {
             PluginLoader pluginLoader = new PluginLoader();
 
             JobExecutor executor = new JobExecutor(pluginLoader);
-            executor.execute(config);
+            executor.execute(localFileSourceConfig);
 
             logger.info("Job 执行成功");
             System.exit(0);
@@ -463,16 +467,16 @@ public class EtlClient {
 
     private static void printUsage() {
         System.err.println("用法:");
-        System.err.println("  java -jar flink-etl-tool.jar --file <config.json>");
-        System.err.println("  java -jar flink-etl-tool.jar --config '<json-string>'");
+        System.err.println("  java -jar flink-etl-tool.jar --file <localFileSourceConfig.json>");
+        System.err.println("  java -jar flink-etl-tool.jar --localFileSourceConfig '<json-string>'");
         System.err.println();
         System.err.println("参数:");
         System.err.println("  --file <path>      从文件加载配置");
-        System.err.println("  --config <json>    从 JSON 字符串加载配置");
+        System.err.println("  --localFileSourceConfig <json>    从 JSON 字符串加载配置");
         System.err.println();
         System.err.println("示例:");
-        System.err.println("  java -jar flink-etl-tool.jar --file config/mysql-to-console.json");
-        System.err.println("  java -jar flink-etl-tool.jar --config '{\"job\":{\"name\":\"test\",\"mode\":\"batch\"},...}'");
+        System.err.println("  java -jar flink-etl-tool.jar --file localFileSourceConfig/mysql-to-console.json");
+        System.err.println("  java -jar flink-etl-tool.jar --localFileSourceConfig '{\"job\":{\"name\":\"test\",\"mode\":\"batch\"},...}'");
         System.err.println();
         System.err.println("注意:");
         System.err.println("  旧格式（直接传文件路径）已弃用，建议使用 --file 参数");
@@ -517,9 +521,9 @@ echo "===== 测试 1: 使用 --file 参数 ====="
 java -jar $JAR_FILE --file $CONFIG_FILE
 
 echo ""
-echo "===== 测试 2: 使用 --config 参数 ====="
+echo "===== 测试 2: 使用 --localFileSourceConfig 参数 ====="
 JSON_STRING=$(cat $CONFIG_FILE | tr '\n' ' ')
-java -jar $JAR_FILE --config "$JSON_STRING"
+java -jar $JAR_FILE --localFileSourceConfig "$JSON_STRING"
 
 echo ""
 echo "===== 测试 3: 文件不存在错误 ====="
@@ -527,7 +531,7 @@ java -jar $JAR_FILE --file /non/existent/file.json || echo "预期错误"
 
 echo ""
 echo "===== 测试 4: JSON 解析错误 ====="
-java -jar $JAR_FILE --config "{ invalid json }" || echo "预期错误"
+java -jar $JAR_FILE --localFileSourceConfig "{ invalid json }" || echo "预期错误"
 
 echo ""
 echo "===== 测试 5: 向后兼容性 ====="
@@ -568,14 +572,14 @@ git commit -m "test: 添加参数传递测试脚本"
 ETL 工具支持两种配置传递方式：
 
 1. **文件路径方式**：使用 `--file` 参数传递配置文件路径
-2. **JSON 字符串方式**：使用 `--config` 参数直接传递 JSON 配置
+2. **JSON 字符串方式**：使用 `--localFileSourceConfig` 参数直接传递 JSON 配置
 
 ## 使用方法
 
 ### 方式一：从文件加载配置
 
 ```bash
-java -jar flink-etl-client-1.0.0-SNAPSHOT.jar --file config/mysql-to-console.json
+java -jar flink-etl-client-1.0.0-SNAPSHOT.jar --file localFileSourceConfig/mysql-to-console.json
 ```
 
 **优点：**
@@ -586,7 +590,7 @@ java -jar flink-etl-client-1.0.0-SNAPSHOT.jar --file config/mysql-to-console.jso
 ### 方式二：从 JSON 字符串加载配置
 
 ```bash
-java -jar flink-etl-client-1.0.0-SNAPSHOT.jar --config '{"job":{"name":"test","mode":"batch"},"source":{...},"sink":{...}}'
+java -jar flink-etl-client-1.0.0-SNAPSHOT.jar --localFileSourceConfig '{"job":{"name":"test","mode":"batch"},"source":{...},"sink":{...}}'
 ```
 
 **优点：**
@@ -612,7 +616,7 @@ java -jar flink-etl-client-1.0.0-SNAPSHOT.jar --config '{"job":{"name":"test","m
 旧版本参数格式仍然支持（已弃用）：
 
 ```bash
-java -jar flink-etl-tool.jar config/mysql-to-console.json
+java -jar flink-etl-tool.jar localFileSourceConfig/mysql-to-console.json
 ```
 
 建议尽快迁移到新参数格式。
@@ -637,7 +641,7 @@ mvn clean package
 java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar --file docs/examples/mysql-to-console.json
 
 # 方式二：从 JSON 字符串加载配置
-java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar --config '{"job":{...},"source":{...},"sink":{...}}'
+java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar --localFileSourceConfig '{"job":{...},"source":{...},"sink":{...}}'
 
 # 安装到本地仓库
 mvn clean install -DskipTests
@@ -681,7 +685,7 @@ git commit -m "feat: 完成参数传递优化功能"
 ## 验收标准
 
 - [x] 支持 `--file` 参数传递配置文件路径
-- [x] 支持 `--config` 参数传递 JSON 字符串
+- [x] 支持 `--localFileSourceConfig` 参数传递 JSON 字符串
 - [x] 文件不存在时抛出明确的错误信息
 - [x] JSON 解析失败时抛出明确的错误信息
 - [x] 使用 Flink ParameterTool 处理参数

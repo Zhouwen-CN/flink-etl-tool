@@ -164,7 +164,7 @@ git commit -m "feat: 添加 Google Auto Service 依赖"
 ```java
 package com.etl.source.mysql;
 
-import com.etl.core.config.SourceConfig;
+import com.etl.core.localFileSourceConfig.SourceConfig;
 import com.etl.core.spi.SourcePlugin;
 import com.etl.core.spi.SplitStrategy;
 import com.etl.source.jdbc.JdbcSource;

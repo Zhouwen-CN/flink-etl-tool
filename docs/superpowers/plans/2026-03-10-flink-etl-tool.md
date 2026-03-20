@@ -22,12 +22,12 @@
 - `flink-etl-core/src/main/java/com/etl/core/spi/SinkPlugin.java` - Sink 插件接口
 - `flink-etl-core/src/main/java/com/etl/core/spi/SplitStrategy.java` - 分片策略枚举
 - `flink-etl-core/src/main/java/com/etl/core/spi/PluginLoader.java` - 插件加载器
-- `flink-etl-core/src/main/java/com/etl/core/config/SourceConfig.java` - Source 配置对象
-- `flink-etl-core/src/main/java/com/etl/core/config/TransformConfig.java` - Transform 配置对象
-- `flink-etl-core/src/main/java/com/etl/core/config/SinkConfig.java` - Sink 配置对象
-- `flink-etl-core/src/main/java/com/etl/core/config/JobMeta.java` - Job 元信息
-- `flink-etl-core/src/main/java/com/etl/core/config/JobConfig.java` - Job 完整配置
-- `flink-etl-core/src/main/java/com/etl/core/config/ConfigParser.java` - 配置解析器
+- `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/SourceConfig.java` - Source 配置对象
+- `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/TransformConfig.java` - Transform 配置对象
+- `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/SinkConfig.java` - Sink 配置对象
+- `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/JobMeta.java` - Job 元信息
+- `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/JobConfig.java` - Job 完整配置
+- `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/ConfigParser.java` - 配置解析器
 - `flink-etl-core/src/main/java/com/etl/core/source/RangeSplit.java` - 范围分片对象
 - `flink-etl-core/src/main/java/com/etl/core/source/AbstractSplitSource.java` - 分片 Source 抽象基类
 - `flink-etl-core/src/main/java/com/etl/core/source/AbstractRangeSplitSource.java` - 范围分片 Source 抽象基类
@@ -279,7 +279,7 @@ public enum SplitStrategy {
 ```java
 package com.etl.core.spi;
 
-import com.etl.core.config.SourceConfig;
+import com.etl.core.localFileSourceConfig.SourceConfig;
 import org.apache.flink.api.connector.source.Source;
 
 /**
@@ -299,10 +299,10 @@ public interface SourcePlugin {
     /**
      * 创建 Flink Source
      *
-     * @param config Source 配置
+     * @param localFileSourceConfig Source 配置
      * @return Flink Source 实例
      */
-    Source<?, ?, ?> createSource(SourceConfig config);
+    Source<?, ?, ?> createSource(SourceConfig localFileSourceConfig);
 
     /**
      * 获取分片策略描述
@@ -320,7 +320,7 @@ public interface SourcePlugin {
 ```java
 package com.etl.core.spi;
 
-import com.etl.core.config.TransformConfig;
+import com.etl.core.localFileSourceConfig.TransformConfig;
 import org.apache.flink.api.common.functions.MapFunction;
 
 /**
@@ -339,10 +339,10 @@ public interface TransformPlugin {
     /**
      * 创建转换函数
      *
-     * @param config Transform 配置
+     * @param localFileSourceConfig Transform 配置
      * @return Flink MapFunction
      */
-    MapFunction<?, ?> createTransform(TransformConfig config);
+    MapFunction<?, ?> createTransform(TransformConfig localFileSourceConfig);
 }
 ```
 
@@ -353,7 +353,7 @@ public interface TransformPlugin {
 ```java
 package com.etl.core.spi;
 
-import com.etl.core.config.SinkConfig;
+import com.etl.core.localFileSourceConfig.SinkConfig;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 
 /**
@@ -372,10 +372,10 @@ public interface SinkPlugin {
     /**
      * 创建 Sink 函数
      *
-     * @param config Sink 配置
+     * @param localFileSourceConfig Sink 配置
      * @return Flink SinkFunction
      */
-    SinkFunction<?> createSink(SinkConfig config);
+    SinkFunction<?> createSink(SinkConfig localFileSourceConfig);
 }
 ```
 
@@ -391,19 +391,20 @@ git commit -m "feat: 添加核心 SPI 接口定义"
 ### Task 3: 创建配置对象和解析器
 
 **文件:**
-- 创建: `flink-etl-core/src/main/java/com/etl/core/config/SourceConfig.java`
-- 创建: `flink-etl-core/src/main/java/com/etl/core/config/TransformConfig.java`
-- 创建: `flink-etl-core/src/main/java/com/etl/core/config/SinkConfig.java`
-- 创建: `flink-etl-core/src/main/java/com/etl/core/config/JobMeta.java`
-- 创建: `flink-etl-core/src/main/java/com/etl/core/config/JobConfig.java`
-- 创建: `flink-etl-core/src/main/java/com/etl/core/config/ConfigParser.java`
+
+- 创建: `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/SourceConfig.java`
+- 创建: `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/TransformConfig.java`
+- 创建: `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/SinkConfig.java`
+- 创建: `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/JobMeta.java`
+- 创建: `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/JobConfig.java`
+- 创建: `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/ConfigParser.java`
 
 - [ ] **Step 1: 创建 SourceConfig**
 
-创建文件: `flink-etl-core/src/main/java/com/etl/core/config/SourceConfig.java`
+创建文件: `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/SourceConfig.java`
 
 ```java
-package com.etl.core.config;
+package com.etl.core.localFileSourceConfig;
 
 import java.util.Map;
 
@@ -412,7 +413,7 @@ import java.util.Map;
  */
 public class SourceConfig {
     private String type;
-    private Map<String, Object> config;
+    private Map<String, Object> localFileSourceConfig;
 
     public String getType() {
         return type;
@@ -423,42 +424,42 @@ public class SourceConfig {
     }
 
     public Map<String, Object> getConfig() {
-        return config;
+        return localFileSourceConfig;
     }
 
-    public void setConfig(Map<String, Object> config) {
-        this.config = config;
+    public void setConfig(Map<String, Object> localFileSourceConfig) {
+        this.localFileSourceConfig = localFileSourceConfig;
     }
 
     /**
      * 获取字符串配置
      */
     public String getString(String key) {
-        return config != null ? (String) config.get(key) : null;
+        return localFileSourceConfig != null ? (String) localFileSourceConfig.get(key) : null;
     }
 
     /**
      * 获取整数配置
      */
     public Integer getInteger(String key) {
-        return config != null ? (Integer) config.get(key) : null;
+        return localFileSourceConfig != null ? (Integer) localFileSourceConfig.get(key) : null;
     }
 
     /**
      * 获取对象配置
      */
     public Object get(String key) {
-        return config != null ? config.get(key) : null;
+        return localFileSourceConfig != null ? localFileSourceConfig.get(key) : null;
     }
 }
 ```
 
 - [ ] **Step 2: 创建 TransformConfig**
 
-创建文件: `flink-etl-core/src/main/java/com/etl/core/config/TransformConfig.java`
+创建文件: `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/TransformConfig.java`
 
 ```java
-package com.etl.core.config;
+package com.etl.core.localFileSourceConfig;
 
 import java.util.Map;
 
@@ -467,7 +468,7 @@ import java.util.Map;
  */
 public class TransformConfig {
     private String type;
-    private Map<String, Object> config;
+    private Map<String, Object> localFileSourceConfig;
 
     public String getType() {
         return type;
@@ -478,28 +479,28 @@ public class TransformConfig {
     }
 
     public Map<String, Object> getConfig() {
-        return config;
+        return localFileSourceConfig;
     }
 
-    public void setConfig(Map<String, Object> config) {
-        this.config = config;
+    public void setConfig(Map<String, Object> localFileSourceConfig) {
+        this.localFileSourceConfig = localFileSourceConfig;
     }
 
     /**
      * 获取对象配置
      */
     public Object get(String key) {
-        return config != null ? config.get(key) : null;
+        return localFileSourceConfig != null ? localFileSourceConfig.get(key) : null;
     }
 }
 ```
 
 - [ ] **Step 3: 创建 SinkConfig**
 
-创建文件: `flink-etl-core/src/main/java/com/etl/core/config/SinkConfig.java`
+创建文件: `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/SinkConfig.java`
 
 ```java
-package com.etl.core.config;
+package com.etl.core.localFileSourceConfig;
 
 import java.util.Map;
 
@@ -508,7 +509,7 @@ import java.util.Map;
  */
 public class SinkConfig {
     private String type;
-    private Map<String, Object> config;
+    private Map<String, Object> localFileSourceConfig;
 
     public String getType() {
         return type;
@@ -519,42 +520,42 @@ public class SinkConfig {
     }
 
     public Map<String, Object> getConfig() {
-        return config;
+        return localFileSourceConfig;
     }
 
-    public void setConfig(Map<String, Object> config) {
-        this.config = config;
+    public void setConfig(Map<String, Object> localFileSourceConfig) {
+        this.localFileSourceConfig = localFileSourceConfig;
     }
 
     /**
      * 获取字符串配置
      */
     public String getString(String key) {
-        return config != null ? (String) config.get(key) : null;
+        return localFileSourceConfig != null ? (String) localFileSourceConfig.get(key) : null;
     }
 
     /**
      * 获取整数配置
      */
     public Integer getInteger(String key) {
-        return config != null ? (Integer) config.get(key) : null;
+        return localFileSourceConfig != null ? (Integer) localFileSourceConfig.get(key) : null;
     }
 
     /**
      * 获取对象配置
      */
     public Object get(String key) {
-        return config != null ? config.get(key) : null;
+        return localFileSourceConfig != null ? localFileSourceConfig.get(key) : null;
     }
 }
 ```
 
 - [ ] **Step 4: 创建 JobMeta**
 
-创建文件: `flink-etl-core/src/main/java/com/etl/core/config/JobMeta.java`
+创建文件: `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/JobMeta.java`
 
 ```java
-package com.etl.core.config;
+package com.etl.core.localFileSourceConfig;
 
 /**
  * Job 元信息
@@ -583,10 +584,10 @@ public class JobMeta {
 
 - [ ] **Step 5: 创建 JobConfig**
 
-创建文件: `flink-etl-core/src/main/java/com/etl/core/config/JobConfig.java`
+创建文件: `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/JobConfig.java`
 
 ```java
-package com.etl.core.config;
+package com.etl.core.localFileSourceConfig;
 
 /**
  * Job 完整配置
@@ -633,10 +634,10 @@ public class JobConfig {
 
 - [ ] **Step 6: 创建 ConfigParser**
 
-创建文件: `flink-etl-core/src/main/java/com/etl/core/config/ConfigParser.java`
+创建文件: `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/ConfigParser.java`
 
 ```java
-package com.etl.core.config;
+package com.etl.core.localFileSourceConfig;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -661,10 +662,10 @@ public class ConfigParser {
         logger.info("解析配置文件: {}", configPath);
 
         try {
-            JobConfig config = mapper.readValue(new File(configPath), JobConfig.class);
-            validate(config);
+            JobConfig localFileSourceConfig = mapper.readValue(new File(configPath), JobConfig.class);
+            validate(localFileSourceConfig);
             logger.info("配置文件解析成功");
-            return config;
+            return localFileSourceConfig;
         } catch (Exception e) {
             String errorMsg = String.format("配置文件解析失败: %s", e.getMessage());
             logger.error(errorMsg, e);
@@ -675,28 +676,28 @@ public class ConfigParser {
     /**
      * 校验配置完整性
      *
-     * @param config Job 配置
+     * @param localFileSourceConfig Job 配置
      */
-    private static void validate(JobConfig config) {
-        if (config.getJob() == null) {
+    private static void validate(JobConfig localFileSourceConfig) {
+        if (localFileSourceConfig.getJob() == null) {
             throw new IllegalArgumentException("缺少 job 配置");
         }
-        if (config.getJob().getName() == null || config.getJob().getName().isEmpty()) {
+        if (localFileSourceConfig.getJob().getName() == null || localFileSourceConfig.getJob().getName().isEmpty()) {
             throw new IllegalArgumentException("缺少 job.name 配置");
         }
-        if (config.getJob().getMode() == null || config.getJob().getMode().isEmpty()) {
+        if (localFileSourceConfig.getJob().getMode() == null || localFileSourceConfig.getJob().getMode().isEmpty()) {
             throw new IllegalArgumentException("缺少 job.mode 配置");
         }
-        if (config.getSource() == null) {
+        if (localFileSourceConfig.getSource() == null) {
             throw new IllegalArgumentException("缺少 source 配置");
         }
-        if (config.getSource().getType() == null || config.getSource().getType().isEmpty()) {
+        if (localFileSourceConfig.getSource().getType() == null || localFileSourceConfig.getSource().getType().isEmpty()) {
             throw new IllegalArgumentException("缺少 source.type 配置");
         }
-        if (config.getSink() == null) {
+        if (localFileSourceConfig.getSink() == null) {
             throw new IllegalArgumentException("缺少 sink 配置");
         }
-        if (config.getSink().getType() == null || config.getSink().getType().isEmpty()) {
+        if (localFileSourceConfig.getSink().getType() == null || localFileSourceConfig.getSink().getType().isEmpty()) {
             throw new IllegalArgumentException("缺少 sink.type 配置");
         }
     }
@@ -706,7 +707,7 @@ public class ConfigParser {
 - [ ] **Step 7: 提交配置解析层**
 
 ```bash
-git add flink-etl-core/src/main/java/com/etl/core/config/
+git add flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/
 git commit -m "feat: 添加配置对象和解析器"
 ```
 
@@ -1034,7 +1035,7 @@ git commit -m "feat: 添加 Flink Source API 封装层"
 ```java
 package com.etl.core.job;
 
-import com.etl.core.config.JobConfig;
+import com.etl.core.localFileSourceConfig.JobConfig;
 import com.etl.core.spi.PluginLoader;
 import com.etl.core.spi.SinkPlugin;
 import com.etl.core.spi.SourcePlugin;
@@ -1063,34 +1064,34 @@ public class JobBuilder {
      * 构建 Flink Job
      *
      * @param env    Flink 执行环境
-     * @param config Job 配置
+     * @param localFileSourceConfig Job 配置
      */
-    public void build(StreamExecutionEnvironment env, JobConfig config) {
-        logger.info("开始构建 Flink Job: {}", config.getJob().getName());
+    public void build(StreamExecutionEnvironment env, JobConfig localFileSourceConfig) {
+        logger.info("开始构建 Flink Job: {}", localFileSourceConfig.getJob().getName());
 
         // 1. 加载 Source 插件
-        SourcePlugin sourcePlugin = pluginLoader.loadSourcePlugin(config.getSource().getType());
-        Source<?, ?, ?> source = sourcePlugin.createSource(config.getSource());
+        SourcePlugin sourcePlugin = pluginLoader.loadSourcePlugin(localFileSourceConfig.getSource().getType());
+        Source<?, ?, ?> source = sourcePlugin.createSource(localFileSourceConfig.getSource());
 
         // 2. 创建 DataStream
         DataStream<?> stream = env.fromSource(
                 source,
                 WatermarkStrategy.noWatermarks(),
-                "source-" + config.getSource().getType()
+                "source-" + localFileSourceConfig.getSource().getType()
         );
 
         logger.info("Source 创建成功");
 
         // 3. 应用 Transform（如果配置）
-        if (config.getTransform() != null) {
-            TransformPlugin transformPlugin = pluginLoader.loadTransformPlugin(config.getTransform().getType());
-            stream = stream.map(transformPlugin.createTransform(config.getTransform()));
+        if (localFileSourceConfig.getTransform() != null) {
+            TransformPlugin transformPlugin = pluginLoader.loadTransformPlugin(localFileSourceConfig.getTransform().getType());
+            stream = stream.map(transformPlugin.createTransform(localFileSourceConfig.getTransform()));
             logger.info("Transform 应用成功");
         }
 
         // 4. 加载 Sink 插件并写入
-        SinkPlugin sinkPlugin = pluginLoader.loadSinkPlugin(config.getSink().getType());
-        stream.addSink(sinkPlugin.createSink(config.getSink()));
+        SinkPlugin sinkPlugin = pluginLoader.loadSinkPlugin(localFileSourceConfig.getSink().getType());
+        stream.addSink(sinkPlugin.createSink(localFileSourceConfig.getSink()));
 
         logger.info("Sink 创建成功");
         logger.info("Flink Job 构建完成");
@@ -1105,8 +1106,8 @@ public class JobBuilder {
 ```java
 package com.etl.core.job;
 
-import com.etl.core.config.ConfigParser;
-import com.etl.core.config.JobConfig;
+import com.etl.core.localFileSourceConfig.ConfigParser;
+import com.etl.core.localFileSourceConfig.JobConfig;
 import com.etl.core.spi.PluginLoader;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
@@ -1136,18 +1137,18 @@ public class JobExecutor {
 
         try {
             // 1. 解析配置
-            JobConfig config = ConfigParser.parse(configPath);
+            JobConfig localFileSourceConfig = ConfigParser.parse(configPath);
 
             // 2. 创建 Flink 执行环境
-            StreamExecutionEnvironment env = createExecutionEnvironment(config);
+            StreamExecutionEnvironment env = createExecutionEnvironment(localFileSourceConfig);
 
             // 3. 构建 Job
             JobBuilder jobBuilder = new JobBuilder(pluginLoader);
-            jobBuilder.build(env, config);
+            jobBuilder.build(env, localFileSourceConfig);
 
             // 4. 执行 Job
             logger.info("提交 Job 到 Flink 执行引擎");
-            env.execute(config.getJob().getName());
+            env.execute(localFileSourceConfig.getJob().getName());
 
             logger.info("Job 执行成功");
         } catch (Exception e) {
@@ -1160,11 +1161,11 @@ public class JobExecutor {
     /**
      * 根据配置创建执行环境
      *
-     * @param config Job 配置
+     * @param localFileSourceConfig Job 配置
      * @return Flink 执行环境
      */
-    private StreamExecutionEnvironment createExecutionEnvironment(JobConfig config) {
-        String mode = config.getJob().getMode();
+    private StreamExecutionEnvironment createExecutionEnvironment(JobConfig localFileSourceConfig) {
+        String mode = localFileSourceConfig.getJob().getMode();
         logger.info("创建 Flink 执行环境: mode={}", mode);
 
         if ("batch".equals(mode)) {
@@ -1214,8 +1215,8 @@ public class EtlApplication {
 
     public static void main(String[] args) {
         if (args.length < 1) {
-            System.err.println("用法: java -jar etl-tool.jar <config.json>");
-            System.err.println("示例: java -jar etl-tool.jar config/mysql-to-console.json");
+            System.err.println("用法: java -jar etl-tool.jar <localFileSourceConfig.json>");
+            System.err.println("示例: java -jar etl-tool.jar localFileSourceConfig/mysql-to-console.json");
             System.exit(1);
         }
 
@@ -1330,7 +1331,7 @@ git commit -m "feat: 添加 CLI 入口"
 ```java
 package com.etl.sink.console;
 
-import com.etl.core.config.SinkConfig;
+import com.etl.core.localFileSourceConfig.SinkConfig;
 import com.etl.core.spi.SinkPlugin;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.slf4j.Logger;
@@ -1349,8 +1350,8 @@ public class ConsoleSinkPlugin implements SinkPlugin {
     }
 
     @Override
-    public SinkFunction<?> createSink(SinkConfig config) {
-        String format = config.getString("format");
+    public SinkFunction<?> createSink(SinkConfig localFileSourceConfig) {
+        String format = localFileSourceConfig.getString("format");
         logger.info("创建 Console Sink, format={}", format);
 
         return new ConsoleSinkFunction(format);
@@ -1442,7 +1443,7 @@ git commit -m "feat: 添加 Console Sink 插件"
 ```java
 package com.etl.transform;
 
-import com.etl.core.config.TransformConfig;
+import com.etl.core.localFileSourceConfig.TransformConfig;
 import com.etl.core.spi.TransformPlugin;
 import org.apache.flink.api.common.functions.MapFunction;
 import org.slf4j.Logger;
@@ -1464,7 +1465,7 @@ public class FieldMappingTransformPlugin implements TransformPlugin {
     }
 
     @Override
-    public MapFunction<?, ?> createTransform(TransformConfig config) {
+    public MapFunction<?, ?> createTransform(TransformConfig localFileSourceConfig) {
         logger.info("创建字段映射转换插件");
 
         // 简化实现：这里返回一个简单的 MapFunction
@@ -1525,7 +1526,7 @@ git commit -m "feat: 添加字段映射转换插件"
   },
   "source": {
     "type": "mysql",
-    "config": {
+    "localFileSourceConfig": {
       "url": "jdbc:mysql://localhost:3306/test_db",
       "table": "user_table",
       "username": "root",
@@ -1536,7 +1537,7 @@ git commit -m "feat: 添加字段映射转换插件"
   },
   "transform": {
     "type": "field-mapping",
-    "config": {
+    "localFileSourceConfig": {
       "mappings": [
         { "from": "id", "to": "user_id" },
         { "from": "name", "to": "user_name" }
@@ -1562,7 +1563,7 @@ git commit -m "feat: 添加字段映射转换插件"
   },
   "source": {
     "type": "file",
-    "config": {
+    "localFileSourceConfig": {
       "path": "/data/input/users.csv",
       "format": "csv",
       "fields": ["id", "name", "age", "email"]

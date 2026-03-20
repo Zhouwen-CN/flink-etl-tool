@@ -51,7 +51,7 @@
 {
   "source": {
     "type": "localfile",
-    "config": {
+    "localFileSourceConfig": {
       "path": "/data/users.csv",
       "format": "csv",
       "skipHeader": true,
@@ -370,10 +370,10 @@ public class FlinkTypeConverter {
 ```java
 // SourceConfig 新增方法
 public EtlSchema getSchema() {
-    if (config == null) {
+    if (localFileSourceConfig == null) {
         return null;
     }
-    return SchemaParser.parse(config.get("schema"));
+    return SchemaParser.parse(localFileSourceConfig.get("schema"));
 }
 ```
 
@@ -435,9 +435,9 @@ public class CsvFormatPlugin implements FileFormatPlugin {
     }
 
     @Override
-    public List<String> resolveFields(SourceConfig config, InputStream firstFile) {
+    public List<String> resolveFields(SourceConfig localFileSourceConfig, InputStream firstFile) {
         // 字段名从 schema 获取
-        EtlSchema schema = config.getSchema();
+        EtlSchema schema = localFileSourceConfig.getSchema();
         if (schema == null) {
             throw new SchemaConfigException("CSV Source 必须配置 schema");
         }
@@ -445,20 +445,20 @@ public class CsvFormatPlugin implements FileFormatPlugin {
     }
 
     @Override
-    public Iterable<Row> parse(SourceConfig config, InputStream inputStream, List<String> fields) {
-        EtlSchema schema = config.getSchema();
+    public Iterable<Row> parse(SourceConfig localFileSourceConfig, InputStream inputStream, List<String> fields) {
+        EtlSchema schema = localFileSourceConfig.getSchema();
         if (schema == null) {
             throw new SchemaConfigException("CSV Source 必须配置 schema");
         }
 
-        String encoding = config.getString("encoding");
+        String encoding = localFileSourceConfig.getString("encoding");
         Charset charset = encoding != null ? Charset.forName(encoding) : StandardCharsets.UTF_8;
 
-        String delimiter = config.getString("delimiter");
+        String delimiter = localFileSourceConfig.getString("delimiter");
         char delim = delimiter != null ? delimiter.charAt(0) : ',';
 
         // skipHeader: 是否跳过 CSV 第一行（默认 true）
-        boolean skipHeader = config.getBoolean("skipHeader", true);
+        boolean skipHeader = localFileSourceConfig.getBoolean("skipHeader", true);
 
         CSVFormat csvFormat = CSVFormat.DEFAULT.builder()
                 .setDelimiter(delim)
@@ -653,12 +653,12 @@ private EtlFieldType inferFieldType(int sqlType) {
 ```java
 public class JdbcSource extends AbstractRangeSplitSource<Row> {
 
-    public JdbcSource(SourceConfig config, JdbcDialect dialect) {
-        super(config.getString("splitColumn"));
+    public JdbcSource(SourceConfig localFileSourceConfig, JdbcDialect dialect) {
+        super(localFileSourceConfig.getString("splitColumn"));
         // ... 其他初始化
 
         // 解析 schema（可选）
-        this.schema = config.getSchema();
+        this.schema = localFileSourceConfig.getSchema();
     }
 
     @Override

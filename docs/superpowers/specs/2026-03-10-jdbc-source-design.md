@@ -163,7 +163,7 @@ public class MySQLDialect implements JdbcDialect {
 ```json
 {
   "type": "mysql",
-  "config": {
+  "localFileSourceConfig": {
     "url": "jdbc:mysql://localhost:3306/test_db",
     "table": "user_table",
     "username": "root",
@@ -181,7 +181,7 @@ public class MySQLDialect implements JdbcDialect {
 ```json
 {
   "type": "mysql",
-  "config": {
+  "localFileSourceConfig": {
     "url": "jdbc:mysql://localhost:3306/test_db",
     "sql": "SELECT id, name FROM user_table WHERE status='active'",
     "username": "root",
@@ -378,8 +378,8 @@ public class PostgreSQLDialect implements JdbcDialect {
 
 public class PostgreSQLSourcePlugin implements SourcePlugin {
     @Override
-    public Source<?, ?, ?> createSource(SourceConfig config) {
-        return new JdbcSource(config, new PostgreSQLDialect());
+    public Source<?, ?, ?> createSource(SourceConfig localFileSourceConfig) {
+        return new JdbcSource(localFileSourceConfig, new PostgreSQLDialect());
     }
 }
 ```

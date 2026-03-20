@@ -5,14 +5,14 @@
 ETL 工具支持两种配置传递方式：
 
 1. **文件路径方式**：使用 `--file` 参数传递配置文件路径
-2. **JSON 字符串方式**：使用 `--config` 参数直接传递 JSON 配置
+2. **JSON 字符串方式**：使用 `--localFileSourceConfig` 参数直接传递 JSON 配置
 
 ## 使用方法
 
 ### 方式一：从文件加载配置
 
 ```bash
-java -jar flink-etl-client-1.0.0-SNAPSHOT.jar --file config/mysql-to-console.json
+java -jar flink-etl-client-1.0.0-SNAPSHOT.jar --file localFileSourceConfig/mysql-to-console.json
 ```
 
 **优点：**
@@ -23,7 +23,7 @@ java -jar flink-etl-client-1.0.0-SNAPSHOT.jar --file config/mysql-to-console.jso
 ### 方式二：从 JSON 字符串加载配置
 
 ```bash
-java -jar flink-etl-client-1.0.0-SNAPSHOT.jar --config '{"job":{"name":"test","mode":"batch"},"source":{...},"sink":{...}}'
+java -jar flink-etl-client-1.0.0-SNAPSHOT.jar --localFileSourceConfig '{"job":{"name":"test","mode":"batch"},"source":{...},"sink":{...}}'
 ```
 
 **优点：**
@@ -49,7 +49,7 @@ java -jar flink-etl-client-1.0.0-SNAPSHOT.jar --config '{"job":{"name":"test","m
 
 ```bash
 错误: --file 参数值不能为空
-错误: --config 参数值不能为空
+错误: --localFileSourceConfig 参数值不能为空
 ```
 
 ## 向后兼容性
@@ -57,7 +57,7 @@ java -jar flink-etl-client-1.0.0-SNAPSHOT.jar --config '{"job":{"name":"test","m
 旧版本参数格式仍然支持（已弃用）：
 
 ```bash
-java -jar flink-etl-tool.jar config/mysql-to-console.json
+java -jar flink-etl-tool.jar localFileSourceConfig/mysql-to-console.json
 ```
 
 建议尽快迁移到新参数格式。

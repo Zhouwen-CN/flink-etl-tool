@@ -1,9 +1,8 @@
 package com.etl.source.localfile;
 
-import com.etl.core.config.SourceConfig;
 import com.etl.core.exception.SourceConfigException;
 import com.etl.core.source.BaseSplitEnumerator;
-import com.etl.source.localfile.format.FileFormatPlugin;
+import com.etl.source.localfile.config.LocalFileSourceConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 
@@ -29,37 +28,34 @@ import java.util.stream.Stream;
 @Slf4j
 public class LocalFileSplitEnumerator extends BaseSplitEnumerator<LocalFileSplit, LocalFileEnumCheckpoint> {
 
-    private final String pathPattern;
-    private final boolean recursive;
+    private final LocalFileSourceConfig localFileSourceConfig;
 
     /**
      * 构造函数
      *
-     * @param context 枚举器上下文
-     * @param config  配置
+     * @param context               枚举器上下文
+     * @param localFileSourceConfig 配置
      */
     public LocalFileSplitEnumerator(
             SplitEnumeratorContext<LocalFileSplit> context,
-            SourceConfig config) {
+            LocalFileSourceConfig localFileSourceConfig) {
         super(context);
-        this.pathPattern = config.getString("path");
-        this.recursive = config.getBoolean("recursive", false);
+        this.localFileSourceConfig = localFileSourceConfig;
     }
 
     /**
      * 从检查点恢复的构造函数
      *
-     * @param context    枚举器上下文
-     * @param checkpoint 检查点
-     * @param config     配置
+     * @param context               枚举器上下文
+     * @param checkpoint            检查点
+     * @param localFileSourceConfig 配置
      */
     public LocalFileSplitEnumerator(
             SplitEnumeratorContext<LocalFileSplit> context,
             LocalFileEnumCheckpoint checkpoint,
-            SourceConfig config) {
+            LocalFileSourceConfig localFileSourceConfig) {
         super(context, checkpoint);
-        this.pathPattern = config.getString("path");
-        this.recursive = config.getBoolean("recursive", false);
+        this.localFileSourceConfig = localFileSourceConfig;
     }
 
     /**
@@ -75,10 +71,12 @@ public class LocalFileSplitEnumerator extends BaseSplitEnumerator<LocalFileSplit
 
     @Override
     public void start() {
-        log.info("LocalFileSplitEnumerator 启动，路径模式: {}", pathPattern);
+        String pathPattern = localFileSourceConfig.getPathPattern();
+        boolean recursive = localFileSourceConfig.isRecursive();
+        log.info("LocalFileSplitEnumerator 启动，路径模式: {}，是否递归: {}", pathPattern, recursive);
 
         // 扫描匹配的文件
-        List<File> matchedFiles = scanFiles();
+        List<File> matchedFiles = scanFiles(pathPattern, recursive);
         if (matchedFiles.isEmpty()) {
             throw new SourceConfigException("未找到匹配的文件: " + pathPattern);
         }
@@ -99,7 +97,7 @@ public class LocalFileSplitEnumerator extends BaseSplitEnumerator<LocalFileSplit
     /**
      * 扫描匹配的文件
      */
-    private List<File> scanFiles() {
+    private List<File> scanFiles(String pathPattern, boolean recursive) {
         List<File> result = new ArrayList<>();
 
         // 解析路径模式

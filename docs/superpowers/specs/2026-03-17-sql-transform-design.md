@@ -34,7 +34,7 @@ Schema 配置变为必填，包含 tableName：
 {
   "source": {
     "type": "mysql",
-    "config": {
+    "localFileSourceConfig": {
       "url": "jdbc:mysql://...",
       "table": "user_table",
       "schema": {
@@ -49,14 +49,14 @@ Schema 配置变为必填，包含 tableName：
   "transforms": [
     {
       "type": "sql",
-      "config": {
+      "localFileSourceConfig": {
         "sql": "SELECT id, name FROM users WHERE id > 10"
       }
     }
   ],
   "sink": {
     "type": "console",
-    "config": { "format": "json" }
+    "localFileSourceConfig": { "format": "json" }
   }
 }
 ```
@@ -116,11 +116,11 @@ public interface TransformPlugin {
     /**
      * 执行转换
      * @param inputTable 输入表
-     * @param config 转换配置
+     * @param localFileSourceConfig 转换配置
      * @param stEnv Table 环境
      * @return 转换后的表
      */
-    Table transform(Table inputTable, TransformConfig config, StreamTableEnvironment stEnv);
+    Table transform(Table inputTable, TransformConfig localFileSourceConfig, StreamTableEnvironment stEnv);
 }
 ```
 
@@ -131,21 +131,21 @@ public interface TransformPlugin {
 新增 `getString()` 便捷方法：
 
 ```java
-package com.etl.core.config;
+package com.etl.core.localFileSourceConfig;
 
 @Data
 public class TransformConfig {
     private String type;
-    private Map<String, Object> config;
+    private Map<String, Object> localFileSourceConfig;
 
     /**
      * 获取字符串类型的配置值
      */
     public String getString(String key) {
-        if (config == null) {
+        if (localFileSourceConfig == null) {
             return null;
         }
-        Object value = config.get(key);
+        Object value = localFileSourceConfig.get(key);
         return value != null ? String.valueOf(value) : null;
     }
 
@@ -153,7 +153,7 @@ public class TransformConfig {
      * 获取配置值
      */
     public Object get(String key) {
-        return config != null ? config.get(key) : null;
+        return localFileSourceConfig != null ? localFileSourceConfig.get(key) : null;
     }
 }
 ```
@@ -165,7 +165,7 @@ public class TransformConfig {
 ```java
 package com.etl.transform;
 
-import com.etl.core.config.TransformConfig;
+import com.etl.core.localFileSourceConfig.TransformConfig;
 import com.etl.core.spi.TransformPlugin;
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
@@ -182,8 +182,8 @@ public class SqlTransformPlugin implements TransformPlugin {
     }
 
     @Override
-    public Table transform(Table inputTable, TransformConfig config, StreamTableEnvironment stEnv) {
-        String sql = config.getString("sql");
+    public Table transform(Table inputTable, TransformConfig localFileSourceConfig, StreamTableEnvironment stEnv) {
+        String sql = localFileSourceConfig.getString("sql");
 
         // 参数校验
         if (sql == null || sql.trim().isEmpty()) {
@@ -208,7 +208,7 @@ Sink 保持消费 DataStream，返回类型明确为 `SinkFunction<Row>`：
 ```java
 package com.etl.core.spi;
 
-import com.etl.core.config.SinkConfig;
+import com.etl.core.localFileSourceConfig.SinkConfig;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.types.Row;
 
@@ -217,10 +217,10 @@ public interface SinkPlugin {
 
     /**
      * 创建 Sink
-     * @param config Sink 配置
+     * @param localFileSourceConfig Sink 配置
      * @return Flink SinkFunction，强制消费 Row 类型
      */
-    SinkFunction<Row> createSink(SinkConfig config);
+    SinkFunction<Row> createSink(SinkConfig localFileSourceConfig);
 }
 ```
 
@@ -243,8 +243,8 @@ public interface SinkPlugin {
 package com.etl.core.job;
 
 import com.etl.core.schema.EtlSchema;
-import com.etl.core.config.JobConfig;
-import com.etl.core.config.TransformConfig;
+import com.etl.core.localFileSourceConfig.JobConfig;
+import com.etl.core.localFileSourceConfig.TransformConfig;
 import com.etl.core.spi.PluginLoader;
 import com.etl.core.spi.SinkPlugin;
 import com.etl.core.spi.SourcePlugin;
@@ -270,19 +270,19 @@ public class JobBuilder {
         this.pluginLoader = pluginLoader;
     }
 
-    public void build(StreamExecutionEnvironment env, JobConfig config) {
-        log.info("开始构建 Flink Job: {}", config.getJob().getName());
+    public void build(StreamExecutionEnvironment env, JobConfig localFileSourceConfig) {
+        log.info("开始构建 Flink Job: {}", localFileSourceConfig.getJob().getName());
 
         // 创建 Table 环境
         StreamTableEnvironment stEnv = StreamTableEnvironment.create(env);
 
         // 1. Source -> DataStream -> 注册 Table
-        SourcePlugin sourcePlugin = pluginLoader.loadSourcePlugin(config.getSource().getType());
-        Source<?, ?, ?> source = sourcePlugin.createSource(config.getSource());
+        SourcePlugin sourcePlugin = pluginLoader.loadSourcePlugin(localFileSourceConfig.getSource().getType());
+        Source<?, ?, ?> source = sourcePlugin.createSource(localFileSourceConfig.getSource());
         DataStream<Row> sourceStream = env.fromSource(source, WatermarkStrategy.noWatermarks(), "source");
 
         // 强制校验 Schema
-        EtlSchema schema = config.getSource().getSchema();
+        EtlSchema schema = localFileSourceConfig.getSource().getSchema();
         if (schema == null) {
             throw new IllegalArgumentException("Source 必须配置 schema");
         }
@@ -297,7 +297,7 @@ public class JobBuilder {
         // 2. Transform 链式处理
         Table resultTable = stEnv.from(schema.getTableName());
 
-        List<TransformConfig> transforms = config.getTransforms();
+        List<TransformConfig> transforms = localFileSourceConfig.getTransforms();
         if (transforms != null && !transforms.isEmpty()) {
             for (int i = 0; i < transforms.size(); i++) {
                 TransformConfig transformConfig = transforms.get(i);
@@ -318,8 +318,8 @@ public class JobBuilder {
         log.info("Table 转换为 DataStream");
 
         // 4. Sink 消费 DataStream
-        SinkPlugin sinkPlugin = pluginLoader.loadSinkPlugin(config.getSink().getType());
-        SinkFunction<Row> sink = sinkPlugin.createSink(config.getSink());
+        SinkPlugin sinkPlugin = pluginLoader.loadSinkPlugin(localFileSourceConfig.getSink().getType());
+        SinkFunction<Row> sink = sinkPlugin.createSink(localFileSourceConfig.getSink());
         resultStream.addSink(sink);
         log.info("Sink 创建成功");
 
@@ -348,16 +348,16 @@ public class JobBuilder {
 
 ### 修改文件
 
-| 文件 | 包路径 | 变更内容 |
-|------|--------|----------|
-| `EtlSchema.java` | `com.etl.core.schema` | 新增 `tableName` 字段 |
-| `SchemaParser.java` | `com.etl.core.schema` | 解析并校验 `tableName` |
-| `TransformConfig.java` | `com.etl.core.config` | 新增 `getString()` 方法 |
-| `TransformPlugin.java` | `com.etl.core.spi` | 接口方法改为 `transform(Table, TransformConfig, StreamTableEnvironment)` |
-| `SinkPlugin.java` | `com.etl.core.spi` | 返回类型改为 `SinkFunction<Row>` |
-| `JobBuilder.java` | `com.etl.core.job` | 集成 Table API，注册表、执行 SQL、转回 DataStream |
-| `ConsoleSinkPlugin.java` | `com.etl.sink.console` | 返回类型改为 `SinkFunction<Row>` |
-| `MySQLSinkPlugin.java` | `com.etl.sink.mysql` | 返回类型改为 `SinkFunction<Row>` |
+| 文件                       | 包路径                                  | 变更内容                                                               |
+|--------------------------|--------------------------------------|--------------------------------------------------------------------|
+| `EtlSchema.java`         | `com.etl.core.schema`                | 新增 `tableName` 字段                                                  |
+| `SchemaParser.java`      | `com.etl.core.schema`                | 解析并校验 `tableName`                                                  |
+| `TransformConfig.java`   | `com.etl.core.localFileSourceConfig` | 新增 `getString()` 方法                                                |
+| `TransformPlugin.java`   | `com.etl.core.spi`                   | 接口方法改为 `transform(Table, TransformConfig, StreamTableEnvironment)` |
+| `SinkPlugin.java`        | `com.etl.core.spi`                   | 返回类型改为 `SinkFunction<Row>`                                         |
+| `JobBuilder.java`        | `com.etl.core.job`                   | 集成 Table API，注册表、执行 SQL、转回 DataStream                              |
+| `ConsoleSinkPlugin.java` | `com.etl.sink.console`               | 返回类型改为 `SinkFunction<Row>`                                         |
+| `MySQLSinkPlugin.java`   | `com.etl.sink.mysql`                 | 返回类型改为 `SinkFunction<Row>`                                         |
 
 ### 新增文件
 
@@ -387,7 +387,7 @@ public class JobBuilder {
 {
   "source": {
     "type": "mysql",
-    "config": {
+    "localFileSourceConfig": {
       "url": "jdbc:mysql://...",
       "table": "user_table"
     }
@@ -395,7 +395,7 @@ public class JobBuilder {
   "transforms": [
     {
       "type": "field-mapping",
-      "config": {
+      "localFileSourceConfig": {
         "mappings": [
           { "from": "id", "to": "user_id" }
         ]
@@ -411,7 +411,7 @@ public class JobBuilder {
 {
   "source": {
     "type": "mysql",
-    "config": {
+    "localFileSourceConfig": {
       "url": "jdbc:mysql://...",
       "table": "user_table",
       "schema": {
@@ -426,7 +426,7 @@ public class JobBuilder {
   "transforms": [
     {
       "type": "sql",
-      "config": {
+      "localFileSourceConfig": {
         "sql": "SELECT id AS user_id, name FROM users"
       }
     }
@@ -451,14 +451,14 @@ public class JobBuilder {
 {
   "source": {
     "type": "mysql",
-    "config": {
+    "localFileSourceConfig": {
       "schema": { "tableName": "users", "fields": [...] }
     }
   },
   "transforms": [
     {
       "type": "sql",
-      "config": {
+      "localFileSourceConfig": {
         "sql": "SELECT * FROM users WHERE status = 'active'"
       }
     }
@@ -475,18 +475,18 @@ public class JobBuilder {
 {
   "source": {
     "type": "mysql",
-    "config": {
+    "localFileSourceConfig": {
       "schema": { "tableName": "users", "fields": [...] }
     }
   },
   "transforms": [
     {
       "type": "sql",
-      "config": { "sql": "SELECT * FROM users WHERE id > 100" }
+      "localFileSourceConfig": { "sql": "SELECT * FROM users WHERE id > 100" }
     },
     {
       "type": "sql",
-      "config": { "sql": "SELECT id, UPPER(name) as name FROM transform_result_0" }
+      "localFileSourceConfig": { "sql": "SELECT id, UPPER(name) as name FROM transform_result_0" }
     }
   ],
   "sink": { "type": "console" }
@@ -504,7 +504,7 @@ public class JobBuilder {
 {
   "source": {
     "type": "mysql",
-    "config": {
+    "localFileSourceConfig": {
       "schema": { "tableName": "users", "fields": [...] }
     }
   },

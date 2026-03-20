@@ -33,7 +33,7 @@ flink-etl-core/src/test/java/com/etl/core/schema/
 
 **修改文件：**
 ```
-flink-etl-core/src/main/java/com/etl/core/config/SourceConfig.java
+flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/SourceConfig.java
 flink-etl-core/src/main/java/com/etl/core/source/AbstractSplitSource.java
 flink-etl-source/flink-etl-source-localfile/.../CsvFormatPlugin.java
 flink-etl-source/flink-etl-source-jdbc/.../JdbcDialect.java
@@ -1057,11 +1057,12 @@ git commit -m "feat: 添加 FlinkTypeConverter Flink 类型转换器"
 ### Task 9: SourceConfig 扩展
 
 **Files:**
-- Modify: `flink-etl-core/src/main/java/com/etl/core/config/SourceConfig.java`
+
+- Modify: `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/SourceConfig.java`
 
 - [ ] **Step 1: 读取现有文件**
 
-Read: `flink-etl-core/src/main/java/com/etl/core/config/SourceConfig.java`
+Read: `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/SourceConfig.java`
 
 - [ ] **Step 2: 添加 getSchema 方法**
 
@@ -1074,10 +1075,10 @@ Read: `flink-etl-core/src/main/java/com/etl/core/config/SourceConfig.java`
  * @return EtlSchema 对象，如果未配置则返回 null
  */
 public EtlSchema getSchema() {
-    if (config == null) {
+    if (localFileSourceConfig == null) {
         return null;
     }
-    return SchemaParser.parse(config.get("schema"));
+    return SchemaParser.parse(localFileSourceConfig.get("schema"));
 }
 ```
 
@@ -1095,7 +1096,7 @@ Expected: BUILD SUCCESS
 - [ ] **Step 4: Commit**
 
 ```bash
-git add flink-etl-core/src/main/java/com/etl/core/config/SourceConfig.java
+git add flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/SourceConfig.java
 git commit -m "feat: SourceConfig 添加 getSchema 方法"
 ```
 
@@ -1201,7 +1202,7 @@ Read: `flink-etl-source/flink-etl-source-localfile/src/test/java/com/etl/source/
 ```java
 package com.etl.source.localfile.format;
 
-import com.etl.core.config.SourceConfig;
+import com.etl.core.localFileSourceConfig.SourceConfig;
 import com.etl.core.schema.*;
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
@@ -1233,9 +1234,9 @@ public class CsvFormatPlugin implements FileFormatPlugin {
     }
 
     @Override
-    public List<String> resolveFields(SourceConfig config, InputStream firstFile) {
+    public List<String> resolveFields(SourceConfig localFileSourceConfig, InputStream firstFile) {
         // 字段名从 schema 获取
-        EtlSchema schema = config.getSchema();
+        EtlSchema schema = localFileSourceConfig.getSchema();
         if (schema == null) {
             throw new SchemaConfigException("CSV Source 必须配置 schema");
         }
@@ -1243,20 +1244,20 @@ public class CsvFormatPlugin implements FileFormatPlugin {
     }
 
     @Override
-    public Iterable<Row> parse(SourceConfig config, InputStream inputStream, List<String> fields) {
-        EtlSchema schema = config.getSchema();
+    public Iterable<Row> parse(SourceConfig localFileSourceConfig, InputStream inputStream, List<String> fields) {
+        EtlSchema schema = localFileSourceConfig.getSchema();
         if (schema == null) {
             throw new SchemaConfigException("CSV Source 必须配置 schema");
         }
 
-        String encoding = config.getString("encoding");
+        String encoding = localFileSourceConfig.getString("encoding");
         Charset charset = encoding != null ? Charset.forName(encoding) : StandardCharsets.UTF_8;
 
-        String delimiter = config.getString("delimiter");
+        String delimiter = localFileSourceConfig.getString("delimiter");
         char delim = delimiter != null ? delimiter.charAt(0) : ',';
 
         // skipHeader: 是否跳过 CSV 第一行（默认 true）
-        boolean skipHeader = config.getBoolean("skipHeader", true);
+        boolean skipHeader = localFileSourceConfig.getBoolean("skipHeader", true);
 
         CSVFormat csvFormat = CSVFormat.DEFAULT.builder()
                 .setDelimiter(delim)
@@ -1386,7 +1387,7 @@ Expected: BUILD SUCCESS
 ```java
 package com.etl.source.localfile.format;
 
-import com.etl.core.config.SourceConfig;
+import com.etl.core.localFileSourceConfig.SourceConfig;
 import com.etl.core.exception.SchemaConfigException;
 import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
@@ -1399,19 +1400,19 @@ class CsvFormatPluginTest {
 
     @Test
     void resolveFields_shouldThrowException_whenSchemaMissing() {
-        SourceConfig config = new SourceConfig();
-        config.setConfig(new java.util.HashMap<>());
+        SourceConfig localFileSourceConfig = new SourceConfig();
+        localFileSourceConfig.setConfig(new java.util.HashMap<>());
 
         ByteArrayInputStream input = new ByteArrayInputStream("id,name".getBytes());
 
         assertThrows(SchemaConfigException.class,
-            () -> plugin.resolveFields(config, input));
+            () -> plugin.resolveFields(localFileSourceConfig, input));
     }
 
     @Test
     void parse_shouldConvertTypes_correctly() throws Exception {
         // 构造带 schema 的配置
-        SourceConfig config = new SourceConfig();
+        SourceConfig localFileSourceConfig = new SourceConfig();
         java.util.Map<String, Object> configMap = new java.util.HashMap<>();
         java.util.Map<String, Object> schemaMap = new java.util.HashMap<>();
 
@@ -1422,13 +1423,13 @@ class CsvFormatPluginTest {
         ));
         configMap.put("schema", schemaMap);
         configMap.put("skipHeader", false); // 测试数据无头行
-        config.setConfig(configMap);
+        localFileSourceConfig.setConfig(configMap);
 
         // CSV 数据（无头行）
         String csvData = "1,Alice,25\n2,Bob,30";
         ByteArrayInputStream input = new ByteArrayInputStream(csvData.getBytes(StandardCharsets.UTF_8));
 
-        Iterable<org.apache.flink.types.Row> rows = plugin.parse(config, input,
+        Iterable<org.apache.flink.types.Row> rows = plugin.parse(localFileSourceConfig, input,
             java.util.List.of("id", "name", "age"));
 
         var iterator = rows.iterator();
@@ -1450,7 +1451,7 @@ class CsvFormatPluginTest {
 
     @Test
     void parse_shouldSkipHeader_whenSkipHeaderTrue() throws Exception {
-        SourceConfig config = new SourceConfig();
+        SourceConfig localFileSourceConfig = new SourceConfig();
         java.util.Map<String, Object> configMap = new java.util.HashMap<>();
         java.util.Map<String, Object> schemaMap = new java.util.HashMap<>();
 
@@ -1459,12 +1460,12 @@ class CsvFormatPluginTest {
         ));
         configMap.put("schema", schemaMap);
         configMap.put("skipHeader", true); // 跳过头行
-        config.setConfig(configMap);
+        localFileSourceConfig.setConfig(configMap);
 
         String csvData = "header\nvalue1\nvalue2";
         ByteArrayInputStream input = new ByteArrayInputStream(csvData.getBytes(StandardCharsets.UTF_8));
 
-        Iterable<org.apache.flink.types.Row> rows = plugin.parse(config, input,
+        Iterable<org.apache.flink.types.Row> rows = plugin.parse(localFileSourceConfig, input,
             java.util.List.of("id"));
 
         var iterator = rows.iterator();
@@ -1671,7 +1672,7 @@ Read: `flink-etl-source/flink-etl-source-jdbc/src/main/java/com/etl/source/jdbc/
 在构造函数中添加：
 ```java
 // 解析 schema（可选）
-this.schema = config.getSchema();
+this.schema = localFileSourceConfig.getSchema();
 ```
 
 在 createEnumerator 方法开头添加 schema 推断逻辑：
@@ -1747,7 +1748,7 @@ git commit -m "feat: JdbcSource 支持可选 schema 配置"
   },
   "source": {
     "type": "localfile",
-    "config": {
+    "localFileSourceConfig": {
       "path": "docs/examples/data/*.csv",
       "format": "csv",
       "skipHeader": true,
@@ -1762,7 +1763,7 @@ git commit -m "feat: JdbcSource 支持可选 schema 配置"
   },
   "sink": {
     "type": "console",
-    "config": {}
+    "localFileSourceConfig": {}
   }
 }
 ```
@@ -1819,7 +1820,7 @@ git commit -m "feat: JdbcSource 支持可选 schema 配置"
 {
   "source": {
     "type": "localfile",
-    "config": {
+    "localFileSourceConfig": {
       "path": "/data/users.csv",
       "format": "csv",
       "skipHeader": true,
@@ -1878,7 +1879,7 @@ id,name,age,price,created_at,is_active
   },
   "source": {
     "type": "localfile",
-    "config": {
+    "localFileSourceConfig": {
       "path": "docs/examples/data/users.csv",
       "format": "csv",
       "skipHeader": true,
@@ -1896,7 +1897,7 @@ id,name,age,price,created_at,is_active
   },
   "sink": {
     "type": "console",
-    "config": {
+    "localFileSourceConfig": {
       "format": "json"
     }
   }

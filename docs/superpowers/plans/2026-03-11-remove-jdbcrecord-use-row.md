@@ -244,13 +244,13 @@ public class JdbcSourceReader extends BaseSourceReader<Row, Row, RangeSplit, Ran
      */
     public JdbcSourceReader(
             Supplier<BaseSplitReader<Row, RangeSplit>> splitReaderSupplier,
-            Configuration config,
+            Configuration localFileSourceConfig,
             SourceReaderContext context,
             String url, String username, String password,
             String table, String sql, String splitColumn,
             Integer fetchSize, Integer queryTimeout,
             JdbcDialect dialect) {
-        super(splitReaderSupplier, new RowRecordEmitter(), config, context);
+        super(splitReaderSupplier, new RowRecordEmitter(), localFileSourceConfig, context);
         // ... 其余赋值保持不变
     }
 
@@ -282,7 +282,7 @@ public class JdbcSourceReader extends BaseSourceReader<Row, Row, RangeSplit, Ran
 ```java
 package com.etl.source.jdbc;
 
-import com.etl.core.config.SourceConfig;
+import com.etl.core.localFileSourceConfig.SourceConfig;
 import com.etl.source.jdbc.AbstractRangeSplitSource;
 import com.etl.source.jdbc.RangeEnumCheckpoint;
 import com.etl.source.jdbc.RangeSplit;

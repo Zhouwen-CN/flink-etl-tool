@@ -265,7 +265,7 @@ git commit -m "refactor(jdbc): 将分片计算逻辑迁移到 JdbcSplitEnumerato
 ```java
 package com.etl.source.jdbc;
 
-import com.etl.core.config.SourceConfig;
+import com.etl.core.localFileSourceConfig.SourceConfig;
 import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseSplitReader;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
@@ -302,9 +302,9 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
     private final Integer queryTimeout;
     private final JdbcDialect dialect;
 
-    public JdbcSource(SourceConfig config, JdbcDialect dialect) {
-        super(config);
-        String url = config.getString("url");
+    public JdbcSource(SourceConfig localFileSourceConfig, JdbcDialect dialect) {
+        super(localFileSourceConfig);
+        String url = localFileSourceConfig.getString("url");
         Preconditions.checkNotNull(url, "url is null");
 
         // mysql 需要加上这个参数，batchSize 参数才能生效
@@ -318,14 +318,14 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
             }
         }
         this.url = url;
-        this.username = config.getString("username");
-        this.password = config.getString("password");
-        this.table = config.getString("table");
-        this.splitColumn = config.getString("splitColumn");
+        this.username = localFileSourceConfig.getString("username");
+        this.password = localFileSourceConfig.getString("password");
+        this.table = localFileSourceConfig.getString("table");
+        this.splitColumn = localFileSourceConfig.getString("splitColumn");
         Preconditions.checkNotNull(this.splitColumn, "splitColumn is null");
-        this.sql = config.getString("sql");
-        this.batchSize = config.getInteger("batchSize", getDefaultBatchSize());
-        this.queryTimeout = config.getInteger("queryTimeout");
+        this.sql = localFileSourceConfig.getString("sql");
+        this.batchSize = localFileSourceConfig.getInteger("batchSize", getDefaultBatchSize());
+        this.queryTimeout = localFileSourceConfig.getInteger("queryTimeout");
         this.dialect = dialect;
 
         log.info("创建 JdbcSource: table={}, sql={}, splitColumn={}", table, sql, splitColumn);

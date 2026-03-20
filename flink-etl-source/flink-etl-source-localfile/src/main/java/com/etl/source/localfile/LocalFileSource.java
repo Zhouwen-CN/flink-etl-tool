@@ -1,8 +1,11 @@
 package com.etl.source.localfile;
 
 import com.etl.core.config.SourceConfig;
+import com.etl.core.schema.EtlSchema;
 import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseSplitReader;
+import com.etl.source.localfile.config.LocalFileSourceConfig;
+import com.etl.source.localfile.format.FileFormatPlugin;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.connector.source.*;
@@ -10,6 +13,7 @@ import org.apache.flink.core.io.SimpleVersionedSerializer;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Preconditions;
 
+import java.util.ServiceLoader;
 import java.util.function.Supplier;
 
 /**
@@ -29,20 +33,70 @@ import java.util.function.Supplier;
 @Slf4j
 public class LocalFileSource extends AbstractSplitSource<LocalFileSplit, LocalFileEnumCheckpoint> {
 
-    private final String pathPattern;
-    private final String format;
+    private final LocalFileSourceConfig localFileSourceConfig;
 
     public LocalFileSource(SourceConfig config) {
         super(config);
 
-        // 验证必要配置项
-        pathPattern = config.getString("path");
-        Preconditions.checkArgument(StringUtils.isNotBlank(pathPattern),"path is null");
+        // 路径
+        String pathPattern = config.getString("path");
+        Preconditions.checkArgument(StringUtils.isNotBlank(pathPattern), "path is null");
 
-        format = config.getString("format");
-        Preconditions.checkArgument(StringUtils.isNotBlank(format),"format is null");
+        // 格式
+        String format = config.getString("format");
+        Preconditions.checkArgument(StringUtils.isNotBlank(format), "format is null");
 
-        log.info("创建 LocalFileSource: path={}, format={}", config.getString("path"), config.getString("format"));
+        // 加载格式插件
+        FileFormatPlugin formatPlugin = loadFormatPlugin(format);
+
+        // 批次大小
+        Integer batchSize = config.getInteger("batchSize", super.getDefaultBatchSize());
+        Preconditions.checkArgument(batchSize > 0, "batchSize must be greater than 0");
+
+        // 是否递归
+        boolean recursive = config.getBoolean("recursive", false);
+
+        // schema
+        EtlSchema schema = config.getSchema();
+        Preconditions.checkNotNull(schema, "schema is null");
+
+        // 编码
+        String encoding = config.getString("encoding", "utf-8");
+
+        // 分隔符
+        String delimiter = config.getString("delimiter", ",");
+
+        // 是否跳过首行
+        boolean skipHeader = config.getBoolean("skipHeader", true);
+
+        // 封装成配置对象
+        this.localFileSourceConfig = LocalFileSourceConfig.builder()
+                .pathPattern(pathPattern)
+                .format(format)
+                .recursive(recursive)
+                .batchSize(batchSize)
+                .schema(schema)
+                .encoding(encoding)
+                .delimiter(delimiter)
+                .skipHeader(skipHeader)
+                .formatPlugin(formatPlugin)
+                .build();
+
+        log.info("创建 LocalFileSource: {}", this.localFileSourceConfig);
+    }
+
+    /**
+     * 加载格式插件
+     */
+    private FileFormatPlugin loadFormatPlugin(String format) {
+        ServiceLoader<FileFormatPlugin> loader = ServiceLoader.load(FileFormatPlugin.class);
+        for (FileFormatPlugin plugin : loader) {
+            if (plugin.getType().equalsIgnoreCase(format)) {
+                log.info("加载格式插件: {}", plugin.getClass().getName());
+                return plugin;
+            }
+        }
+        throw new RuntimeException("未找到格式插件: " + format);
     }
 
     @Override
@@ -51,16 +105,18 @@ public class LocalFileSource extends AbstractSplitSource<LocalFileSplit, LocalFi
     }
 
     @Override
-    public SplitEnumerator<LocalFileSplit, LocalFileEnumCheckpoint> createEnumerator(SplitEnumeratorContext<LocalFileSplit> enumContext) {
+    public SplitEnumerator<LocalFileSplit, LocalFileEnumCheckpoint> createEnumerator(
+            SplitEnumeratorContext<LocalFileSplit> enumContext) {
         log.info("创建 SplitEnumerator");
-        return new LocalFileSplitEnumerator(enumContext, super.getConfig());
+        return new LocalFileSplitEnumerator(enumContext, localFileSourceConfig);
     }
 
     @Override
-    public SplitEnumerator<LocalFileSplit, LocalFileEnumCheckpoint> restoreEnumerator(SplitEnumeratorContext<LocalFileSplit> enumContext,
-                      LocalFileEnumCheckpoint checkpoint) {
+    public SplitEnumerator<LocalFileSplit, LocalFileEnumCheckpoint> restoreEnumerator(
+            SplitEnumeratorContext<LocalFileSplit> enumContext,
+            LocalFileEnumCheckpoint checkpoint) {
         log.info("从检查点恢复 SplitEnumerator");
-        return new LocalFileSplitEnumerator(enumContext, checkpoint, super.getConfig());
+        return new LocalFileSplitEnumerator(enumContext, checkpoint, localFileSourceConfig);
     }
 
     @Override
@@ -68,9 +124,8 @@ public class LocalFileSource extends AbstractSplitSource<LocalFileSplit, LocalFi
         log.info("创建 SourceReader");
 
         // 创建 SplitReader 供应器
-        // 格式插件在 LocalFileSplitReader 内部动态加载
         var splitReaderSupplier = (Supplier<BaseSplitReader<Row, LocalFileSplit>>) () ->
-                new LocalFileSplitReader(super.getConfig());
+                new LocalFileSplitReader(localFileSourceConfig);
 
         // 创建 Reader
         return new LocalFileSourceReader(

@@ -19,17 +19,17 @@
 | `flink-etl-transform/src/test/java/com/etl/transform/SqlTransformPluginTest.java` | SQL Transform 单元测试 |
 
 ### 修改文件
-| 文件 | 变更内容 |
-|------|----------|
-| `flink-etl-core/src/main/java/com/etl/core/schema/EtlSchema.java` | 新增 `tableName` 字段 |
-| `flink-etl-core/src/main/java/com/etl/core/schema/SchemaParser.java` | 解析并校验 `tableName` |
-| `flink-etl-core/src/main/java/com/etl/core/config/TransformConfig.java` | 新增 `getString()` 方法 |
-| `flink-etl-core/src/main/java/com/etl/core/spi/TransformPlugin.java` | 接口方法改为 `transform(Table, ...)` |
-| `flink-etl-core/src/main/java/com/etl/core/spi/SinkPlugin.java` | 返回类型改为 `SinkFunction<Row>` |
-| `flink-etl-core/src/main/java/com/etl/core/job/JobBuilder.java` | 集成 Table API |
-| `flink-etl-core/pom.xml` | 新增 `flink-table-api-java-bridge` 依赖 |
-| `flink-etl-sink-console/.../ConsoleSinkPlugin.java` | 返回类型改为 `SinkFunction<Row>` |
-| `flink-etl-sink-mysql/.../MySQLSinkPlugin.java` | 返回类型改为 `SinkFunction<Row>` |
+| 文件                                                                                     | 变更内容                                |
+|----------------------------------------------------------------------------------------|-------------------------------------|
+| `flink-etl-core/src/main/java/com/etl/core/schema/EtlSchema.java`                      | 新增 `tableName` 字段                   |
+| `flink-etl-core/src/main/java/com/etl/core/schema/SchemaParser.java`                   | 解析并校验 `tableName`                   |
+| `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/TransformConfig.java` | 新增 `getString()` 方法                 |
+| `flink-etl-core/src/main/java/com/etl/core/spi/TransformPlugin.java`                   | 接口方法改为 `transform(Table, ...)`      |
+| `flink-etl-core/src/main/java/com/etl/core/spi/SinkPlugin.java`                        | 返回类型改为 `SinkFunction<Row>`          |
+| `flink-etl-core/src/main/java/com/etl/core/job/JobBuilder.java`                        | 集成 Table API                        |
+| `flink-etl-core/pom.xml`                                                               | 新增 `flink-table-api-java-bridge` 依赖 |
+| `flink-etl-sink-console/.../ConsoleSinkPlugin.java`                                    | 返回类型改为 `SinkFunction<Row>`          |
+| `flink-etl-sink-mysql/.../MySQLSinkPlugin.java`                                        | 返回类型改为 `SinkFunction<Row>`          |
 
 ### 删除文件
 | 文件 | 原因 |
@@ -332,16 +332,17 @@ git commit -m "feat: SchemaParser 解析并校验 tableName"
 ### Task 3: TransformConfig 新增 getString 方法
 
 **Files:**
-- Modify: `flink-etl-core/src/main/java/com/etl/core/config/TransformConfig.java`
-- Create: `flink-etl-core/src/test/java/com/etl/core/config/TransformConfigTest.java`
+
+- Modify: `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/TransformConfig.java`
+- Create: `flink-etl-core/src/test/java/com/etl/core/localFileSourceConfig/TransformConfigTest.java`
 
 - [ ] **Step 1: 为 TransformConfig.getString() 编写测试**
 
 ```java
-// 文件: flink-etl-core/src/test/java/com/etl/core/config/TransformConfigTest.java
+// 文件: flink-etl-core/src/test/java/com/etl/core/localFileSourceConfig/TransformConfigTest.java
 // 新建文件
 
-package com.etl.core.config;
+package com.etl.core.localFileSourceConfig;
 
 import org.junit.jupiter.api.Test;
 import java.util.HashMap;
@@ -352,22 +353,22 @@ class TransformConfigTest {
 
     @Test
     void getString_shouldReturnValue() {
-        Map<String, Object> config = new HashMap<>();
-        config.put("sql", "SELECT * FROM users");
+        Map<String, Object> localFileSourceConfig = new HashMap<>();
+        localFileSourceConfig.put("sql", "SELECT * FROM users");
 
         TransformConfig transformConfig = new TransformConfig();
         transformConfig.setType("sql");
-        transformConfig.setConfig(config);
+        transformConfig.setConfig(localFileSourceConfig);
 
         assertEquals("SELECT * FROM users", transformConfig.getString("sql"));
     }
 
     @Test
     void getString_shouldReturnNull_whenKeyNotFound() {
-        Map<String, Object> config = new HashMap<>();
+        Map<String, Object> localFileSourceConfig = new HashMap<>();
 
         TransformConfig transformConfig = new TransformConfig();
-        transformConfig.setConfig(config);
+        transformConfig.setConfig(localFileSourceConfig);
 
         assertNull(transformConfig.getString("nonexistent"));
     }
@@ -382,11 +383,11 @@ class TransformConfigTest {
 
     @Test
     void getString_shouldConvertToString() {
-        Map<String, Object> config = new HashMap<>();
-        config.put("number", 123);
+        Map<String, Object> localFileSourceConfig = new HashMap<>();
+        localFileSourceConfig.put("number", 123);
 
         TransformConfig transformConfig = new TransformConfig();
-        transformConfig.setConfig(config);
+        transformConfig.setConfig(localFileSourceConfig);
 
         assertEquals("123", transformConfig.getString("number"));
     }
@@ -401,10 +402,10 @@ Expected: 编译错误或测试失败（getString 方法不存在）
 - [ ] **Step 3: 实现 getString 方法**
 
 ```java
-// 文件: flink-etl-core/src/main/java/com/etl/core/config/TransformConfig.java
+// 文件: flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/TransformConfig.java
 // 完整替换
 
-package com.etl.core.config;
+package com.etl.core.localFileSourceConfig;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -421,7 +422,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class TransformConfig {
     private String type;
-    private Map<String, Object> config;
+    private Map<String, Object> localFileSourceConfig;
 
     /**
      * 获取字符串类型的配置值
@@ -430,10 +431,10 @@ public class TransformConfig {
      * @return 配置值
      */
     public String getString(String key) {
-        if (config == null) {
+        if (localFileSourceConfig == null) {
             return null;
         }
-        Object value = config.get(key);
+        Object value = localFileSourceConfig.get(key);
         return value != null ? String.valueOf(value) : null;
     }
 
@@ -444,7 +445,7 @@ public class TransformConfig {
      * @return 配置值
      */
     public Object get(String key) {
-        return config != null ? config.get(key) : null;
+        return localFileSourceConfig != null ? localFileSourceConfig.get(key) : null;
     }
 }
 ```
@@ -457,7 +458,7 @@ Expected: 测试通过
 - [ ] **Step 5: 提交**
 
 ```bash
-git add flink-etl-core/src/main/java/com/etl/core/config/TransformConfig.java flink-etl-core/src/test/java/com/etl/core/config/TransformConfigTest.java
+git add flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/TransformConfig.java flink-etl-core/src/test/java/com/etl/core/localFileSourceConfig/TransformConfigTest.java
 git commit -m "feat: TransformConfig 新增 getString 方法"
 ```
 
@@ -476,7 +477,7 @@ git commit -m "feat: TransformConfig 新增 getString 方法"
 
 package com.etl.core.spi;
 
-import com.etl.core.config.TransformConfig;
+import com.etl.core.localFileSourceConfig.TransformConfig;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 
@@ -497,11 +498,11 @@ public interface TransformPlugin {
      * 执行转换
      *
      * @param inputTable 输入表
-     * @param config 转换配置
+     * @param localFileSourceConfig 转换配置
      * @param stEnv Table 环境
      * @return 转换后的表
      */
-    Table transform(Table inputTable, TransformConfig config, StreamTableEnvironment stEnv);
+    Table transform(Table inputTable, TransformConfig localFileSourceConfig, StreamTableEnvironment stEnv);
 }
 ```
 
@@ -532,7 +533,7 @@ git commit -m "feat: TransformPlugin 接口改为 transform(Table, ...)"
 
 package com.etl.core.spi;
 
-import com.etl.core.config.SinkConfig;
+import com.etl.core.localFileSourceConfig.SinkConfig;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.types.Row;
 
@@ -554,10 +555,10 @@ public interface SinkPlugin extends Serializable {
     /**
      * 创建 Sink 函数
      *
-     * @param config Sink 配置
+     * @param localFileSourceConfig Sink 配置
      * @return Flink SinkFunction，强制消费 Row 类型
      */
-    SinkFunction<Row> createSink(SinkConfig config);
+    SinkFunction<Row> createSink(SinkConfig localFileSourceConfig);
 }
 ```
 
@@ -653,7 +654,7 @@ class SqlTransformPluginTest {
 
 package com.etl.transform;
 
-import com.etl.core.config.TransformConfig;
+import com.etl.core.localFileSourceConfig.TransformConfig;
 import com.etl.core.spi.TransformPlugin;
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
@@ -674,8 +675,8 @@ public class SqlTransformPlugin implements TransformPlugin {
     }
 
     @Override
-    public Table transform(Table inputTable, TransformConfig config, StreamTableEnvironment stEnv) {
-        String sql = config.getString("sql");
+    public Table transform(Table inputTable, TransformConfig localFileSourceConfig, StreamTableEnvironment stEnv) {
+        String sql = localFileSourceConfig.getString("sql");
 
         // 参数校验
         if (sql == null || sql.trim().isEmpty()) {
@@ -728,8 +729,8 @@ git commit -m "feat: 新增 SqlTransformPlugin 实现"
 package com.etl.core.job;
 
 import com.etl.core.schema.EtlSchema;
-import com.etl.core.config.JobConfig;
-import com.etl.core.config.TransformConfig;
+import com.etl.core.localFileSourceConfig.JobConfig;
+import com.etl.core.localFileSourceConfig.TransformConfig;
 import com.etl.core.spi.PluginLoader;
 import com.etl.core.spi.SinkPlugin;
 import com.etl.core.spi.SourcePlugin;
@@ -763,21 +764,21 @@ public class JobBuilder {
      * 构建 Flink Job
      *
      * @param env    Flink 执行环境
-     * @param config Job 配置
+     * @param localFileSourceConfig Job 配置
      */
-    public void build(StreamExecutionEnvironment env, JobConfig config) {
-        log.info("开始构建 Flink Job: {}", config.getJob().getName());
+    public void build(StreamExecutionEnvironment env, JobConfig localFileSourceConfig) {
+        log.info("开始构建 Flink Job: {}", localFileSourceConfig.getJob().getName());
 
         // 创建 Table 环境
         StreamTableEnvironment stEnv = StreamTableEnvironment.create(env);
 
         // 1. Source -> DataStream -> 注册 Table
-        SourcePlugin sourcePlugin = pluginLoader.loadSourcePlugin(config.getSource().getType());
-        Source<?, ?, ?> source = sourcePlugin.createSource(config.getSource());
+        SourcePlugin sourcePlugin = pluginLoader.loadSourcePlugin(localFileSourceConfig.getSource().getType());
+        Source<?, ?, ?> source = sourcePlugin.createSource(localFileSourceConfig.getSource());
         DataStream<Row> sourceStream = env.fromSource(source, WatermarkStrategy.noWatermarks(), "source");
 
         // 强制校验 Schema
-        EtlSchema schema = config.getSource().getSchema();
+        EtlSchema schema = localFileSourceConfig.getSource().getSchema();
         if (schema == null) {
             throw new IllegalArgumentException("Source 必须配置 schema");
         }
@@ -792,7 +793,7 @@ public class JobBuilder {
         // 2. Transform 链式处理
         Table resultTable = stEnv.from(schema.getTableName());
 
-        List<TransformConfig> transforms = config.getTransforms();
+        List<TransformConfig> transforms = localFileSourceConfig.getTransforms();
         if (transforms != null && !transforms.isEmpty()) {
             for (int i = 0; i < transforms.size(); i++) {
                 TransformConfig transformConfig = transforms.get(i);
@@ -813,8 +814,8 @@ public class JobBuilder {
         log.info("Table 转换为 DataStream");
 
         // 4. Sink 消费 DataStream
-        SinkPlugin sinkPlugin = pluginLoader.loadSinkPlugin(config.getSink().getType());
-        SinkFunction<Row> sink = sinkPlugin.createSink(config.getSink());
+        SinkPlugin sinkPlugin = pluginLoader.loadSinkPlugin(localFileSourceConfig.getSink().getType());
+        SinkFunction<Row> sink = sinkPlugin.createSink(localFileSourceConfig.getSink());
         resultStream.addSink(sink);
         log.info("Sink 创建成功");
 
@@ -852,7 +853,7 @@ git commit -m "feat: JobBuilder 集成 Table API 支持 SQL Transform"
 
 package com.etl.sink.console;
 
-import com.etl.core.config.SinkConfig;
+import com.etl.core.localFileSourceConfig.SinkConfig;
 import com.etl.core.spi.SinkPlugin;
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
@@ -877,9 +878,9 @@ public class ConsoleSinkPlugin implements SinkPlugin {
     }
 
     @Override
-    public RichSinkFunction<Row> createSink(SinkConfig config) {
-        String format = config.getString("format");
-        boolean showSubtask = config.getBoolean("showSubtask", true);
+    public RichSinkFunction<Row> createSink(SinkConfig localFileSourceConfig) {
+        String format = localFileSourceConfig.getString("format");
+        boolean showSubtask = localFileSourceConfig.getBoolean("showSubtask", true);
         log.info("创建 Console Sink, format={}, showSubtask={}", format, showSubtask);
 
         return new ConsoleSinkFunction(format, showSubtask);
@@ -954,7 +955,7 @@ git commit -m "feat: ConsoleSinkPlugin 适配 SinkFunction<Row>"
 
 package com.etl.sink.mysql;
 
-import com.etl.core.config.SinkConfig;
+import com.etl.core.localFileSourceConfig.SinkConfig;
 import com.etl.core.spi.SinkPlugin;
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
@@ -977,13 +978,13 @@ public class MySQLSinkPlugin implements SinkPlugin {
     }
 
     @Override
-    public SinkFunction<Row> createSink(SinkConfig config) {
-        String url = config.getString("url");
-        String username = config.getString("username");
-        String password = config.getString("password");
-        String table = config.getString("table");
-        int batchSize = config.getInteger("batchSize") != null ? config.getInteger("batchSize") : 100;
-        String writeMode = config.getString("writeMode") != null ? config.getString("writeMode") : "insert";
+    public SinkFunction<Row> createSink(SinkConfig localFileSourceConfig) {
+        String url = localFileSourceConfig.getString("url");
+        String username = localFileSourceConfig.getString("username");
+        String password = localFileSourceConfig.getString("password");
+        String table = localFileSourceConfig.getString("table");
+        int batchSize = localFileSourceConfig.getInteger("batchSize") != null ? localFileSourceConfig.getInteger("batchSize") : 100;
+        String writeMode = localFileSourceConfig.getString("writeMode") != null ? localFileSourceConfig.getString("writeMode") : "insert";
 
         if (url == null || username == null || password == null || table == null) {
             throw new IllegalArgumentException("MySQL Sink 缺少必要配置: url, username, password, table");
@@ -1059,7 +1060,7 @@ git commit -m "refactor: 删除 FieldMappingTransformPlugin，被 SQL Transform 
   },
   "source": {
     "type": "mysql",
-    "config": {
+    "localFileSourceConfig": {
       "url": "jdbc:mysql://118.145.119.51:3306/test_db",
       "table": "user_table",
       "username": "root",
@@ -1078,14 +1079,14 @@ git commit -m "refactor: 删除 FieldMappingTransformPlugin，被 SQL Transform 
   "transforms": [
     {
       "type": "sql",
-      "config": {
+      "localFileSourceConfig": {
         "sql": "SELECT id AS user_id, name FROM users WHERE id > 0"
       }
     }
   ],
   "sink": {
     "type": "console",
-    "config": {
+    "localFileSourceConfig": {
       "format": "json"
     }
   }

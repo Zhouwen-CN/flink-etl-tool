@@ -12,12 +12,12 @@
 
 ## 文件结构
 
-| 文件 | 职责 | 操作 |
-|------|------|------|
-| `flink-etl-core/src/main/java/com/etl/core/config/JobMeta.java` | Job 元信息配置类，新增 parallelism 字段 | 修改 |
-| `flink-etl-core/src/main/java/com/etl/core/job/JobExecutor.java` | Flink 执行环境创建，应用并行度配置 | 修改 |
-| `flink-etl-core/src/test/java/com/etl/core/config/JobMetaTest.java` | JobMeta 配置解析单元测试 | 创建 |
-| `docs/examples/mysql-to-console.json` | 示例配置文件，添加 parallelism 配置 | 修改 |
+| 文件                                                                                 | 职责                           | 操作 |
+|------------------------------------------------------------------------------------|------------------------------|----|
+| `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/JobMeta.java`     | Job 元信息配置类，新增 parallelism 字段 | 修改 |
+| `flink-etl-core/src/main/java/com/etl/core/job/JobExecutor.java`                   | Flink 执行环境创建，应用并行度配置         | 修改 |
+| `flink-etl-core/src/test/java/com/etl/core/localFileSourceConfig/JobMetaTest.java` | JobMeta 配置解析单元测试             | 创建 |
+| `docs/examples/mysql-to-console.json`                                              | 示例配置文件，添加 parallelism 配置     | 修改 |
 
 ---
 
@@ -26,14 +26,15 @@
 ### Task 1: JobMeta 添加 parallelism 字段
 
 **Files:**
-- Modify: `flink-etl-core/src/main/java/com/etl/core/config/JobMeta.java`
+
+- Modify: `flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/JobMeta.java`
 
 - [ ] **Step 1: 为 JobMeta 添加 parallelism 字段**
 
 在 `JobMeta.java` 中添加 `parallelism` 字段及 getter/setter：
 
 ```java
-package com.etl.core.config;
+package com.etl.core.localFileSourceConfig;
 
 /**
  * Job 元信息配置
@@ -77,7 +78,7 @@ Expected: BUILD SUCCESS
 - [ ] **Step 3: 提交配置模型变更**
 
 ```bash
-git add flink-etl-core/src/main/java/com/etl/core/config/JobMeta.java
+git add flink-etl-core/src/main/java/com/etl/core/localFileSourceConfig/JobMeta.java
 git commit -m "feat: JobMeta 添加 parallelism 并行度配置字段"
 ```
 
@@ -86,12 +87,13 @@ git commit -m "feat: JobMeta 添加 parallelism 并行度配置字段"
 ### Task 2: JobMeta 单元测试
 
 **Files:**
-- Create: `flink-etl-core/src/test/java/com/etl/core/config/JobMetaTest.java`
+
+- Create: `flink-etl-core/src/test/java/com/etl/core/localFileSourceConfig/JobMetaTest.java`
 
 - [ ] **Step 1: 创建 JobMeta 单元测试**
 
 ```java
-package com.etl.core.config;
+package com.etl.core.localFileSourceConfig;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -151,7 +153,7 @@ Expected: 3 tests passed
 - [ ] **Step 3: 提交测试代码**
 
 ```bash
-git add flink-etl-core/src/test/java/com/etl/core/config/JobMetaTest.java
+git add flink-etl-core/src/test/java/com/etl/core/localFileSourceConfig/JobMetaTest.java
 git commit -m "test: 添加 JobMeta 并行度配置解析测试"
 ```
 
@@ -169,9 +171,9 @@ git commit -m "test: 添加 JobMeta 并行度配置解析测试"
 在创建 Flink 执行环境后，检查并应用并行度配置：
 
 ```java
-private StreamExecutionEnvironment createExecutionEnvironment(JobConfig config) {
-    String mode = config.getJob().getMode();
-    Integer parallelism = config.getJob().getParallelism();
+private StreamExecutionEnvironment createExecutionEnvironment(JobConfig localFileSourceConfig) {
+    String mode = localFileSourceConfig.getJob().getMode();
+    Integer parallelism = localFileSourceConfig.getJob().getParallelism();
     logger.info("创建 Flink 执行环境: mode={}, parallelism={}", mode, parallelism);
 
     StreamExecutionEnvironment env;
@@ -219,7 +221,7 @@ git commit -m "feat: JobExecutor 支持从配置设置 Flink 并行度"
 ```java
 package com.etl.core.job;
 
-import com.etl.core.config.*;
+import com.etl.core.localFileSourceConfig.*;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.junit.jupiter.api.Test;
 
@@ -233,18 +235,18 @@ class JobExecutorTest {
     @Test
     void testCreateExecutionEnvironmentWithParallelism() {
         // 准备配置
-        JobConfig config = new JobConfig();
+        JobConfig localFileSourceConfig = new JobConfig();
         JobMeta jobMeta = new JobMeta();
         jobMeta.setName("test-job");
         jobMeta.setMode("batch");
         jobMeta.setParallelism(4);
-        config.setJob(jobMeta);
-        config.setSource(new SourceConfig());
-        config.setSink(new SinkConfig());
+        localFileSourceConfig.setJob(jobMeta);
+        localFileSourceConfig.setSource(new SourceConfig());
+        localFileSourceConfig.setSink(new SinkConfig());
 
         // 创建执行环境
         JobExecutor executor = new JobExecutor();
-        StreamExecutionEnvironment env = executor.createExecutionEnvironment(config);
+        StreamExecutionEnvironment env = executor.createExecutionEnvironment(localFileSourceConfig);
 
         // 验证并行度
         assertEquals(4, env.getParallelism());
@@ -253,18 +255,18 @@ class JobExecutorTest {
     @Test
     void testCreateExecutionEnvironmentWithoutParallelism() {
         // 准备配置（不设置并行度）
-        JobConfig config = new JobConfig();
+        JobConfig localFileSourceConfig = new JobConfig();
         JobMeta jobMeta = new JobMeta();
         jobMeta.setName("test-job");
         jobMeta.setMode("batch");
         // 不设置 parallelism
-        config.setJob(jobMeta);
-        config.setSource(new SourceConfig());
-        config.setSink(new SinkConfig());
+        localFileSourceConfig.setJob(jobMeta);
+        localFileSourceConfig.setSource(new SourceConfig());
+        localFileSourceConfig.setSink(new SinkConfig());
 
         // 创建执行环境
         JobExecutor executor = new JobExecutor();
-        StreamExecutionEnvironment env = executor.createExecutionEnvironment(config);
+        StreamExecutionEnvironment env = executor.createExecutionEnvironment(localFileSourceConfig);
 
         // 验证使用默认并行度（Flink 默认值，通常是 CPU 核心数）
         assertTrue(env.getParallelism() > 0);
@@ -279,7 +281,7 @@ class JobExecutorTest {
 将 `JobExecutor.java` 中的 `createExecutionEnvironment` 方法从 `private` 改为包级可见：
 
 ```java
-StreamExecutionEnvironment createExecutionEnvironment(JobConfig config) {
+StreamExecutionEnvironment createExecutionEnvironment(JobConfig localFileSourceConfig) {
     // ... 方法体不变
 }
 ```
@@ -317,7 +319,7 @@ git commit -m "test: 添加 JobExecutor 并行度配置集成测试"
   },
   "source": {
     "type": "mysql",
-    "config": {
+    "localFileSourceConfig": {
       "url": "jdbc:mysql://localhost:3306/test",
       "username": "root",
       "password": "root",
@@ -327,7 +329,7 @@ git commit -m "test: 添加 JobExecutor 并行度配置集成测试"
   },
   "sink": {
     "type": "console",
-    "config": {}
+    "localFileSourceConfig": {}
   }
 }
 ```
@@ -362,9 +364,9 @@ git commit -m "docs: 示例配置添加 parallelism 并行度配置"
     "mode": "batch",
     "parallelism": 4
   },
-  "source": { "type": "mysql", "config": { ... } },
-  "transform": { "type": "field-mapping", "config": { ... } },
-  "sink": { "type": "console", "config": { ... } }
+  "source": { "type": "mysql", "localFileSourceConfig": { ... } },
+  "transform": { "type": "field-mapping", "localFileSourceConfig": { ... } },
+  "sink": { "type": "console", "localFileSourceConfig": { ... } }
 }
 ```
 

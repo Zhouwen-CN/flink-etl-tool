@@ -1,8 +1,9 @@
 package com.etl.source.localfile.format;
 
-import com.etl.core.config.SourceConfig;
-import com.etl.core.exception.SchemaConfigException;
-import com.etl.core.schema.*;
+import com.etl.core.schema.EtlField;
+import com.etl.core.schema.EtlSchema;
+import com.etl.core.schema.TypeConverter;
+import com.etl.source.localfile.config.LocalFileSourceConfig;
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
@@ -15,9 +16,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
-import java.util.List;
 
 /**
  * CSV 格式解析插件
@@ -33,23 +32,14 @@ public class CsvFormatPlugin implements FileFormatPlugin {
     }
 
     @Override
-    public Iterable<Row> parse(SourceConfig config, InputStream inputStream) {
-        EtlSchema schema = config.getSchema();
-        if (schema == null) {
-            throw new SchemaConfigException("CSV Source 必须配置 schema");
-        }
-
-        String encoding = config.getString("encoding");
-        Charset charset = encoding != null ? Charset.forName(encoding) : StandardCharsets.UTF_8;
-
-        String delimiter = config.getString("delimiter");
-        char delim = delimiter != null ? delimiter.charAt(0) : ',';
-
-        // skipHeader: 是否跳过 CSV 第一行（默认 true）
-        boolean skipHeader = config.getBoolean("skipHeader", true);
+    public Iterable<Row> parse(LocalFileSourceConfig localFileSourceConfig, InputStream inputStream) {
+        EtlSchema schema = localFileSourceConfig.getSchema();
+        Charset charset = Charset.forName(localFileSourceConfig.getEncoding());
+        String delimiter = localFileSourceConfig.getDelimiter();
+        boolean skipHeader = localFileSourceConfig.isSkipHeader();
 
         CSVFormat csvFormat = CSVFormat.DEFAULT.builder()
-                .setDelimiter(delim)
+                .setDelimiter(delimiter)
                 .build();
 
         try {

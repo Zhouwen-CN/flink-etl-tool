@@ -61,7 +61,7 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
 
         Integer queryTimeout = config.getInteger("queryTimeout");
 
-        jdbcSourceConfig = JdbcSourceConfig.builder()
+        this.jdbcSourceConfig = JdbcSourceConfig.builder()
                 .url(url)
                 .username(username)
                 .password(password)
@@ -73,7 +73,7 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
                 .dialect(dialect)
                 .build();
 
-        log.info("创建 JdbcSource: table={}, sql={}, splitColumn={}", table, sql, splitColumn);
+        log.info("创建 JdbcSource: {}", this.jdbcSourceConfig);
     }
 
     @Override

@@ -13,6 +13,7 @@
       "encoding": "UTF-8",
       "delimiter": ",",
       "skipHeader": true,
+      "recursive": true,
       "schema": [
         { "name": "id", "type": "LONG" },
         { "name": "name", "type": "STRING" },

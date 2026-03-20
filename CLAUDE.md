@@ -20,7 +20,7 @@ mvn clean package
 java --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar --file docs/examples/mysql-to-console.json
 
 # 方式二：从 JSON 字符串加载配置
-java --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar --config '{"job":{...},"source":{...},"sink":{...}}'
+java --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar --localFileSourceConfig '{"job":{...},"source":{...},"sink":{...}}'
 
 # 注意：Java 11+ 运行时需要 --add-opens 参数，解决 Flink Kryo 序列化器与模块系统的兼容性问题
 
@@ -162,17 +162,17 @@ public class JdbcSourceConfig implements Serializable {
 public class JdbcSource extends AbstractSplitSource<...> {
     private final JdbcSourceConfig jdbcSourceConfig;
 
-    public JdbcSource(SourceConfig config, JdbcDialect dialect) {
-        super(config);
+    public JdbcSource(SourceConfig localFileSourceConfig, JdbcDialect dialect) {
+        super(localFileSourceConfig);
 
         // 参数校验
-        String url = config.getString("url");
+        String url = localFileSourceConfig.getString("url");
         Preconditions.checkNotNull(url, "url is null");
 
-        String splitColumn = config.getString("splitColumn");
+        String splitColumn = localFileSourceConfig.getString("splitColumn");
         Preconditions.checkNotNull(splitColumn, "splitColumn is null");
 
-        Integer batchSize = config.getInteger("batchSize", getDefaultBatchSize());
+        Integer batchSize = localFileSourceConfig.getInteger("batchSize", getDefaultBatchSize());
         Preconditions.checkArgument(batchSize > 0, "batchSize must be greater than 0");
 
         // 封装成配置对象
@@ -217,14 +217,14 @@ public class JdbcSource extends AbstractSplitSource<...> {
   "source": {
     "type": "mysql",
     "outputTable": "source_table",
-    "config": { ... }
+    "localFileSourceConfig": { ... }
   },
   "transforms": [
     {
       "type": "sql",
       "inputTable": "source_table",
       "outputTable": "transformed_table",
-      "config": {
+      "localFileSourceConfig": {
         "sql": "SELECT * FROM source_table WHERE id > 0"
       }
     }
@@ -232,7 +232,7 @@ public class JdbcSource extends AbstractSplitSource<...> {
   "sink": {
     "type": "console",
     "inputTable": "transformed_table",
-    "config": { ... }
+    "localFileSourceConfig": { ... }
   }
 }
 ```

@@ -1,9 +1,10 @@
 package com.etl.source.localfile.format;
 
-import com.etl.core.config.SourceConfig;
+import com.etl.source.localfile.config.LocalFileSourceConfig;
 import org.apache.flink.types.Row;
 
 import java.io.InputStream;
+import java.io.Serializable;
 
 /**
  * 文件格式解析插件接口
@@ -17,7 +18,7 @@ import java.io.InputStream;
  *
  * <p>字段名和类型从 source.schema 配置中获取
  */
-public interface FileFormatPlugin {
+public interface FileFormatPlugin extends Serializable {
 
     /**
      * 获取格式类型标识
@@ -35,5 +36,5 @@ public interface FileFormatPlugin {
      *                    调用方负责打开，实现方负责在迭代完成后关闭
      * @return Row 迭代器
      */
-    Iterable<Row> parse(SourceConfig config, InputStream inputStream);
+    Iterable<Row> parse(LocalFileSourceConfig config, InputStream inputStream);
 }

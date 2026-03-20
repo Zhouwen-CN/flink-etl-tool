@@ -119,7 +119,7 @@ public interface SourcePlugin {
     /**
      * 创建 Flink Source
      */
-    Source<?, ?, ?> createSource(SourceConfig config);
+    Source<?, ?, ?> createSource(SourceConfig localFileSourceConfig);
 
     /**
      * 获取分片策略描述
@@ -140,7 +140,7 @@ public interface TransformPlugin {
     /**
      * 创建转换函数
      */
-    MapFunction<?, ?> createTransform(TransformConfig config);
+    MapFunction<?, ?> createTransform(TransformConfig localFileSourceConfig);
 }
 ```
 
@@ -156,7 +156,7 @@ public interface SinkPlugin {
     /**
      * 创建 Sink 函数
      */
-    SinkFunction<?> createSink(SinkConfig config);
+    SinkFunction<?> createSink(SinkConfig localFileSourceConfig);
 }
 ```
 
@@ -197,7 +197,7 @@ public interface SinkPlugin {
   },
   "source": {
     "type": "mysql",
-    "config": {
+    "localFileSourceConfig": {
       "url": "jdbc:mysql://localhost:3306/test_db",
       "table": "user_table",
       "username": "root",
@@ -208,7 +208,7 @@ public interface SinkPlugin {
   },
   "transform": {
     "type": "field-mapping",
-    "config": {
+    "localFileSourceConfig": {
       "mappings": [
         { "from": "id", "to": "user_id" },
         { "from": "name", "to": "user_name" }
@@ -218,7 +218,7 @@ public interface SinkPlugin {
   },
   "sink": {
     "type": "console",
-    "config": {
+    "localFileSourceConfig": {
       "format": "json"
     }
   }
@@ -254,7 +254,7 @@ flink-etl-tool/
 │   ├── pom.xml
 │   └── src/main/java/com/etl/core/
 │       ├── EtlApplication.java             # CLI 入口
-│       ├── config/                         # 配置解析层
+│       ├── localFileSourceConfig/                         # 配置解析层
 │       │   ├── JobConfig.java
 │       │   ├── SourceConfig.java
 │       │   ├── TransformConfig.java
@@ -359,8 +359,8 @@ public class PostgreSQLSourcePlugin implements SourcePlugin {
     }
 
     @Override
-    public Source<?, ?, ?> createSource(SourceConfig config) {
-        return new PostgreSQLSource(config);
+    public Source<?, ?, ?> createSource(SourceConfig localFileSourceConfig) {
+        return new PostgreSQLSource(localFileSourceConfig);
     }
 
     @Override
