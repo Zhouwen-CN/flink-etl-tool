@@ -179,11 +179,13 @@ public class JdbcSource extends AbstractSplitSource<...> {
     "mode": "batch",
     "parallelism": 4
   },
-  "source": {
-    "type": "mysql",
-    "outputTable": "source_table",
-    "config": { ... }
-  },
+  "sources": [
+    {
+      "type": "mysql",
+      "outputTable": "source_table",
+      "config": { ... }
+    }
+  ],
   "transforms": [
     {
       "type": "sql",
@@ -193,19 +195,21 @@ public class JdbcSource extends AbstractSplitSource<...> {
       }
     }
   ],
-  "sink": {
-    "type": "console",
-    "inputTable": "transformed_table",
-    "config": {}
-  }
+  "sinks": [
+    {
+      "type": "console",
+      "inputTable": "transformed_table",
+      "config": {}
+    }
+  ]
 }
 ```
 
 **数据流转机制：**
-- `source.outputTable` → Source 输出注册为 Table
-- `transform.inputTable` → 从该 Table 读取数据（SQL 引用）
-- `transform.outputTable` → Transform 结果注册为中间表
-- `sink.inputTable` → 从该 Table 读取数据写入 Sink
+- `sources` → 支持多个数据源，每个 Source 的 `outputTable` 注册为 Table
+- `transforms` → 支持多个 Transform 组成处理链
+- `sinks` → 支持多个数据目的地，每个 Sink 从 `inputTable` 读取数据写入目标
+- SQL 中引用的表名为上游的 `outputTable`
 
 **job 配置项说明：**
 - `name`: Job 名称
