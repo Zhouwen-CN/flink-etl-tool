@@ -4,27 +4,31 @@
     "mode": "batch",
     "parallelism": 2
   },
-  "source": {
-    "type": "localfile",
-    "outputTable": "csv_data",
-    "config": {
-      "path": "docs/examples/data/*.csv",
-      "format": "csv",
-      "encoding": "UTF-8",
-      "delimiter": ",",
-      "skipHeader": true,
-      "recursive": true,
-      "schema": [
-        { "name": "id", "type": "LONG" },
-        { "name": "name", "type": "STRING" },
-        { "name": "age", "type": "INT" },
-        { "name": "email", "type": "STRING" }
-      ]
+  "sources": [
+    {
+      "type": "localfile",
+      "outputTable": "csv_data",
+      "config": {
+        "path": "docs/examples/data/*.csv",
+        "format": "csv",
+        "encoding": "UTF-8",
+        "delimiter": ",",
+        "skipHeader": true,
+        "recursive": true,
+        "schema": [
+          { "name": "id", "type": "LONG" },
+          { "name": "name", "type": "STRING" },
+          { "name": "age", "type": "INT" },
+          { "name": "email", "type": "STRING" }
+        ]
+      }
     }
-  },
-  "sink": {
-    "type": "console",
-    "inputTable": "csv_data",
-    "config": {}
-  }
+  ],
+  "sinks": [
+    {
+      "type": "console",
+      "inputTable": "csv_data",
+      "config": {}
+    }
+  ]
 }

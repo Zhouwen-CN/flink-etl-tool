@@ -4,22 +4,24 @@
     "mode": "batch",
     "parallelism": 1
   },
-  "source": {
-    "type": "mysql",
-    "outputTable": "users",
-    "config": {
-      "url": "jdbc:mysql://118.145.119.51:3306/test_db",
-      "table": "user_table",
-      "username": "root",
-      "password": "Zw$8rb8*",
-      "splitColumn": "id",
-      "batchSize": 1,
-      "schema": [
-        { "name": "id", "type": "INT" },
-        { "name": "name", "type": "STRING" }
-      ]
+  "sources": [
+    {
+      "type": "mysql",
+      "outputTable": "users",
+      "config": {
+        "url": "jdbc:mysql://118.145.119.51:3306/test_db",
+        "table": "user_table",
+        "username": "root",
+        "password": "Zw$8rb8*",
+        "splitColumn": "id",
+        "batchSize": 1,
+        "schema": [
+          { "name": "id", "type": "INT" },
+          { "name": "name", "type": "STRING" }
+        ]
+      }
     }
-  },
+  ],
   "transforms": [
     {
       "type": "sql",
@@ -29,9 +31,11 @@
       }
     }
   ],
-  "sink": {
-    "type": "console",
-    "inputTable": "users_transformed",
-    "config": {}
-  }
+  "sinks": [
+    {
+      "type": "console",
+      "inputTable": "users_transformed",
+      "config": {}
+    }
+  ]
 }
