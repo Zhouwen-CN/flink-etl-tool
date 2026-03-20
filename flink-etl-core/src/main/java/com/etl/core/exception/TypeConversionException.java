@@ -1,7 +1,7 @@
 package com.etl.core.exception;
 
-import com.etl.core.schema.EtlFieldType;
 import lombok.Getter;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 
 /**
  * 类型转换异常
@@ -12,10 +12,10 @@ public class TypeConversionException extends RuntimeException {
 
     private final String fieldName;
     private final String rawValue;
-    private final EtlFieldType targetType;
+    private final TypeInformation<?> targetType;
 
     public TypeConversionException(String fieldName, String rawValue,
-                                   EtlFieldType targetType, Throwable cause) {
+                                   TypeInformation<?> targetType, Throwable cause) {
         super(String.format("字段 '%s' 类型转换失败: 值 '%s' 无法转换为 %s",
               fieldName, rawValue, targetType), cause);
         this.fieldName = fieldName;

@@ -1,6 +1,8 @@
 package com.etl.core.schema;
 
 import com.etl.core.exception.TypeConversionException;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.Types;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -9,29 +11,30 @@ import java.time.format.DateTimeParseException;
 
 /**
  * 类型转换器
- * 将原始值转换为目标类型
+ * 将原始值转换为目标类型（基于 Flink TypeInformation）
  */
 public class TypeConverter {
 
-    private static final DateTimeFormatter DEFAULT_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter DEFAULT_TIMESTAMP_FORMAT =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     /**
      * 将原始值转换为目标类型
      *
      * @param value 原始值（通常是 String）
      * @param fieldName 字段名（用于错误信息）
-     * @param targetType 目标类型
+     * @param targetType 目标类型（Flink TypeInformation）
      * @return 转换后的值
      * @throws TypeConversionException 转换失败时抛出
      */
-    public static Object convert(Object value, String fieldName, EtlFieldType targetType) {
+    public static Object convert(Object value, String fieldName, TypeInformation<?> targetType) {
         if (value == null) {
             return null;
         }
 
         // 处理字符串类型：检查空字符串
         if (value instanceof String) {
-            String strValue = ((String) value);
+            String strValue = (String) value;
             if (strValue.isEmpty()) {
                 return null;
             }
@@ -48,52 +51,108 @@ public class TypeConverter {
         }
 
         try {
-            switch (targetType) {
-                case STRING:
-                    return strValue;
-                case BOOLEAN:
-                    return parseBoolean(strValue);
-                case INT:
-                    return Integer.parseInt(strValue);
-                case LONG:
-                    return Long.parseLong(strValue);
-                case DOUBLE:
-                    return Double.parseDouble(strValue);
-                case DECIMAL:
-                    return new BigDecimal(strValue);
-                case TIMESTAMP:
-                    return LocalDateTime.parse(strValue, DEFAULT_TIMESTAMP_FORMAT);
-                default:
-                    throw new IllegalArgumentException("不支持的类型: " + targetType);
+            // 根据 TypeInformation 判断目标类型
+            if (targetType == Types.STRING) {
+                return strValue;
+            } else if (targetType == Types.BOOLEAN) {
+                return parseBoolean(strValue);
+            } else if (targetType == Types.INT) {
+                return Integer.parseInt(strValue);
+            } else if (targetType == Types.LONG) {
+                return Long.parseLong(strValue);
+            } else if (targetType == Types.DOUBLE) {
+                return Double.parseDouble(strValue);
+            } else if (targetType == Types.BIG_DEC) {
+                return new BigDecimal(strValue);
+            } else if (targetType == Types.LOCAL_DATE_TIME) {
+                return LocalDateTime.parse(strValue, DEFAULT_TIMESTAMP_FORMAT);
+            } else {
+                // 未知类型，返回原值
+                return value;
             }
         } catch (NumberFormatException | DateTimeParseException e) {
             throw new TypeConversionException(fieldName, strValue, targetType, e);
         }
     }
 
-    private static boolean isCompatibleType(Object value, EtlFieldType targetType) {
-        switch (targetType) {
-            case STRING:
-                return value instanceof String;
-            case BOOLEAN:
-                return value instanceof Boolean;
-            case INT:
-                return value instanceof Integer;
-            case LONG:
-                return value instanceof Long;
-            case DOUBLE:
-                return value instanceof Double;
-            case DECIMAL:
-                return value instanceof BigDecimal;
-            case TIMESTAMP:
-                return value instanceof LocalDateTime || value instanceof java.sql.Timestamp;
+    /**
+     * 根据 JDBC java.sql.Types 转换为 Flink TypeInformation
+     * 从 FlinkTypeConverter 迁移
+     *
+     * @param sqlType JDBC SQL 类型常量（来自 java.sql.Types）
+     * @return 对应的 Flink TypeInformation
+     */
+    public static TypeInformation<?> fromSqlType(int sqlType) {
+        // 注意：使用完全限定名避免与 Flink Types 冲突
+        switch (sqlType) {
+            case java.sql.Types.CHAR:
+            case java.sql.Types.VARCHAR:
+            case java.sql.Types.LONGVARCHAR:
+            case java.sql.Types.CLOB:
+            case java.sql.Types.NCHAR:
+            case java.sql.Types.NVARCHAR:
+            case java.sql.Types.LONGNVARCHAR:
+            case java.sql.Types.NCLOB:
+                return Types.STRING;
+
+            case java.sql.Types.BOOLEAN:
+            case java.sql.Types.BIT:
+                return Types.BOOLEAN;
+
+            case java.sql.Types.TINYINT:
+            case java.sql.Types.SMALLINT:
+            case java.sql.Types.INTEGER:
+                return Types.INT;
+
+            case java.sql.Types.BIGINT:
+                return Types.LONG;
+
+            case java.sql.Types.REAL:
+            case java.sql.Types.FLOAT:
+            case java.sql.Types.DOUBLE:
+                return Types.DOUBLE;
+
+            case java.sql.Types.NUMERIC:
+            case java.sql.Types.DECIMAL:
+                return Types.BIG_DEC;
+
+            case java.sql.Types.DATE:
+            case java.sql.Types.TIME:
+            case java.sql.Types.TIMESTAMP:
+            case java.sql.Types.TIMESTAMP_WITH_TIMEZONE:
+                return Types.LOCAL_DATE_TIME;
+
             default:
-                return false;
+                return Types.STRING;
         }
     }
 
+    /**
+     * 检查值是否已经是目标类型
+     */
+    private static boolean isCompatibleType(Object value, TypeInformation<?> targetType) {
+        if (targetType == Types.STRING) {
+            return value instanceof String;
+        } else if (targetType == Types.BOOLEAN) {
+            return value instanceof Boolean;
+        } else if (targetType == Types.INT) {
+            return value instanceof Integer;
+        } else if (targetType == Types.LONG) {
+            return value instanceof Long;
+        } else if (targetType == Types.DOUBLE) {
+            return value instanceof Double;
+        } else if (targetType == Types.BIG_DEC) {
+            return value instanceof BigDecimal;
+        } else if (targetType == Types.LOCAL_DATE_TIME) {
+            return value instanceof LocalDateTime || value instanceof java.sql.Timestamp;
+        }
+        return false;
+    }
+
+    /**
+     * 解析布尔值（支持多种格式）
+     */
     private static Boolean parseBoolean(String value) {
-        // 支持多种布尔值表示
         if ("true".equalsIgnoreCase(value) || "1".equals(value) || "yes".equalsIgnoreCase(value)) {
             return true;
         }
