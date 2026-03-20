@@ -15,12 +15,12 @@
         "encoding": "UTF-8",
         "delimiter": ",",
         "skipHeader": true,
-        "schema": [
-          { "name": "id", "type": "LONG" },
-          { "name": "name", "type": "STRING" },
-          { "name": "age", "type": "INT" },
-          { "name": "email", "type": "STRING" }
-        ]
+        "schema": {
+          "id": "LONG",
+          "name": "STRING",
+          "age": "INT",
+          "email": "STRING"
+        }
       }
     },
     {

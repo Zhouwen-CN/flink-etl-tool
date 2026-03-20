@@ -149,10 +149,11 @@
           "description": "查询超时时间（秒）"
         },
         "schema": {
-          "type": "array",
+          "type": "object",
           "description": "字段定义（可选）",
-          "items": {
-            "$ref": "#/definitions/schemaField"
+          "additionalProperties": {
+            "type": "string",
+            "enum": ["STRING", "BOOLEAN", "INT", "LONG", "DOUBLE", "DECIMAL", "TIMESTAMP"]
           }
         }
       }
@@ -193,10 +194,11 @@
           "default": false
         },
         "schema": {
-          "type": "array",
+          "type": "object",
           "description": "字段定义（必填）",
-          "items": {
-            "$ref": "#/definitions/schemaField"
+          "additionalProperties": {
+            "type": "string",
+            "enum": ["STRING", "BOOLEAN", "INT", "LONG", "DOUBLE", "DECIMAL", "TIMESTAMP"]
           }
         }
       }
@@ -226,22 +228,6 @@
           "type": "integer",
           "description": "批量写入大小",
           "default": 100
-        }
-      }
-    },
-    "schemaField": {
-      "type": "object",
-      "description": "字段定义",
-      "required": ["name", "type"],
-      "properties": {
-        "name": {
-          "type": "string",
-          "description": "字段名"
-        },
-        "type": {
-          "type": "string",
-          "description": "字段类型",
-          "enum": ["INT", "LONG", "STRING", "DOUBLE", "BOOLEAN", "DATE", "TIMESTAMP"]
         }
       }
     }
