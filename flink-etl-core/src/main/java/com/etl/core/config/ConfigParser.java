@@ -1,10 +1,10 @@
 package com.etl.core.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+
 import lombok.extern.slf4j.Slf4j;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.File;
-import java.util.List;
 
 /**
  * 配置文件解析器
