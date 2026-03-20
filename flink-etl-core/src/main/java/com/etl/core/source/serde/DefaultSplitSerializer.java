@@ -1,33 +1,19 @@
 package com.etl.core.source.serde;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 import com.etl.core.source.BaseSourceSplit;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
-import org.objenesis.strategy.StdInstantiatorStrategy;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 /**
  * 默认的分片序列化器
- * 使用 Kryo 序列化，性能优于 Java 原生序列化
+ * 使用 JDK 序列化
  *
  * @param <SplitT> 分片类型
  */
 public class DefaultSplitSerializer<SplitT extends BaseSourceSplit> implements SimpleVersionedSerializer<SplitT> {
 
     public static final int VERSION = 1;
-
-    // Kryo 非线程安全，使用 ThreadLocal 保证每个线程独立实例
-    // StdInstantiatorStrategy 允许反序列化没有无参构造函数的类
-    private static final ThreadLocal<Kryo> KRYO_THREAD_LOCAL = ThreadLocal.withInitial(() -> {
-        Kryo kryo = new Kryo();
-        kryo.setRegistrationRequired(false);
-        kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
-        return kryo;
-    });
 
     @Override
     public int getVersion() {
@@ -36,13 +22,7 @@ public class DefaultSplitSerializer<SplitT extends BaseSourceSplit> implements S
 
     @Override
     public byte[] serialize(SplitT split) throws IOException {
-        Kryo kryo = KRYO_THREAD_LOCAL.get();
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             Output output = new Output(baos)) {
-            kryo.writeClassAndObject(output, split);
-            output.flush();
-            return baos.toByteArray();
-        }
+        return SerializerUtils.serialize(split);
     }
 
     @Override
@@ -52,10 +32,6 @@ public class DefaultSplitSerializer<SplitT extends BaseSourceSplit> implements S
             throw new IOException("无法读取未来版本的数据，当前版本: " + VERSION + "，数据版本: " + version);
         }
 
-        // 注意：如果序列化格式发生变化，需要在此添加版本迁移逻辑
-        Kryo kryo = KRYO_THREAD_LOCAL.get();
-        try (Input input = new Input(serialized)) {
-            return (SplitT) kryo.readClassAndObject(input);
-        }
+        return (SplitT) SerializerUtils.deserialize(serialized);
     }
 }

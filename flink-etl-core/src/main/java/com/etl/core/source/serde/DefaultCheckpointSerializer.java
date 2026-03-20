@@ -1,19 +1,14 @@
 package com.etl.core.source.serde;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
 import com.etl.core.source.BaseEnumCheckpoint;
 import com.etl.core.source.BaseSourceSplit;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
-import org.objenesis.strategy.StdInstantiatorStrategy;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 /**
  * 默认的检查点序列化器
- * 使用 Kryo 序列化，性能优于 Java 原生序列化
+ * 使用 JDK 序列化
  *
  * @param <SplitT>      分片类型
  * @param <CheckpointT> 检查点类型
@@ -23,13 +18,6 @@ public class DefaultCheckpointSerializer<SplitT extends BaseSourceSplit, Checkpo
 
     public static final int VERSION = 1;
 
-    private static final ThreadLocal<Kryo> KRYO_THREAD_LOCAL = ThreadLocal.withInitial(() -> {
-        Kryo kryo = new Kryo();
-        kryo.setRegistrationRequired(false);
-        kryo.setInstantiatorStrategy(new StdInstantiatorStrategy());
-        return kryo;
-    });
-
     @Override
     public int getVersion() {
         return VERSION;
@@ -37,13 +25,7 @@ public class DefaultCheckpointSerializer<SplitT extends BaseSourceSplit, Checkpo
 
     @Override
     public byte[] serialize(CheckpointT checkpoint) throws IOException {
-        Kryo kryo = KRYO_THREAD_LOCAL.get();
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-             Output output = new Output(baos)) {
-            kryo.writeClassAndObject(output, checkpoint);
-            output.flush();
-            return baos.toByteArray();
-        }
+        return SerializerUtils.serialize(checkpoint);
     }
 
     @Override
@@ -52,11 +34,6 @@ public class DefaultCheckpointSerializer<SplitT extends BaseSourceSplit, Checkpo
         if (version != VERSION) {
             throw new IOException("无法读取未来版本的数据，当前版本: " + VERSION + "，数据版本: " + version);
         }
-        // 允许向后兼容：尝试直接反序列化
-        // 注意：如果序列化格式发生变化，需要在此添加版本迁移逻辑
-        Kryo kryo = KRYO_THREAD_LOCAL.get();
-        try (Input input = new Input(serialized)) {
-            return (CheckpointT) kryo.readClassAndObject(input);
-        }
+        return (CheckpointT) SerializerUtils.deserialize(serialized);
     }
 }
