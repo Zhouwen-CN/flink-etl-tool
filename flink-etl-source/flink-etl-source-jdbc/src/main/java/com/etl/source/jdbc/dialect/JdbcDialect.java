@@ -1,6 +1,6 @@
 package com.etl.source.jdbc.dialect;
 
-import com.etl.core.schema.FlinkTypeConverter;
+import com.etl.core.schema.TypeConverter;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.types.Row;
@@ -71,7 +71,7 @@ public interface JdbcDialect extends Serializable {
         for (int i = 1; i <= columnCount; i++) {
             int index = i - 1;
             names[index] = metaData.getColumnLabel(i);
-            types[index] = FlinkTypeConverter.fromSqlType(metaData.getColumnType(i));
+            types[index] = TypeConverter.fromSqlType(metaData.getColumnType(i));
         }
 
         return Types.ROW_NAMED(names, types);
