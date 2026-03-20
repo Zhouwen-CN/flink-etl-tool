@@ -20,6 +20,8 @@ public class JobConfig {
 
 ### 示例配置
 
+**完整示例（含 Join 和多个 Sink）：**
+
 ```json
 {
   "job": {
@@ -87,6 +89,37 @@ public class JobConfig {
 }
 ```
 
+**最简示例（无 Transform，Source 直连 Sink）：**
+
+```json
+{
+  "job": {
+    "name": "simple-multi-sink",
+    "mode": "batch"
+  },
+  "sources": [
+    {
+      "type": "mysql",
+      "outputTable": "users",
+      "config": {
+        "url": "jdbc:mysql://localhost:3306/db",
+        "table": "users",
+        "username": "root",
+        "password": "xxx",
+        "splitColumn": "id"
+      }
+    }
+  ],
+  "sinks": [
+    {
+      "type": "console",
+      "inputTable": "users",
+      "config": {}
+    }
+  ]
+}
+```
+
 ## 执行流程
 
 ```
@@ -137,7 +170,9 @@ public class JobConfig {
 
 ## Transform inputTable 规则
 
-- **SQL Transform**：可省略 `inputTable`，因为 SQL 语句中已明确引用表名
+- **SQL Transform**：
+  - 可省略 `inputTable`，因为 SQL 语句中已明确引用表名
+  - 如果用户提供了 `inputTable`，则忽略（不报错，保持向后兼容）
 - **其他 Transform 类型**：保留 `inputTable` 字段（预留扩展）
 
 ## 代码变更
@@ -159,8 +194,10 @@ public class JobConfig {
 更新校验逻辑：
 - 校验 `sources` 数组非空
 - 校验每个 source 的 `type` 和 `outputTable`
+- 校验 `sources` 中 `outputTable` 名称唯一（不允许重复）
 - 校验 `sinks` 数组非空
 - 校验每个 sink 的 `type` 和 `inputTable`
+- 校验 `transforms` 中 `outputTable` 名称唯一（不允许与 source 或其他 transform 重复）
 
 ### 3. JobBuilder.java
 
