@@ -4,6 +4,8 @@ import com.etl.core.config.SourceConfig;
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseSplitReader;
+import com.etl.core.source.serde.DefaultCheckpointSerializer;
+import com.etl.core.source.serde.DefaultSplitSerializer;
 import com.etl.source.localfile.config.LocalFileSourceConfig;
 import com.etl.source.localfile.format.FileFormatPlugin;
 import lombok.extern.slf4j.Slf4j;
@@ -137,12 +139,12 @@ public class LocalFileSource extends AbstractSplitSource<LocalFileSplit, LocalFi
     @Override
     public SimpleVersionedSerializer<LocalFileSplit> getSplitSerializer() {
         // 使用自定义序列化器，避免 Kryo 序列化 List<String> 的问题
-        return new LocalFileSplitSerializer();
+        return new DefaultSplitSerializer<>();
     }
 
     @Override
     public SimpleVersionedSerializer<LocalFileEnumCheckpoint> getEnumeratorCheckpointSerializer() {
         // 使用自定义序列化器
-        return new LocalFileEnumCheckpointSerializer();
+        return new DefaultCheckpointSerializer<>();
     }
 }

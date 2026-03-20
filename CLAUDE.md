@@ -15,18 +15,14 @@ mvn clean compile
 # 打包项目（生成可执行 JAR）
 mvn clean package
 
-# 运行 ETL 任务
-# 方式一：从文件加载配置（推荐）
+# 运行 ETL 任务（从文件加载配置）
 java --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar --file docs/examples/mysql-to-console.json
-
-# 方式二：从 JSON 字符串加载配置
-java --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar --localFileSourceConfig '{"job":{...},"source":{...},"sink":{...}}'
-
-# 注意：Java 11+ 运行时需要 --add-opens 参数，解决 Flink Kryo 序列化器与模块系统的兼容性问题
 
 # 安装到本地仓库（开发新插件时需要）
 mvn clean install -DskipTests
 ```
+
+**注意**：Java 11+ 运行时需要 `--add-opens` 参数，解决 Flink Kryo 序列化器与模块系统的兼容性问题。
 
 ## 架构概览
 
@@ -75,16 +71,16 @@ flink-etl-tool/
 
 项目参考 Clink 项目设计，实现了完整的 Source 抽象层，简化 Flink FLIP-27 Source API 的实现：
 
-**核心抽象类层次：**
+**核心抽象类：**
 - `AbstractSplitSource<SplitT, CheckpointT>` - Source 基类（core 模块）
 
 **base 包组件（core 模块）：**
-- `BaseSourceSplit` - 分片接口
-- `BaseSplitState` - 分片状态
-- `BaseEnumCheckpoint` - 枚举器检查点
 - `BaseSplitEnumerator` - 分片枚举器基类（自动处理分片分配和回收）
 - `BaseSourceReader` - 源阅读器基类（封装线程模型和状态管理）
 - `BaseSplitReader` - 分片读取器接口（阻塞式数据读取）
+- `BaseSplitState` - 分片状态
+- `BaseEnumCheckpoint` - 枚举器检查点
+- `BaseSourceSplit` - 分片接口
 
 **数据类型：**
 - 所有 Source 直接使用 Flink `Row` 类型输出，无额外包装层
@@ -98,9 +94,10 @@ flink-etl-tool/
 2. 实现 `SourcePlugin` 接口
 3. 添加 `@AutoService(SourcePlugin.class)` 注解（自动生成 SPI 配置）
 4. 继承 `AbstractSplitSource` 实现分片读取
-   - 关系型数据库：直接继承 `AbstractSplitSource`，分片逻辑在 `JdbcSplitEnumerator` 中
+   - 关系型数据库：参考 `JdbcSource` 实现，分片逻辑在 Enumerator 的 `start()` 方法中计算
    - 文件类：参考 `LocalFileSource` 实现
-5. 在 `flink-etl-client/pom.xml` 添加新模块依赖
+5. 创建配置封装类（如 `XxxSourceConfig`），实现 `Serializable`
+6. 在 `flink-etl-client/pom.xml` 添加新模块依赖
 
 **注意：** 使用 `@AutoService` 注解后，无需手动创建 `META-INF/services/` 目录下的服务配置文件，编译时会自动生成。
 
@@ -111,36 +108,6 @@ import com.google.auto.service.AutoService;
 public class MySourcePlugin implements SourcePlugin {
     // ...
 }
-```
-
-### Source 配置封装模式
-
-**核心原则：参数校验在 Source 构造函数中完成，封装成配置对象传递给下游组件。**
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                      Source 构造函数                              │
-│  ┌─────────────────────────────────────────────────────────┐    │
-│  │ 1. 从 SourceConfig 读取原始配置                           │    │
-│  │ 2. 参数校验（Preconditions.checkNotNull/checkArgument）   │    │
-│  │ 3. 特殊处理（如 MySQL 的 useCursorFetch 参数）            │    │
-│  │ 4. 封装成 XxxSourceConfig 对象                            │    │
-│  └─────────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-                    ┌─────────────────┐
-                    │ XxxSourceConfig │
-                    │  (不可变对象)     │
-                    │  implements     │
-                    │  Serializable   │
-                    └─────────────────┘
-                              │
-              ┌───────────────┼───────────────┐
-              ▼               ▼               ▼
-        ┌───────────┐  ┌───────────┐  ┌───────────┐
-        │Enumerator │  │ SplitReader│  │  其他组件  │
-        └───────────┘  └───────────┘  └───────────┘
 ```
 
 **示例代码：**
@@ -162,17 +129,17 @@ public class JdbcSourceConfig implements Serializable {
 public class JdbcSource extends AbstractSplitSource<...> {
     private final JdbcSourceConfig jdbcSourceConfig;
 
-    public JdbcSource(SourceConfig localFileSourceConfig, JdbcDialect dialect) {
-        super(localFileSourceConfig);
+    public JdbcSource(SourceConfig config, JdbcDialect dialect) {
+        super(config);
 
         // 参数校验
-        String url = localFileSourceConfig.getString("url");
+        String url = config.getString("url");
         Preconditions.checkNotNull(url, "url is null");
 
-        String splitColumn = localFileSourceConfig.getString("splitColumn");
+        String splitColumn = config.getString("splitColumn");
         Preconditions.checkNotNull(splitColumn, "splitColumn is null");
 
-        Integer batchSize = localFileSourceConfig.getInteger("batchSize", getDefaultBatchSize());
+        Integer batchSize = config.getInteger("batchSize", getDefaultBatchSize());
         Preconditions.checkArgument(batchSize > 0, "batchSize must be greater than 0");
 
         // 封装成配置对象
@@ -217,14 +184,13 @@ public class JdbcSource extends AbstractSplitSource<...> {
   "source": {
     "type": "mysql",
     "outputTable": "source_table",
-    "localFileSourceConfig": { ... }
+    "config": { ... }
   },
   "transforms": [
     {
       "type": "sql",
-      "inputTable": "source_table",
       "outputTable": "transformed_table",
-      "localFileSourceConfig": {
+      "config": {
         "sql": "SELECT * FROM source_table WHERE id > 0"
       }
     }
@@ -232,7 +198,7 @@ public class JdbcSource extends AbstractSplitSource<...> {
   "sink": {
     "type": "console",
     "inputTable": "transformed_table",
-    "localFileSourceConfig": { ... }
+    "config": {}
   }
 }
 ```
@@ -250,16 +216,25 @@ public class JdbcSource extends AbstractSplitSource<...> {
   - 对于支持分片的 Source（如 MySQL），分片数量等于并行度
   - 如果数据量小于并行度，实际分片数会自动调整为数据量
 
-**source 配置项说明（以 MySQL 为例）：**
+**MySQL source 配置项：**
 - `url`: 数据库连接 URL
 - `table`: 表名（与 `sql` 二选一）
 - `sql`: 自定义查询 SQL（与 `table` 二选一）
 - `username`: 用户名
 - `password`: 密码
 - `splitColumn`: 分片列名（通常为主键）
-- `fetchSize`: JDBC fetch size（可选，流式读取优化）
+- `batchSize`: 批量读取大小（可选，默认 100）
 - `queryTimeout`: 查询超时时间（可选，单位秒）
 - `schema`: 字段定义数组（可选，用于定义输出字段名和类型）
+
+**LocalFile source 配置项：**
+- `path`: 文件路径（支持通配符 `*`）
+- `format`: 文件格式（如 `csv`）
+- `encoding`: 文件编码（可选，默认 UTF-8）
+- `delimiter`: CSV 分隔符（可选，默认 `,`）
+- `skipHeader`: 是否跳过首行（可选，默认 true）
+- `recursive`: 是否递归扫描目录（可选，默认 false）
+- `schema`: 字段定义数组（必填）
 
 **schema 格式：**
 ```json
@@ -283,21 +258,28 @@ public class JdbcSource extends AbstractSplitSource<...> {
 **Source 抽象层：**
 - `AbstractSplitSource<SplitT, CheckpointT>`: Source 基类，封装 Flink FLIP-27 Source API
 
-**Base 组件：**
+**Base 组件（core 模块）：**
 - `BaseSplitEnumerator`: 分片枚举器基类，自动处理分片分配和回收
 - `BaseSourceReader`: 源阅读器基类，封装线程模型和状态管理
 - `BaseSplitReader`: 分片读取器接口，实现阻塞式数据读取
 
-**分片和状态（jdbc 模块）：**
+**JDBC 实现（jdbc 模块）：**
+- `JdbcSource`: JDBC Source 实现，直接继承 `AbstractSplitSource`
+- `JdbcSourceConfig`: JDBC 配置封装类
+- `JdbcSplitEnumerator`: 分片枚举器，在 `start()` 中延迟计算分片
+- `JdbcSplitReader`: 分片读取器
 - `RangeSplit`: 范围分片，表示数据范围 [start, end]
-- `RangeSplitState`: 分片状态，追踪读取进度
-- `RangeEnumCheckpoint`: 枚举器检查点
-
-**JDBC 实现：**
-- `JdbcSource`: JDBC Source 实现，直接继承 `AbstractSplitSource`，分片逻辑由 `JdbcSplitEnumerator` 处理
-- `JdbcSourceConfig`: JDBC 配置封装类，统一传递给 Enumerator 和 SplitReader
 - `JdbcDialect`: 数据库方言接口
 - `MySQLDialect`: MySQL 方言实现
+
+**LocalFile 实现（localfile 模块）：**
+- `LocalFileSource`: 本地文件 Source 实现，支持通配符路径匹配
+- `LocalFileSourceConfig`: 本地文件配置封装类
+- `LocalFileSplitEnumerator`: 文件扫描和分片枚举
+- `LocalFileSplitReader`: 文件读取器
+- `LocalFileSplit`: 文件分片，每个文件对应一个分片
+- `FileFormatPlugin`: 文件格式解析插件接口（SPI）
+- `CsvFormatPlugin`: CSV 格式解析实现
 
 **Transform 实现：**
 - `SqlTransformPlugin`: SQL Transform 插件，通过 Flink Table API 执行 SQL
