@@ -18,7 +18,7 @@ import java.io.IOException;
  */
 public class DefaultSplitSerializer<SplitT extends BaseSourceSplit> implements SimpleVersionedSerializer<SplitT> {
 
-    private static final int VERSION = 2;
+    public static final int VERSION = 1;
 
     // Kryo 非线程安全，使用 ThreadLocal 保证每个线程独立实例
     // StdInstantiatorStrategy 允许反序列化没有无参构造函数的类
@@ -51,7 +51,7 @@ public class DefaultSplitSerializer<SplitT extends BaseSourceSplit> implements S
         if (version > VERSION) {
             throw new IOException("无法读取未来版本的数据，当前版本: " + VERSION + "，数据版本: " + version);
         }
-        // 允许向后兼容：尝试直接反序列化
+
         // 注意：如果序列化格式发生变化，需要在此添加版本迁移逻辑
         Kryo kryo = KRYO_THREAD_LOCAL.get();
         try (Input input = new Input(serialized)) {

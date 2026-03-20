@@ -12,7 +12,6 @@ import java.sql.SQLException;
  */
 @Slf4j
 public class MySQLDialect implements JdbcDialect {
-    private static final long serialVersionUID = 1L;
 
     @Override
     public String getDriverClassName() {
@@ -20,18 +19,18 @@ public class MySQLDialect implements JdbcDialect {
     }
 
     /** 用反引号包裹标识符并转义内部的反引号，防止 SQL 注入 */
-    private static String quoteIdentifier(String name) {
+    private String quoteIdentifier(String name) {
         return "`" + name.replace("`", "``") + "`";
     }
 
     @Override
     public String buildRangeQuery(String table, String sql, String splitColumn) {
-        String quotedColumn = quoteIdentifier(splitColumn);
+        String quotedColumn = this.quoteIdentifier(splitColumn);
         String query;
         if (table != null) {
             // 表名模式
             query = String.format("SELECT MIN(%s), MAX(%s) FROM %s",
-                    quotedColumn, quotedColumn, quoteIdentifier(table));
+                    quotedColumn, quotedColumn, this.quoteIdentifier(table));
         } else {
             // 自定义 SQL 模式
             query = String.format("SELECT MIN(%s), MAX(%s) FROM (%s) AS t",
@@ -43,12 +42,12 @@ public class MySQLDialect implements JdbcDialect {
 
     @Override
     public String buildSplitQuery(String table, String sql, String splitColumn, long start, long end) {
-        String quotedColumn = quoteIdentifier(splitColumn);
+        String quotedColumn = this.quoteIdentifier(splitColumn);
         String query;
         if (table != null) {
             // 表名模式
             query = String.format("SELECT * FROM %s WHERE %s BETWEEN %d AND %d",
-                    quoteIdentifier(table), quotedColumn, start, end);
+                    this.quoteIdentifier(table), quotedColumn, start, end);
         } else {
             // 自定义 SQL 模式
             query = String.format("SELECT * FROM (%s) AS t WHERE %s BETWEEN %d AND %d",
@@ -74,7 +73,7 @@ public class MySQLDialect implements JdbcDialect {
     @Override
     public String buildSampleQuery(String table, String sql) {
         if (table != null) {
-            return "SELECT * FROM " + quoteIdentifier(table) + " WHERE 1=0";
+            return "SELECT * FROM " + this.quoteIdentifier(table) + " WHERE 1=0";
         } else {
             return "SELECT * FROM (" + sql + ") AS t WHERE 1=0";
         }

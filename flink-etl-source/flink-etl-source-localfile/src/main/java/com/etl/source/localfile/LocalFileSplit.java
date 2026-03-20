@@ -1,10 +1,10 @@
 package com.etl.source.localfile;
 
 import com.etl.core.source.BaseSourceSplit;
+import com.etl.core.source.serde.DefaultSplitSerializer;
 import lombok.Getter;
 
 import java.io.File;
-import java.io.Serializable;
 
 /**
  * 文件分片
@@ -13,9 +13,9 @@ import java.io.Serializable;
  * <p>字段名和类型从 source.schema 配置中获取，无需从文件推断
  */
 @Getter
-public class LocalFileSplit implements BaseSourceSplit, Serializable {
+public class LocalFileSplit implements BaseSourceSplit {
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = DefaultSplitSerializer.VERSION;
 
     /** 分片 ID = 文件路径 */
     private final String splitId;

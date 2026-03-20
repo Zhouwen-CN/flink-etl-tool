@@ -18,11 +18,10 @@ import java.io.IOException;
  * @param <SplitT>      分片类型
  * @param <CheckpointT> 检查点类型
  */
-public class DefaultCheckpointSerializer<SplitT extends BaseSourceSplit,
-        CheckpointT extends BaseEnumCheckpoint<SplitT>>
+public class DefaultCheckpointSerializer<SplitT extends BaseSourceSplit, CheckpointT extends BaseEnumCheckpoint<SplitT>>
         implements SimpleVersionedSerializer<CheckpointT> {
 
-    private static final int VERSION = 2;
+    public static final int VERSION = 1;
 
     private static final ThreadLocal<Kryo> KRYO_THREAD_LOCAL = ThreadLocal.withInitial(() -> {
         Kryo kryo = new Kryo();
@@ -50,7 +49,7 @@ public class DefaultCheckpointSerializer<SplitT extends BaseSourceSplit,
     @Override
     @SuppressWarnings("unchecked")
     public CheckpointT deserialize(int version, byte[] serialized) throws IOException {
-        if (version > VERSION) {
+        if (version != VERSION) {
             throw new IOException("无法读取未来版本的数据，当前版本: " + VERSION + "，数据版本: " + version);
         }
         // 允许向后兼容：尝试直接反序列化

@@ -1,6 +1,7 @@
 package com.etl.source.localfile;
 
 import com.etl.core.source.BaseEnumCheckpoint;
+import com.etl.core.source.serde.DefaultCheckpointSerializer;
 
 import java.util.Collection;
 
@@ -10,7 +11,7 @@ import java.util.Collection;
  */
 public class LocalFileEnumCheckpoint extends BaseEnumCheckpoint<LocalFileSplit> {
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = DefaultCheckpointSerializer.VERSION;
 
     /**
      * 构造函数

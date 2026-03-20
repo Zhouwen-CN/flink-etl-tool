@@ -1,9 +1,9 @@
 package com.etl.source.jdbc;
 
 import com.etl.core.source.BaseSourceSplit;
+import com.etl.core.source.serde.DefaultSplitSerializer;
 import lombok.Getter;
 
-import java.io.Serializable;
 
 /**
  * 范围分片
@@ -12,9 +12,9 @@ import java.io.Serializable;
  * <p>实现了 {@link BaseSourceSplit} 接口，支持序列化和状态管理
  */
 @Getter
-public class RangeSplit implements BaseSourceSplit, Serializable {
+public class RangeSplit implements BaseSourceSplit {
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = DefaultSplitSerializer.VERSION;
 
     private final String splitId;
     private final String columnName;

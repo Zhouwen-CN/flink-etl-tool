@@ -17,8 +17,6 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class EtlSchema implements Serializable {
 
-    private static final long serialVersionUID = 1L;
-
     /**
      * 字段列表
      */

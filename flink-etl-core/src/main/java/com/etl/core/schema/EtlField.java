@@ -15,8 +15,6 @@ import java.io.Serializable;
 @AllArgsConstructor
 public class EtlField implements Serializable {
 
-    private static final long serialVersionUID = 1L;
-
     /**
      * 字段名
      */
