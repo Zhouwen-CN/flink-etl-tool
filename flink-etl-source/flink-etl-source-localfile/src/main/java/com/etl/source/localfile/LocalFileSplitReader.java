@@ -115,7 +115,7 @@ public class LocalFileSplitReader implements BaseSplitReader<Row, LocalFileSplit
 
         } catch (Exception e) {
             closeCurrentSplit();
-            throw new IOException("读取文件失败: " + currentSplit.getFilePath(), e);
+            throw e;
         }
 
         return builder.build();

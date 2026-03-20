@@ -114,13 +114,7 @@ public class CsvFormatPlugin implements FileFormatPlugin {
                         }
 
                         String fieldName = schema.getFieldName(i);
-                        Object converted;
-                        try {
-                            converted = TypeConverter.convert(value, fieldName, schema.getFieldType(i));
-                        } catch (Exception e) {
-                            throw new RuntimeException("CSV 字段类型转换失败: 字段名=" + fieldName
-                                    + ", 字段类型=" + schema.getFieldType(i) + ", 原始值=" + value, e);
-                        }
+                        Object converted = TypeConverter.convert(value, fieldName, schema.getFieldType(i));
                         row.setField(i, converted);
                     }
 

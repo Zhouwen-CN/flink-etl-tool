@@ -2,6 +2,7 @@ package com.etl.core.config;
 
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.DeserializationFeature;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.File;
@@ -14,6 +15,10 @@ import java.util.Set;
 @Slf4j
 public class ConfigParser {
     private static final ObjectMapper mapper = new ObjectMapper();
+
+    static {
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
 
     /**
      * 从文件解析 Job 配置

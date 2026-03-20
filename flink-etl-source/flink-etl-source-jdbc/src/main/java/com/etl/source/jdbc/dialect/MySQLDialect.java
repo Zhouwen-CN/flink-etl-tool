@@ -20,7 +20,7 @@ public class MySQLDialect implements JdbcDialect {
 
     /** 用反引号包裹标识符并转义内部的反引号，防止 SQL 注入 */
     private String quoteIdentifier(String name) {
-        return "`" + name.replace("`", "``") + "`";
+        return "`" + name + "`";
     }
 
     @Override

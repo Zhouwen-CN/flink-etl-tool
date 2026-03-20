@@ -32,14 +32,6 @@ public class TypeConverter {
             return null;
         }
 
-        // 处理字符串类型：检查空字符串
-        if (value instanceof String) {
-            String strValue = (String) value;
-            if (strValue.isEmpty()) {
-                return null;
-            }
-        }
-
         // 如果已经是目标类型或兼容类型，直接返回
         if (isCompatibleType(value, targetType)) {
             return value;
@@ -52,19 +44,20 @@ public class TypeConverter {
 
         try {
             // 根据 TypeInformation 判断目标类型
-            if (targetType == Types.STRING) {
+            // 注意：使用 equals() 而不是 ==，因为反序列化后对象引用可能不同
+            if (Types.STRING.equals(targetType)) {
                 return strValue;
-            } else if (targetType == Types.BOOLEAN) {
+            } else if (Types.BOOLEAN.equals(targetType)) {
                 return parseBoolean(strValue);
-            } else if (targetType == Types.INT) {
+            } else if (Types.INT.equals(targetType)) {
                 return Integer.parseInt(strValue);
-            } else if (targetType == Types.LONG) {
+            } else if (Types.LONG.equals(targetType)) {
                 return Long.parseLong(strValue);
-            } else if (targetType == Types.DOUBLE) {
+            } else if (Types.DOUBLE.equals(targetType)) {
                 return Double.parseDouble(strValue);
-            } else if (targetType == Types.BIG_DEC) {
+            } else if (Types.BIG_DEC.equals(targetType)) {
                 return new BigDecimal(strValue);
-            } else if (targetType == Types.LOCAL_DATE_TIME) {
+            } else if (Types.LOCAL_DATE_TIME.equals(targetType)) {
                 return LocalDateTime.parse(strValue, DEFAULT_TIMESTAMP_FORMAT);
             } else {
                 // 未知类型，返回原值
@@ -131,19 +124,19 @@ public class TypeConverter {
      * 检查值是否已经是目标类型
      */
     private static boolean isCompatibleType(Object value, TypeInformation<?> targetType) {
-        if (targetType == Types.STRING) {
+        if (Types.STRING.equals(targetType)) {
             return value instanceof String;
-        } else if (targetType == Types.BOOLEAN) {
+        } else if (Types.BOOLEAN.equals(targetType)) {
             return value instanceof Boolean;
-        } else if (targetType == Types.INT) {
+        } else if (Types.INT.equals(targetType)) {
             return value instanceof Integer;
-        } else if (targetType == Types.LONG) {
+        } else if (Types.LONG.equals(targetType)) {
             return value instanceof Long;
-        } else if (targetType == Types.DOUBLE) {
+        } else if (Types.DOUBLE.equals(targetType)) {
             return value instanceof Double;
-        } else if (targetType == Types.BIG_DEC) {
+        } else if (Types.BIG_DEC.equals(targetType)) {
             return value instanceof BigDecimal;
-        } else if (targetType == Types.LOCAL_DATE_TIME) {
+        } else if (Types.LOCAL_DATE_TIME.equals(targetType)) {
             return value instanceof LocalDateTime || value instanceof java.sql.Timestamp;
         }
         return false;

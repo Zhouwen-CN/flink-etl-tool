@@ -1,6 +1,7 @@
 package com.etl.core.source;
 
 import com.etl.core.config.SourceConfig;
+import com.etl.core.exception.SchemaConfigException;
 import com.etl.core.schema.EtlSchema;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
@@ -19,20 +20,10 @@ import org.apache.flink.types.Row;
 public abstract class AbstractSplitSource<SplitT extends SourceSplit, CheckpointT>
         implements Source<Row, SplitT, CheckpointT>, ResultTypeQueryable<Row> {
 
-    private final SourceConfig config;
+    protected final SourceConfig config;
 
     public AbstractSplitSource(SourceConfig config) {
         this.config = config;
-    }
-
-    /**
-     * 获取 Source 配置
-     * 子类可通过此方法访问配置
-     *
-     * @return Source 配置
-     */
-    protected SourceConfig getConfig() {
-        return config;
     }
 
     /**
@@ -65,7 +56,7 @@ public abstract class AbstractSplitSource<SplitT extends SourceSplit, Checkpoint
     public TypeInformation<Row> getProducedType() {
         EtlSchema schema = config.getSchema();
         if (schema == null) {
-            return null;
+            throw new SchemaConfigException("schema is null");
         }
 
         // 直接使用 EtlSchema 中的字段名和类型
