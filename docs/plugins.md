@@ -11,7 +11,7 @@
   - [Console Sink](#console-sink)
   - [MySQL Sink](#mysql-sink)
 - [Transform 插件](#transform-插件)
-  - [Field Mapping Transform](#field-mapping-transform)
+  - [SQL Transform](#sql-transform)
 
 ---
 
@@ -31,25 +31,29 @@
 | `table` | 条件必填 | - | 表名。与 `sql` 二选一 |
 | `sql` | 条件必填 | - | 自定义查询 SQL。与 `table` 二选一 |
 | `splitColumn` | 是 | - | 分片列名，通常为主键列 |
-| `fetchSize` | 否 | 无限制 | JDBC fetch size，流式读取时建议设置 |
+| `batchSize` | 否 | 100 | 批量读取大小 |
 | `queryTimeout` | 否 | 无限制 | 查询超时时间（秒） |
 | `schema` | 否 | 自动推断 | Schema 定义，不配置则从数据库元数据自动推断 |
 
-#### schema 结构（可选）
+#### schema 格式
 
-| 字段 | 必填 | 说明 |
-|------|:----:|------|
-| `fields` | 是 | 字段列表，每项包含 `name` 和 `type` |
+Schema 为数组格式，每项包含 `name` 和 `type`：
 
-每个字段支持以下类型：
-- `string` - 字符串类型
-- `boolean` - 布尔类型
-- `int` - 32位整数
-- `long` - 64位长整数
-- `double` - 双精度浮点数
-- `decimal` - 高精度十进制数
-- `timestamp` - 时间戳
-- `bytes` - 字节数组
+```json
+"schema": [
+  { "name": "id", "type": "INT" },
+  { "name": "name", "type": "STRING" }
+]
+```
+
+支持的数据类型：
+- `STRING` - 字符串类型
+- `BOOLEAN` - 布尔类型
+- `INT` - 32位整数
+- `LONG` - 64位长整数
+- `DOUBLE` - 双精度浮点数
+- `DATE` - 日期
+- `TIMESTAMP` - 时间戳
 
 #### 配置示例
 
@@ -59,13 +63,14 @@
 {
   "source": {
     "type": "mysql",
-    "localFileSourceConfig": {
+    "outputTable": "users",
+    "config": {
       "url": "jdbc:mysql://localhost:3306/mydb",
       "username": "root",
       "password": "password",
       "table": "users",
       "splitColumn": "id",
-      "fetchSize": 1000
+      "batchSize": 1000
     }
   }
 }
@@ -77,7 +82,8 @@
 {
   "source": {
     "type": "mysql",
-    "localFileSourceConfig": {
+    "outputTable": "active_users",
+    "config": {
       "url": "jdbc:mysql://localhost:3306/mydb",
       "username": "root",
       "password": "password",
@@ -105,52 +111,47 @@
 
 | 参数 | 必填 | 默认值 | 说明 |
 |------|:----:|--------|------|
-| `path` | 是 | - | 文件路径，支持通配符 `*` 和 `**` |
+| `path` | 是 | - | 文件路径，支持通配符 `*` |
 | `format` | 是 | - | 文件格式，目前支持 `csv` |
-| `recursive` | 否 | `false` | 是否递归匹配子目录 |
 | `encoding` | 否 | `UTF-8` | 文件编码 |
 | `delimiter` | 否 | `,` | CSV 字段分隔符 |
-| `skipHeader` | 否 | `false` | 是否跳过 CSV 文件头 |
+| `skipHeader` | 否 | `true` | 是否跳过 CSV 文件头 |
+| `recursive` | 否 | `false` | 是否递归匹配子目录 |
 | `schema` | 是 | - | Schema 定义，包含字段名和类型 |
 
-#### schema 结构
+#### schema 格式
 
-| 字段 | 必填 | 说明 |
-|------|:----:|------|
-| `fields` | 是 | 字段列表，每项包含 `name` 和 `type` |
+```json
+"schema": [
+  { "name": "id", "type": "LONG" },
+  { "name": "name", "type": "STRING" },
+  { "name": "age", "type": "INT" }
+]
+```
 
-每个字段支持以下类型：
-- `string` - 字符串类型
-- `boolean` - 布尔类型
-- `int` - 32位整数
-- `long` - 64位长整数
-- `double` - 双精度浮点数
-- `decimal` - 高精度十进制数
-- `timestamp` - 时间戳
-- `bytes` - 字节数组
+支持的数据类型：`STRING`、`BOOLEAN`、`INT`、`LONG`、`DOUBLE`、`DATE`、`TIMESTAMP`
 
 #### 配置示例
 
-**CSV 文件读取（带类型转换）：**
+**CSV 文件读取：**
 
 ```json
 {
   "source": {
     "type": "localfile",
-    "localFileSourceConfig": {
+    "outputTable": "csv_data",
+    "config": {
       "path": "/data/input/*.csv",
       "format": "csv",
       "encoding": "UTF-8",
       "delimiter": ",",
       "skipHeader": true,
-      "schema": {
-        "fields": [
-          {"name": "id", "type": "long"},
-          {"name": "name", "type": "string"},
-          {"name": "age", "type": "int"},
-          {"name": "email", "type": "string"}
-        ]
-      }
+      "schema": [
+        { "name": "id", "type": "LONG" },
+        { "name": "name", "type": "STRING" },
+        { "name": "age", "type": "INT" },
+        { "name": "email", "type": "STRING" }
+      ]
     }
   }
 }
@@ -162,17 +163,16 @@
 {
   "source": {
     "type": "localfile",
-    "localFileSourceConfig": {
+    "outputTable": "csv_data",
+    "config": {
       "path": "/data/**/*.csv",
       "format": "csv",
       "recursive": true,
       "skipHeader": true,
-      "schema": {
-        "fields": [
-          {"name": "id", "type": "string"},
-          {"name": "value", "type": "double"}
-        ]
-      }
+      "schema": [
+        { "name": "id", "type": "STRING" },
+        { "name": "value", "type": "DOUBLE" }
+      ]
     }
   }
 }
@@ -192,12 +192,6 @@
 - Schema 配置必须与文件列数一致
 - CSV 数据会根据 Schema 中定义的类型自动转换
 
-#### 类型转换规则
-
-- 空字符串或 null 值转换为 null
-- 数值类型解析失败会抛出 `TypeConversionException`
-- 布尔类型支持 `true/false`、`1/0`、`yes/no` 等格式
-
 ---
 
 ## Sink 插件
@@ -210,7 +204,7 @@
 
 | 参数 | 必填 | 默认值 | 说明 |
 |------|:----:|--------|------|
-| `format` | 否 | `json` | 输出格式，支持 `json`、`text` |
+| `showSubtask` | 否 | `true` | 是否显示分片子任务编号 |
 
 #### 配置示例
 
@@ -218,8 +212,9 @@
 {
   "sink": {
     "type": "console",
-    "localFileSourceConfig": {
-      "format": "json"
+    "inputTable": "output_data",
+    "config": {
+      "showSubtask": true
     }
   }
 }
@@ -244,13 +239,14 @@
 
 #### 配置示例
 
-**基础配置 - INSERT 模式：**
+**INSERT 模式：**
 
 ```json
 {
   "sink": {
     "type": "mysql",
-    "localFileSourceConfig": {
+    "inputTable": "output_data",
+    "config": {
       "url": "jdbc:mysql://localhost:3306/mydb",
       "username": "root",
       "password": "password",
@@ -267,7 +263,8 @@
 {
   "sink": {
     "type": "mysql",
-    "localFileSourceConfig": {
+    "inputTable": "output_data",
+    "config": {
       "url": "jdbc:mysql://localhost:3306/mydb",
       "username": "root",
       "password": "password",
@@ -295,67 +292,79 @@
 
 ## Transform 插件
 
-### Field Mapping Transform
+### SQL Transform
 
-字段映射转换，支持字段重命名和字段过滤。
+通过 SQL 语句进行数据转换，支持 Flink Table API 的所有 SQL 语法。
 
 #### 配置参数
 
 | 参数 | 必填 | 默认值 | 说明 |
 |------|:----:|--------|------|
-| `mappings` | 是 | - | 字段映射列表，每项包含 `from` 和 `to` |
-
-#### mappings 结构
-
-| 字段 | 必填 | 说明 |
-|------|:----:|------|
-| `from` | 是 | 源字段名 |
-| `to` | 是 | 目标字段名 |
+| `sql` | 是 | - | SQL 查询语句，引用的表名为上游的 `outputTable` |
 
 #### 配置示例
 
-**字段重命名：**
+**数据过滤：**
 
 ```json
 {
   "transforms": [
     {
-      "type": "field-mapping",
-      "localFileSourceConfig": {
-        "mappings": [
-          { "from": "id", "to": "user_id" },
-          { "from": "name", "to": "user_name" }
-        ]
+      "type": "sql",
+      "outputTable": "filtered_users",
+      "config": {
+        "sql": "SELECT * FROM users WHERE id > 0"
       }
     }
   ]
 }
 ```
 
-**字段过滤（只保留映射的字段）：**
+**字段选择与重命名：**
 
 ```json
 {
   "transforms": [
     {
-      "type": "field-mapping",
-      "localFileSourceConfig": {
-        "mappings": [
-          { "from": "id", "to": "id" },
-          { "from": "name", "to": "name" },
-          { "from": "email", "to": "email" }
-        ]
+      "type": "sql",
+      "outputTable": "renamed_users",
+      "config": {
+        "sql": "SELECT id AS user_id, name AS user_name FROM users"
       }
     }
   ]
 }
 ```
 
-#### 行为说明
+**多 Transform 链式处理：**
 
-- 映射的字段会被重命名
-- **未配置映射的字段会原样保留**（如需过滤，请只映射需要的字段）
-- 多个 Transform 按配置顺序依次执行
+```json
+{
+  "transforms": [
+    {
+      "type": "sql",
+      "outputTable": "filtered",
+      "config": {
+        "sql": "SELECT * FROM source_table WHERE status = 1"
+      }
+    },
+    {
+      "type": "sql",
+      "outputTable": "final_output",
+      "config": {
+        "sql": "SELECT id, name, UPPER(email) AS email FROM filtered"
+      }
+    }
+  ]
+}
+```
+
+#### 数据流转机制
+
+- `source.outputTable` → Source 输出注册为 Table
+- `transform.inputTable`（SQL 中引用的表名）→ 从该 Table 读取数据
+- `transform.outputTable` → Transform 结果注册为中间表
+- `sink.inputTable` → 从该 Table 读取数据写入 Sink
 
 ---
 
@@ -372,31 +381,29 @@
   },
   "source": {
     "type": "mysql",
-    "localFileSourceConfig": {
+    "outputTable": "users",
+    "config": {
       "url": "jdbc:mysql://localhost:3306/mydb",
       "username": "root",
       "password": "password",
       "table": "users",
       "splitColumn": "id",
-      "fetchSize": 1000
+      "batchSize": 1000
     }
   },
   "transforms": [
     {
-      "type": "field-mapping",
-      "localFileSourceConfig": {
-        "mappings": [
-          { "from": "id", "to": "user_id" },
-          { "from": "name", "to": "user_name" }
-        ]
+      "type": "sql",
+      "outputTable": "active_users",
+      "config": {
+        "sql": "SELECT id, name FROM users WHERE status = 1"
       }
     }
   ],
   "sink": {
     "type": "console",
-    "localFileSourceConfig": {
-      "format": "json"
-    }
+    "inputTable": "active_users",
+    "config": {}
   }
 }
 ```
@@ -412,23 +419,23 @@
   },
   "source": {
     "type": "localfile",
-    "localFileSourceConfig": {
+    "outputTable": "csv_data",
+    "config": {
       "path": "/data/input/*.csv",
       "format": "csv",
       "skipHeader": true,
-      "schema": {
-        "fields": [
-          {"name": "id", "type": "long"},
-          {"name": "name", "type": "string"},
-          {"name": "age", "type": "int"},
-          {"name": "email", "type": "string"}
-        ]
-      }
+      "schema": [
+        { "name": "id", "type": "LONG" },
+        { "name": "name", "type": "STRING" },
+        { "name": "age", "type": "INT" },
+        { "name": "email", "type": "STRING" }
+      ]
     }
   },
   "sink": {
     "type": "mysql",
-    "localFileSourceConfig": {
+    "inputTable": "csv_data",
+    "config": {
       "url": "jdbc:mysql://localhost:3306/mydb",
       "username": "root",
       "password": "password",
@@ -451,30 +458,20 @@
   },
   "source": {
     "type": "mysql",
-    "localFileSourceConfig": {
+    "outputTable": "source_data",
+    "config": {
       "url": "jdbc:mysql://source-host:3306/source_db",
       "username": "root",
       "password": "password",
       "table": "source_table",
       "splitColumn": "id",
-      "fetchSize": 1000
+      "batchSize": 1000
     }
   },
-  "transforms": [
-    {
-      "type": "field-mapping",
-      "localFileSourceConfig": {
-        "mappings": [
-          { "from": "id", "to": "id" },
-          { "from": "name", "to": "name" },
-          { "from": "created_at", "to": "created_at" }
-        ]
-      }
-    }
-  ],
   "sink": {
     "type": "mysql",
-    "localFileSourceConfig": {
+    "inputTable": "source_data",
+    "config": {
       "url": "jdbc:mysql://target-host:3306/target_db",
       "username": "root",
       "password": "password",
