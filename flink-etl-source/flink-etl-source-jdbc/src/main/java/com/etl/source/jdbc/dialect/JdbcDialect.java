@@ -1,4 +1,4 @@
-package com.etl.source.jdbc;
+package com.etl.source.jdbc.dialect;
 
 import com.etl.core.schema.FlinkTypeConverter;
 import org.apache.flink.api.common.typeinfo.TypeInformation;

@@ -1,7 +1,10 @@
-package com.etl.source.jdbc;
+package com.etl.source.jdbc.config;
 
+import com.etl.source.jdbc.dialect.JdbcDialect;
 import lombok.Builder;
 import lombok.Getter;
+
+import java.io.Serializable;
 
 /**
  * JDBC 分片配置
@@ -9,7 +12,7 @@ import lombok.Getter;
  */
 @Getter
 @Builder
-public class JdbcSplitConfig {
+public class JdbcSourceConfig implements Serializable {
     /** 数据库连接 URL */
     private final String url;
     /** 用户名 */
@@ -22,6 +25,10 @@ public class JdbcSplitConfig {
     private final String sql;
     /** 分片列名 */
     private final String splitColumn;
+    /** 批大小，默认100 */
+    private final Integer batchSize;
+    /** 查询超时 */
+    private final Integer queryTimeout;
     /** 数据库方言 */
     private final JdbcDialect dialect;
 }

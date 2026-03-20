@@ -301,7 +301,7 @@ git commit -m "feat: 添加 JdbcDialect 接口定义"
 ```java
 package com.etl.source.jdbc.dialect;
 
-import com.etl.source.jdbc.JdbcDialect;
+import com.etl.source.jdbc.dialect.JdbcDialect;
 import org.apache.flink.types.Row;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -5,6 +5,8 @@ import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseSplitReader;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
+import com.etl.source.jdbc.config.JdbcSourceConfig;
+import com.etl.source.jdbc.dialect.JdbcDialect;
 import com.etl.source.jdbc.dialect.MySQLDialect;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -25,15 +27,8 @@ import java.util.function.Supplier;
 @Slf4j
 public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpoint> {
 
-    private final String url;
-    private final String username;
-    private final String password;
-    private final String table;
-    private final String sql;
-    private final String splitColumn;
-    private final int batchSize;
-    private final Integer queryTimeout;
-    private final JdbcDialect dialect;
+
+    private final JdbcSourceConfig jdbcSourceConfig;
 
     public JdbcSource(SourceConfig config, JdbcDialect dialect) {
         super(config);
@@ -50,16 +45,33 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
                 }
             }
         }
-        this.url = url;
-        this.username = config.getString("username");
-        this.password = config.getString("password");
-        this.table = config.getString("table");
-        this.splitColumn = config.getString("splitColumn");
-        Preconditions.checkNotNull(this.splitColumn, "splitColumn is null");
-        this.sql = config.getString("sql");
-        this.batchSize = config.getInteger("batchSize", getDefaultBatchSize());
-        this.queryTimeout = config.getInteger("queryTimeout");
-        this.dialect = dialect;
+
+        String username = config.getString("username");
+        String password = config.getString("password");
+
+        // 不能同时为null
+        String table = config.getString("table");
+        String sql = config.getString("sql");
+
+        String splitColumn = config.getString("splitColumn");
+        Preconditions.checkNotNull(splitColumn, "splitColumn is null");
+
+        Integer batchSize = config.getInteger("batchSize", super.getDefaultBatchSize());
+        Preconditions.checkArgument(batchSize > 0, "batchSize must be greater than 0");
+
+        Integer queryTimeout = config.getInteger("queryTimeout");
+
+        jdbcSourceConfig = JdbcSourceConfig.builder()
+                .url(url)
+                .username(username)
+                .password(password)
+                .table(table)
+                .sql(sql)
+                .splitColumn(splitColumn)
+                .batchSize(batchSize)
+                .queryTimeout(queryTimeout)
+                .dialect(dialect)
+                .build();
 
         log.info("创建 JdbcSource: table={}, sql={}, splitColumn={}", table, sql, splitColumn);
     }
@@ -73,18 +85,7 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
     public SplitEnumerator<RangeSplit, RangeEnumCheckpoint>
     createEnumerator(SplitEnumeratorContext<RangeSplit> enumContext) {
         log.info("创建 SplitEnumerator");
-
-        JdbcSplitConfig splitConfig = JdbcSplitConfig.builder()
-                .url(url)
-                .username(username)
-                .password(password)
-                .table(table)
-                .sql(sql)
-                .splitColumn(splitColumn)
-                .dialect(dialect)
-                .build();
-
-        return new JdbcSplitEnumerator(enumContext, splitConfig);
+        return new JdbcSplitEnumerator(enumContext, jdbcSourceConfig);
     }
 
     @Override
@@ -93,17 +94,7 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
                       RangeEnumCheckpoint checkpoint) {
         log.info("从检查点恢复 SplitEnumerator");
 
-        JdbcSplitConfig splitConfig = JdbcSplitConfig.builder()
-                .url(url)
-                .username(username)
-                .password(password)
-                .table(table)
-                .sql(sql)
-                .splitColumn(splitColumn)
-                .dialect(dialect)
-                .build();
-
-        return new JdbcSplitEnumerator(enumContext, checkpoint, splitConfig);
+        return new JdbcSplitEnumerator(enumContext, checkpoint, jdbcSourceConfig);
     }
 
     @Override
@@ -112,8 +103,7 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
 
         // 创建 SplitReader 供应器
         var splitReaderSupplier = (Supplier<BaseSplitReader<Row, RangeSplit>>) () ->
-                new JdbcSplitReader(url, username, password, table, sql,
-                        splitColumn, batchSize, queryTimeout, dialect);
+                new JdbcSplitReader(jdbcSourceConfig);
 
         // 创建 Reader
         return new JdbcSourceReader(
@@ -134,14 +124,19 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
         return new DefaultCheckpointSerializer<>();
     }
 
+
+    /**
+     * 重写父类 getProducedType，通过 metadata 推断字段名称和类型
+     */
     @Override
     public TypeInformation<Row> getProducedType() {
-        // 如果配置了 schema，使用父类实现
-        if (getConfig().getSchema() != null) {
-            return super.getProducedType();
-        }
+        JdbcDialect dialect = jdbcSourceConfig.getDialect();
+        String table = jdbcSourceConfig.getTable();
+        String sql = jdbcSourceConfig.getSql();
+        String url = jdbcSourceConfig.getUrl();
+        String username = jdbcSourceConfig.getUsername();
+        String password = jdbcSourceConfig.getPassword();
 
-        // 否则从数据库推断
         String sampleQuery = dialect.buildSampleQuery(table, sql);
         log.info("推断 Schema: {}", sampleQuery);
 

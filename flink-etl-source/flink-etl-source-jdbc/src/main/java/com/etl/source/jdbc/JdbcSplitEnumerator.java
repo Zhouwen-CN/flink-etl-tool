@@ -1,6 +1,8 @@
 package com.etl.source.jdbc;
 
 import com.etl.core.source.BaseSplitEnumerator;
+import com.etl.source.jdbc.config.JdbcSourceConfig;
+import com.etl.source.jdbc.dialect.JdbcDialect;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.Range;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
@@ -20,78 +22,36 @@ import java.util.List;
 @Slf4j
 public class JdbcSplitEnumerator extends BaseSplitEnumerator<RangeSplit, RangeEnumCheckpoint> {
 
-    /** 分片配置 */
-    private final JdbcSplitConfig splitConfig;
+    /**
+     * 分片配置
+     */
+    private final JdbcSourceConfig jdbcSourceConfig;
 
     /**
      * 构造函数（首次创建，无预计算分片）
      *
-     * @param context 枚举器上下文
-     * @param splitConfig 分片配置
+     * @param context          枚举器上下文
+     * @param jdbcSourceConfig 分片配置
      */
-    public JdbcSplitEnumerator(SplitEnumeratorContext<RangeSplit> context, JdbcSplitConfig splitConfig) {
+    public JdbcSplitEnumerator(SplitEnumeratorContext<RangeSplit> context, JdbcSourceConfig jdbcSourceConfig) {
         super(context);
-        this.splitConfig = splitConfig;
+        this.jdbcSourceConfig = jdbcSourceConfig;
         log.info("JDBC SplitEnumerator 初始化，延迟分片计算");
     }
 
     /**
      * 从检查点恢复的构造函数
      *
-     * @param context 枚举器上下文
-     * @param checkpoint 检查点
-     * @param splitConfig 分片配置（用于恢复后可能的新分片计算）
+     * @param context          枚举器上下文
+     * @param checkpoint       检查点
+     * @param jdbcSourceConfig 分片配置（用于恢复后可能的新分片计算）
      */
     public JdbcSplitEnumerator(SplitEnumeratorContext<RangeSplit> context,
-                                RangeEnumCheckpoint checkpoint,
-                                JdbcSplitConfig splitConfig) {
+                               RangeEnumCheckpoint checkpoint,
+                               JdbcSourceConfig jdbcSourceConfig) {
         super(context, checkpoint);
-        this.splitConfig = splitConfig;
+        this.jdbcSourceConfig = jdbcSourceConfig;
         log.info("JDBC SplitEnumerator 从检查点恢复，待处理分片数: {}", getPendingSplitCount());
-    }
-
-    @Override
-    public void start() {
-        log.info("JDBC SplitEnumerator 启动，开始计算分片");
-
-        // 查询分片列范围
-        Range<Long> range = getSplitColumnRange();
-        log.info("分片列范围: [{}, {}]", range.getMinimum(), range.getMaximum());
-
-        // 计算分片
-        int parallelism = context.currentParallelism();
-        List<RangeSplit> splits = calculateSplits(splitConfig.getSplitColumn(), range, parallelism);
-
-        // 添加到待处理队列
-        addPendingSplits(splits);
-
-        log.info("JDBC SplitEnumerator 启动完成，分片数: {}", splits.size());
-    }
-
-    /**
-     * 查询数据库获取分片列的范围
-     *
-     * @return 分片列的范围
-     */
-    private Range<Long> getSplitColumnRange() {
-        String querySql = splitConfig.getDialect().buildRangeQuery(
-                splitConfig.getTable(), splitConfig.getSql(), splitConfig.getSplitColumn());
-        log.info("查询分片范围: {}", querySql);
-
-        try (Connection conn = DriverManager.getConnection(
-                splitConfig.getUrl(), splitConfig.getUsername(), splitConfig.getPassword());
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(querySql)) {
-
-            if (rs.next()) {
-                long min = rs.getLong(1);
-                long max = rs.getLong(2);
-                return Range.between(min, max);
-            }
-            return Range.between(0L, 0L);
-        } catch (SQLException e) {
-            throw new RuntimeException("获取分片范围失败: " + e.getMessage(), e);
-        }
     }
 
     /**
@@ -134,6 +94,63 @@ public class JdbcSplitEnumerator extends BaseSplitEnumerator<RangeSplit, RangeEn
 
         log.info("共计算出 {} 个分片", splits.size());
         return splits;
+    }
+
+    @Override
+    public void start() {
+        log.info("JDBC SplitEnumerator 启动，开始计算分片");
+        String url = jdbcSourceConfig.getUrl();
+        String username = jdbcSourceConfig.getUsername();
+        String password = jdbcSourceConfig.getPassword();
+        String table = jdbcSourceConfig.getTable();
+        String sql = jdbcSourceConfig.getSql();
+        String splitColumn = jdbcSourceConfig.getSplitColumn();
+        JdbcDialect dialect = jdbcSourceConfig.getDialect();
+
+        // 查询分片列范围
+        Range<Long> range = getSplitColumnRange(url, username, password, table, sql, splitColumn, dialect);
+        log.info("分片列范围: [{}, {}]", range.getMinimum(), range.getMaximum());
+
+        // 计算分片
+        int parallelism = context.currentParallelism();
+        List<RangeSplit> splits = calculateSplits(splitColumn, range, parallelism);
+
+        // 添加到待处理队列
+        addPendingSplits(splits);
+
+        log.info("JDBC SplitEnumerator 启动完成，分片数: {}", splits.size());
+    }
+
+    /**
+     * 查询数据库获取分片列的范围
+     *
+     * @return 分片列的范围
+     */
+    private Range<Long> getSplitColumnRange(
+            String url,
+            String username,
+            String password,
+            String table,
+            String sql,
+            String splitColumn,
+            JdbcDialect dialect
+    ) {
+        String querySql = dialect.buildRangeQuery(table, sql, splitColumn);
+        log.info("查询分片范围: {}", querySql);
+
+        try (Connection conn = DriverManager.getConnection(url, username, password);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(querySql)) {
+
+            if (rs.next()) {
+                long min = rs.getLong(1);
+                long max = rs.getLong(2);
+                return Range.between(min, max);
+            }
+            return Range.between(0L, 0L);
+        } catch (SQLException e) {
+            throw new RuntimeException("获取分片范围失败: " + e.getMessage(), e);
+        }
     }
 
     @Override

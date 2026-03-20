@@ -1,6 +1,5 @@
 package com.etl.source.jdbc.dialect;
 
-import com.etl.source.jdbc.JdbcDialect;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.types.Row;
 

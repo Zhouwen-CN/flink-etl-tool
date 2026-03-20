@@ -75,7 +75,7 @@ public abstract class BaseConfig implements Serializable {
      * @param defaultValue 默认值
      * @return 配置值
      */
-    public int getInteger(String key, int defaultValue) {
+    public Integer getInteger(String key, Integer defaultValue) {
         Integer value = getInteger(key);
         return value != null ? value : defaultValue;
     }

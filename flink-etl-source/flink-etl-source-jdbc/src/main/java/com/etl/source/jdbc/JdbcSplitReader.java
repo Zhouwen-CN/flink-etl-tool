@@ -1,6 +1,8 @@
 package com.etl.source.jdbc;
 
 import com.etl.core.source.BaseSplitReader;
+import com.etl.source.jdbc.config.JdbcSourceConfig;
+import com.etl.source.jdbc.dialect.JdbcDialect;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
 import org.apache.flink.connector.base.source.reader.RecordsWithSplitIds;
@@ -50,22 +52,16 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
     private boolean hasNextRecord;
     private int currentOffset;
 
-    public JdbcSplitReader(String url, String username, String password,
-                           String table, String sql, String splitColumn,
-                           int batchSize, Integer queryTimeout,
-                           JdbcDialect dialect) {
-        if (batchSize <= 0) {
-            throw new IllegalArgumentException("batchSize 必须大于 0，当前值: " + batchSize);
-        }
-        this.url = url;
-        this.username = username;
-        this.password = password;
-        this.table = table;
-        this.sql = sql;
-        this.splitColumn = splitColumn;
-        this.batchSize = batchSize;
-        this.queryTimeout = queryTimeout;
-        this.dialect = dialect;
+    public JdbcSplitReader(JdbcSourceConfig jdbcSourceConfig) {
+        this.url = jdbcSourceConfig.getUrl();
+        this.username = jdbcSourceConfig.getUsername();
+        this.password = jdbcSourceConfig.getPassword();
+        this.table = jdbcSourceConfig.getTable();
+        this.sql = jdbcSourceConfig.getSql();
+        this.splitColumn = jdbcSourceConfig.getSplitColumn();
+        this.batchSize = jdbcSourceConfig.getBatchSize();
+        this.queryTimeout = jdbcSourceConfig.getQueryTimeout();
+        this.dialect = jdbcSourceConfig.getDialect();
     }
 
     @Override

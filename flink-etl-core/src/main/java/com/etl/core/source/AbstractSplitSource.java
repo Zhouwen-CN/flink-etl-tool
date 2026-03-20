@@ -39,6 +39,10 @@ public abstract class AbstractSplitSource<SplitT extends SourceSplit, Checkpoint
         return config;
     }
 
+    /**
+     * 所有 source 默认的 batchSize
+     * @return 批次大小
+     */
     protected int getDefaultBatchSize() {
         return 100;
     }
