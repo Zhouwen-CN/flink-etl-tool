@@ -13,25 +13,19 @@
         "table": "user_table",
         "username": "root",
         "password": "Zw$8rb8*",
-        "splitColumn": "id",
-        "schema": [
-          { "name": "id", "type": "INT" },
-          { "name": "name", "type": "STRING" },
-          { "name": "age", "type": "INT" }
-        ]
+        "splitColumn": "id"
       }
     }
   ],
   "sinks": [
     {
       "type": "mysql",
-      "inputTable": "mapped_data",
+      "inputTable": "source_data",
       "config": {
         "url": "jdbc:mysql://118.145.119.51:3306/test_db",
         "table": "user_table_2",
         "username": "root",
         "password": "Zw$8rb8*",
-        "batchSize": 100,
         "writeMode": "upsert"
       }
     }

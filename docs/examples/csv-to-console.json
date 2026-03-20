@@ -2,19 +2,18 @@
   "job": {
     "name": "csv-to-console",
     "mode": "batch",
-    "parallelism": 2
+    "parallelism": 1
   },
   "sources": [
     {
       "type": "localfile",
-      "outputTable": "csv_data",
+      "outputTable": "csv_source",
       "config": {
         "path": "docs/examples/data/*.csv",
         "format": "csv",
         "encoding": "UTF-8",
         "delimiter": ",",
         "skipHeader": true,
-        "recursive": true,
         "schema": [
           { "name": "id", "type": "LONG" },
           { "name": "name", "type": "STRING" },
@@ -22,13 +21,27 @@
           { "name": "email", "type": "STRING" }
         ]
       }
+    },
+    {
+      "type": "mysql",
+      "outputTable": "mysql_source",
+      "config": {
+        "url": "jdbc:mysql://118.145.119.51:3306/test_db",
+        "table": "user_table",
+        "username": "root",
+        "password": "Zw$8rb8*",
+        "splitColumn": "id"
+      }
     }
   ],
   "sinks": [
     {
       "type": "console",
-      "inputTable": "csv_data",
-      "config": {}
+      "inputTable": "csv_source"
+    },
+    {
+      "type": "console",
+      "inputTable": "mysql_source"
     }
   ]
 }
