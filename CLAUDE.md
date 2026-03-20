@@ -113,6 +113,96 @@ public class MySourcePlugin implements SourcePlugin {
 }
 ```
 
+### Source 配置封装模式
+
+**核心原则：参数校验在 Source 构造函数中完成，封装成配置对象传递给下游组件。**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      Source 构造函数                              │
+│  ┌─────────────────────────────────────────────────────────┐    │
+│  │ 1. 从 SourceConfig 读取原始配置                           │    │
+│  │ 2. 参数校验（Preconditions.checkNotNull/checkArgument）   │    │
+│  │ 3. 特殊处理（如 MySQL 的 useCursorFetch 参数）            │    │
+│  │ 4. 封装成 XxxSourceConfig 对象                            │    │
+│  └─────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+                    ┌─────────────────┐
+                    │ XxxSourceConfig │
+                    │  (不可变对象)     │
+                    │  implements     │
+                    │  Serializable   │
+                    └─────────────────┘
+                              │
+              ┌───────────────┼───────────────┐
+              ▼               ▼               ▼
+        ┌───────────┐  ┌───────────┐  ┌───────────┐
+        │Enumerator │  │ SplitReader│  │  其他组件  │
+        └───────────┘  └───────────┘  └───────────┘
+```
+
+**示例代码：**
+
+```java
+// 1. 配置类定义
+@Getter
+@Builder
+public class JdbcSourceConfig implements Serializable {
+    private final String url;
+    private final String username;
+    private final String password;
+    private final String splitColumn;
+    private final Integer batchSize;
+    private final JdbcDialect dialect;
+}
+
+// 2. Source 构造函数中完成校验和封装
+public class JdbcSource extends AbstractSplitSource<...> {
+    private final JdbcSourceConfig jdbcSourceConfig;
+
+    public JdbcSource(SourceConfig config, JdbcDialect dialect) {
+        super(config);
+
+        // 参数校验
+        String url = config.getString("url");
+        Preconditions.checkNotNull(url, "url is null");
+
+        String splitColumn = config.getString("splitColumn");
+        Preconditions.checkNotNull(splitColumn, "splitColumn is null");
+
+        Integer batchSize = config.getInteger("batchSize", getDefaultBatchSize());
+        Preconditions.checkArgument(batchSize > 0, "batchSize must be greater than 0");
+
+        // 封装成配置对象
+        jdbcSourceConfig = JdbcSourceConfig.builder()
+                .url(url)
+                .splitColumn(splitColumn)
+                .batchSize(batchSize)
+                .dialect(dialect)
+                .build();
+    }
+
+    // 3. 传递给下游组件
+    @Override
+    public SplitEnumerator<...> createEnumerator(...) {
+        return new JdbcSplitEnumerator(enumContext, jdbcSourceConfig);
+    }
+
+    @Override
+    public SourceReader<...> createReader(...) {
+        return new JdbcSourceReader(() -> new JdbcSplitReader(jdbcSourceConfig), ...);
+    }
+}
+```
+
+**设计要点：**
+- **单一校验点**：所有参数校验集中在 Source 构造函数，避免在 Enumerator/Reader 中重复校验
+- **不可变配置**：配置对象使用 `final` 字段 + `@Builder`，保证线程安全
+- **可序列化**：配置对象实现 `Serializable`，支持 Flink 检查点序列化
+- **职责分离**：Source 负责配置解析校验，Enumerator/Reader 只关注业务逻辑
+
 ## 配置文件格式
 
 配置采用 DataX 风格的 JSON 结构，使用 Table API 进行数据流转：
@@ -205,6 +295,7 @@ public class MySourcePlugin implements SourcePlugin {
 
 **JDBC 实现：**
 - `JdbcSource`: JDBC Source 实现，直接继承 `AbstractSplitSource`，分片逻辑由 `JdbcSplitEnumerator` 处理
+- `JdbcSourceConfig`: JDBC 配置封装类，统一传递给 Enumerator 和 SplitReader
 - `JdbcDialect`: 数据库方言接口
 - `MySQLDialect`: MySQL 方言实现
 
