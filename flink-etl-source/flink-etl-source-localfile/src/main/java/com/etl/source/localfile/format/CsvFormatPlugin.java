@@ -1,6 +1,5 @@
 package com.etl.source.localfile.format;
 
-import com.etl.core.schema.EtlField;
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.TypeConverter;
 import com.etl.source.localfile.config.LocalFileSourceConfig;
@@ -101,7 +100,7 @@ public class CsvFormatPlugin implements FileFormatPlugin {
                 @Override
                 public Row next() {
                     CSVRecord record = csvIterator.next();
-                    int schemaSize = schema.getFields().size();
+                    int schemaSize = schema.getFieldCount();
                     int recordSize = record.size();
                     Row row = new Row(schemaSize);
 
@@ -110,17 +109,17 @@ public class CsvFormatPlugin implements FileFormatPlugin {
                         if (i < recordSize) {
                             value = record.get(i);
                         } else {
-                            log.warn("CSV 行缺少字段 '{}', 已设为 null", schema.getField(i).getName());
+                            log.warn("CSV 行缺少字段 '{}', 已设为 null", schema.getFieldName(i));
                             value = null;
                         }
 
-                        EtlField field = schema.getField(i);
+                        String fieldName = schema.getFieldName(i);
                         Object converted;
                         try {
-                            converted = TypeConverter.convert(value, field.getName(), field.getType());
+                            converted = TypeConverter.convert(value, fieldName, schema.getFieldType(i));
                         } catch (Exception e) {
-                            throw new RuntimeException("CSV 字段类型转换失败: 字段名=" + field.getName()
-                                    + ", 字段类型=" + field.getType() + ", 原始值=" + value, e);
+                            throw new RuntimeException("CSV 字段类型转换失败: 字段名=" + fieldName
+                                    + ", 字段类型=" + schema.getFieldType(i) + ", 原始值=" + value, e);
                         }
                         row.setField(i, converted);
                     }
