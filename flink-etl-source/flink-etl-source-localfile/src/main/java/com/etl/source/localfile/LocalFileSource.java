@@ -26,7 +26,7 @@ import java.util.function.Supplier;
  * <ul>
  *   <li>{@link LocalFileSplitEnumerator} - 分片枚举器</li>
  *   <li>{@link LocalFileSourceReader} - 源阅读器</li>
- *   <li>自定义序列化器 - 避免 Kryo 序列化问题</li>
+ *   <li>默认序列化器 - 使用 JDK 原生序列化</li>
  *   <li>直接输出 Flink Row 类型</li>
  * </ul>
  *
@@ -138,13 +138,13 @@ public class LocalFileSource extends AbstractSplitSource<LocalFileSplit, LocalFi
 
     @Override
     public SimpleVersionedSerializer<LocalFileSplit> getSplitSerializer() {
-        // 使用自定义序列化器，避免 Kryo 序列化 List<String> 的问题
+        // 使用默认序列化器，基于 JDK 原生序列化
         return new DefaultSplitSerializer<>();
     }
 
     @Override
     public SimpleVersionedSerializer<LocalFileEnumCheckpoint> getEnumeratorCheckpointSerializer() {
-        // 使用自定义序列化器
+        // 使用默认序列化器，基于 JDK 原生序列化
         return new DefaultCheckpointSerializer<>();
     }
 }

@@ -16,13 +16,11 @@ mvn clean compile
 mvn clean package
 
 # 运行 ETL 任务（从文件加载配置）
-java --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar --file docs/examples/mysql-to-console.json
+java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar --file docs/examples/mysql-to-console.json
 
 # 安装到本地仓库（开发新插件时需要）
 mvn clean install -DskipTests
 ```
-
-**注意**：Java 11+ 运行时需要 `--add-opens` 参数，解决 Flink Kryo 序列化器与模块系统的兼容性问题。
 
 ## 架构概览
 
@@ -262,6 +260,11 @@ public class JdbcSource extends AbstractSplitSource<...> {
 - `BaseSplitEnumerator`: 分片枚举器基类，自动处理分片分配和回收
 - `BaseSourceReader`: 源阅读器基类，封装线程模型和状态管理
 - `BaseSplitReader`: 分片读取器接口，实现阻塞式数据读取
+
+**序列化组件（core 模块）：**
+- `SerializerUtils`: JDK 序列化工具类，封装对象序列化/反序列化逻辑
+- `DefaultSplitSerializer`: 分片序列化器，使用 JDK 原生序列化
+- `DefaultCheckpointSerializer`: 检查点序列化器，使用 JDK 原生序列化
 
 **JDBC 实现（jdbc 模块）：**
 - `JdbcSource`: JDBC Source 实现，直接继承 `AbstractSplitSource`
