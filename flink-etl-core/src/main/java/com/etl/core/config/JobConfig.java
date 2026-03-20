@@ -10,7 +10,7 @@ import java.util.List;
 @Data
 public class JobConfig {
     private JobMeta job;
-    private SourceConfig source;
+    private List<SourceConfig> sources;
     private List<TransformConfig> transforms;
-    private SinkConfig sink;
+    private List<SinkConfig> sinks;
 }
