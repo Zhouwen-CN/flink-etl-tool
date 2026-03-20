@@ -40,20 +40,21 @@ public class JobBuilder {
         // 创建 Table 环境
         StreamTableEnvironment stEnv = StreamTableEnvironment.create(env);
 
-        // 1. Source -> DataStream
-        SourceConfig sourceConfig = config.getSource();
-        String sourceType = sourceConfig.getType();
-        SourcePlugin sourcePlugin = PluginLoader.loadSourcePlugin(sourceType);
-        Source source = sourcePlugin.createSource(sourceConfig);
-        DataStream<Row> sourceStream = env.fromSource(source, WatermarkStrategy.noWatermarks(), sourceType);
+        // 1. 处理所有 Source -> DataStream
+        for (SourceConfig sourceConfig : config.getSources()) {
+            String sourceType = sourceConfig.getType();
+            SourcePlugin sourcePlugin = PluginLoader.loadSourcePlugin(sourceType);
+            Source source = sourcePlugin.createSource(sourceConfig);
+            DataStream<Row> sourceStream = env.fromSource(source, WatermarkStrategy.noWatermarks(), sourceType);
 
-        // 2. DataStream<Row> -> Table
-        String sourceOutputTable = sourceConfig.getOutputTable();
-        stEnv.createTemporaryView(sourceOutputTable, sourceStream);
-        log.info("注册 Table: {}", sourceOutputTable);
+            // DataStream<Row> -> Table
+            String sourceOutputTable = sourceConfig.getOutputTable();
+            stEnv.createTemporaryView(sourceOutputTable, sourceStream);
+            log.info("注册 Table: {}", sourceOutputTable);
+        }
 
 
-        // 3. Transform 链式处理
+        // 2. Transform 链式处理
         List<TransformConfig> transforms = config.getTransforms();
         if (transforms != null && !transforms.isEmpty()) {
             for (TransformConfig transformConfig : transforms) {
@@ -69,23 +70,24 @@ public class JobBuilder {
             }
         }
 
-        // 4. Table -> DataStream<Row>
-        SinkConfig sinkConfig = config.getSink();
-        String sinkInputTable = sinkConfig.getInputTable();
-        DataStream<Row> resultStream;
-        try {
-            Table sinkTable = stEnv.from(sinkInputTable);
-            resultStream = stEnv.toDataStream(sinkTable);
-            log.info("Table 转换为 DataStream");
-        } catch (Exception e) {
-            throw new IllegalArgumentException("无法从表 '" + sinkInputTable + "' 读取数据，请检查 inputTable 配置是否正确，或上游 source.outputTable / transform.outputTable 是否已正确配置", e);
-        }
+        // 3. 处理所有 Sink
+        for (SinkConfig sinkConfig : config.getSinks()) {
+            String sinkInputTable = sinkConfig.getInputTable();
+            DataStream<Row> resultStream;
+            try {
+                Table sinkTable = stEnv.from(sinkInputTable);
+                resultStream = stEnv.toDataStream(sinkTable);
+                log.info("Table 转换为 DataStream");
+            } catch (Exception e) {
+                throw new IllegalArgumentException("无法从表 '" + sinkInputTable + "' 读取数据，请检查 inputTable 配置是否正确，或上游 source.outputTable / transform.outputTable 是否已正确配置", e);
+            }
 
-        // 5. Sink 消费 DataStream
-        SinkPlugin sinkPlugin = PluginLoader.loadSinkPlugin(sinkConfig.getType());
-        SinkFunction<Row> sink = sinkPlugin.createSink(sinkConfig);
-        resultStream.addSink(sink);
-        log.info("Sink 创建成功");
+            // Sink 消费 DataStream
+            SinkPlugin sinkPlugin = PluginLoader.loadSinkPlugin(sinkConfig.getType());
+            SinkFunction<Row> sink = sinkPlugin.createSink(sinkConfig);
+            resultStream.addSink(sink);
+            log.info("Sink 创建成功: {}", sinkConfig.getType());
+        }
 
         log.info("Flink Job 构建完成");
     }

@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.File;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * 配置文件解析器
@@ -61,6 +63,7 @@ public class ConfigParser {
      * @param config Job 配置
      */
     private static void validate(JobConfig config) {
+        // 校验 job 配置
         if (config.getJob() == null) {
             throw new IllegalArgumentException("缺少 job 配置");
         }
@@ -70,23 +73,24 @@ public class ConfigParser {
         if (config.getJob().getMode() == null) {
             throw new IllegalArgumentException("缺少 job.mode 配置");
         }
-        if (config.getSource() == null) {
-            throw new IllegalArgumentException("缺少 source 配置");
+
+        // 校验 sources 数组
+        if (config.getSources() == null || config.getSources().isEmpty()) {
+            throw new IllegalArgumentException("缺少 sources 配置");
         }
-        if (config.getSource().getType() == null || config.getSource().getType().isEmpty()) {
-            throw new IllegalArgumentException("缺少 source.type 配置");
-        }
-        if (config.getSource().getOutputTable() == null || config.getSource().getOutputTable().isEmpty()) {
-            throw new IllegalArgumentException("缺少 source.outputTable 配置");
-        }
-        if (config.getSink() == null) {
-            throw new IllegalArgumentException("缺少 sink 配置");
-        }
-        if (config.getSink().getType() == null || config.getSink().getType().isEmpty()) {
-            throw new IllegalArgumentException("缺少 sink.type 配置");
-        }
-        if (config.getSink().getInputTable() == null || config.getSink().getInputTable().isEmpty()) {
-            throw new IllegalArgumentException("缺少 sink.inputTable 配置");
+
+        Set<String> outputTables = new HashSet<>();
+        for (int i = 0; i < config.getSources().size(); i++) {
+            SourceConfig source = config.getSources().get(i);
+            if (source.getType() == null || source.getType().isEmpty()) {
+                throw new IllegalArgumentException("缺少 sources[" + i + "].type 配置");
+            }
+            if (source.getOutputTable() == null || source.getOutputTable().isEmpty()) {
+                throw new IllegalArgumentException("缺少 sources[" + i + "].outputTable 配置");
+            }
+            if (!outputTables.add(source.getOutputTable())) {
+                throw new IllegalArgumentException("sources 中 outputTable 重复: " + source.getOutputTable());
+            }
         }
 
         // 校验 transforms
@@ -99,6 +103,23 @@ public class ConfigParser {
                 if (transform.getOutputTable() == null || transform.getOutputTable().isEmpty()) {
                     throw new IllegalArgumentException("缺少 transforms[" + i + "].outputTable 配置");
                 }
+                if (!outputTables.add(transform.getOutputTable())) {
+                    throw new IllegalArgumentException("transforms 中 outputTable 重复或与 sources 冲突: " + transform.getOutputTable());
+                }
+            }
+        }
+
+        // 校验 sinks 数组
+        if (config.getSinks() == null || config.getSinks().isEmpty()) {
+            throw new IllegalArgumentException("缺少 sinks 配置");
+        }
+        for (int i = 0; i < config.getSinks().size(); i++) {
+            SinkConfig sink = config.getSinks().get(i);
+            if (sink.getType() == null || sink.getType().isEmpty()) {
+                throw new IllegalArgumentException("缺少 sinks[" + i + "].type 配置");
+            }
+            if (sink.getInputTable() == null || sink.getInputTable().isEmpty()) {
+                throw new IllegalArgumentException("缺少 sinks[" + i + "].inputTable 配置");
             }
         }
     }
