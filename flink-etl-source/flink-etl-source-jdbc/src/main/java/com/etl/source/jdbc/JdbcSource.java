@@ -1,15 +1,15 @@
 package com.etl.source.jdbc;
 
 import com.etl.core.config.SourceConfig;
+import com.etl.core.schema.TypeConverter;
 import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseSplitReader;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
 import com.etl.source.jdbc.config.JdbcSourceConfig;
-import com.etl.source.jdbc.dialect.JdbcDialect;
-import com.etl.source.jdbc.dialect.MySQLDialect;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.connector.source.*;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
 import org.apache.flink.types.Row;
@@ -21,35 +21,26 @@ import java.util.function.Supplier;
 /**
  * JDBC Source 实现
  * 支持主键范围分片读取关系型数据库
- *
- * <p>直接继承 AbstractSplitSource，分片逻辑由 JdbcSplitEnumerator 处理。
  */
 @Slf4j
 public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpoint> {
 
-
     private final JdbcSourceConfig jdbcSourceConfig;
 
-    public JdbcSource(SourceConfig config, JdbcDialect dialect) {
+    public JdbcSource(SourceConfig config) {
         super(config);
         String url = config.getString("url");
         Preconditions.checkNotNull(url, "url is null");
 
-        // mysql 需要加上这个参数，batchSize 参数才能生效
-        if (dialect instanceof MySQLDialect) {
-            if(!url.contains("useCursorFetch=true")){
-                if(url.contains("?")){
-                    url += "&useCursorFetch=true";
-                }else{
-                    url += "?useCursorFetch=true";
-                }
-            }
+        // MySQL 需要添加 useCursorFetch 参数，使 batchSize 生效
+        if (url.contains("jdbc:mysql:") && !url.contains("useCursorFetch=true")) {
+            url = url.contains("?") ? url + "&useCursorFetch=true" : url + "?useCursorFetch=true";
+            log.info("MySQL URL 添加 useCursorFetch 参数");
         }
 
         String username = config.getString("username");
         String password = config.getString("password");
 
-        // 不能同时为null
         String table = config.getString("table");
         String sql = config.getString("sql");
 
@@ -70,7 +61,6 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
                 .splitColumn(splitColumn)
                 .batchSize(batchSize)
                 .queryTimeout(queryTimeout)
-                .dialect(dialect)
                 .build();
 
         log.info("创建 JdbcSource: {}", this.jdbcSourceConfig);
@@ -93,57 +83,62 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
     restoreEnumerator(SplitEnumeratorContext<RangeSplit> enumContext,
                       RangeEnumCheckpoint checkpoint) {
         log.info("从检查点恢复 SplitEnumerator");
-
         return new JdbcSplitEnumerator(enumContext, checkpoint, jdbcSourceConfig);
     }
 
     @Override
     public SourceReader<Row, RangeSplit> createReader(SourceReaderContext readerContext) {
         log.info("创建 SourceReader");
-
-        // 创建 SplitReader 供应器
         var splitReaderSupplier = (Supplier<BaseSplitReader<Row, RangeSplit>>) () ->
                 new JdbcSplitReader(jdbcSourceConfig);
-
-        // 创建 Reader
-        return new JdbcSourceReader(
-                splitReaderSupplier,
-                readerContext
-        );
+        return new JdbcSourceReader(splitReaderSupplier, readerContext);
     }
 
     @Override
     public SimpleVersionedSerializer<RangeSplit> getSplitSerializer() {
-        // 使用默认序列化器
         return new DefaultSplitSerializer<>();
     }
 
     @Override
     public SimpleVersionedSerializer<RangeEnumCheckpoint> getEnumeratorCheckpointSerializer() {
-        // 使用默认序列化器
         return new DefaultCheckpointSerializer<>();
     }
 
-
-    /**
-     * 重写父类 getProducedType，通过 metadata 推断字段名称和类型
-     */
     @Override
     public TypeInformation<Row> getProducedType() {
-        JdbcDialect dialect = jdbcSourceConfig.getDialect();
         String table = jdbcSourceConfig.getTable();
         String sql = jdbcSourceConfig.getSql();
         String url = jdbcSourceConfig.getUrl();
         String username = jdbcSourceConfig.getUsername();
         String password = jdbcSourceConfig.getPassword();
 
-        String sampleQuery = dialect.buildSampleQuery(table, sql);
+        // 构建示例查询 SQL
+        String sampleQuery;
+        if (table != null) {
+            sampleQuery = "SELECT * FROM " + table + " WHERE 1=0";
+        } else {
+            sampleQuery = "SELECT * FROM (" + sql + ") AS t WHERE 1=0";
+        }
         log.info("推断 Schema: {}", sampleQuery);
 
         try (Connection conn = DriverManager.getConnection(url, username, password);
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sampleQuery)) {
-            return dialect.inferType(rs.getMetaData());
+
+            // 从 ResultSetMetaData 推断类型
+            ResultSetMetaData metaData = rs.getMetaData();
+            int columnCount = metaData.getColumnCount();
+            String[] names = new String[columnCount];
+            TypeInformation<?>[] types = new TypeInformation<?>[columnCount];
+
+            for (int i = 1; i <= columnCount; i++) {
+                int index = i - 1;
+                names[index] = metaData.getColumnLabel(i);
+                types[index] = TypeConverter.fromSqlType(metaData.getColumnType(i));
+            }
+
+            return Types.ROW_NAMED(names, types);
+
         } catch (SQLException e) {
             throw new RuntimeException("从数据库推断 Schema 失败: " + e.getMessage(), e);
         }
