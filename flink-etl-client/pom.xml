@@ -34,13 +34,19 @@
         <!-- Source 插件 -->
         <dependency>
             <groupId>com.etl</groupId>
-            <artifactId>flink-etl-source-mysql</artifactId>
+            <artifactId>flink-etl-source-jdbc</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.etl</groupId>
             <artifactId>flink-etl-source-localfile</artifactId>
             <version>${project.version}</version>
+        </dependency>
+
+        <!-- MySQL 驱动 -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
         </dependency>
 
         <!-- Sink 插件 -->
