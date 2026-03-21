@@ -1,5 +1,6 @@
 package com.etl.sink.jdbc;
 
+import com.etl.core.utils.SqlUtils;
 import com.etl.sink.jdbc.config.JdbcSinkConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.configuration.Configuration;
@@ -13,7 +14,6 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * JDBC Sink Function
@@ -87,7 +87,11 @@ public class JdbcSinkFunction extends RichSinkFunction<Row> {
                 throw new IllegalStateException("Row 没有字段名信息，请使用 Row.withNames()");
             }
             columns = fieldNames.toArray(new String[0]);
-            String sql = buildInsertSql();
+            String sql = SqlUtils.getInsertSql(
+                    config.getUrl(),
+                    config.getTable(),
+                    columns
+            );
             statement = connection.prepareStatement(sql);
             log.info("JDBC Sink table 模式: table={}, columns={}", config.getTable(), Arrays.toString(columns));
         } else {
@@ -97,35 +101,6 @@ public class JdbcSinkFunction extends RichSinkFunction<Row> {
             statement = connection.prepareStatement(parsed.getPreparedSql());
             log.info("JDBC Sink sql 模式: params={}", paramNames);
         }
-    }
-
-    private String buildInsertSql() {
-        String colList = Arrays.stream(columns)
-                .map(this::quoteIdentifier)
-                .collect(Collectors.joining(", "));
-        String placeholders = Arrays.stream(columns)
-                .map(c -> "?")
-                .collect(Collectors.joining(", "));
-
-        return String.format("INSERT INTO %s (%s) VALUES (%s)",
-                quoteIdentifier(config.getTable()), colList, placeholders);
-    }
-
-    /**
-     * 转义标识符，防止 SQL 注入
-     * 支持常见数据库：MySQL(`), PostgreSQL/SQLite("), SQL Server([)
-     */
-    private String quoteIdentifier(String name) {
-        String url = config.getUrl();
-        if (url.contains(":mysql")) {
-            return "`" + name + "`";
-        } else if (url.contains(":postgresql") || url.contains(":sqlite")) {
-            return "\"" + name + "\"";
-        } else if (url.contains(":sqlserver") || url.contains(":microsoft")) {
-            return "[" + name + "]";
-        }
-        // 默认使用双引号（SQL 标准）
-        return "\"" + name + "\"";
     }
 
     @Override

@@ -35,28 +35,6 @@
 | `queryTimeout` | 否 | 无限制 | 查询超时时间（秒） |
 | `schema` | 否 | 自动推断 | Schema 定义，不配置则从数据库元数据自动推断 |
 
-#### schema 格式
-
-Schema 为对象格式，键为字段名，值为类型：
-
-```json
-"schema": {
-  "id": "LONG",
-  "name": "STRING",
-  "age": "INT",
-  "email": "STRING"
-}
-```
-
-支持的数据类型：
-- `STRING` - 字符串类型
-- `BOOLEAN` - 布尔类型
-- `INT` - 32位整数
-- `LONG` - 64位长整数
-- `DOUBLE` - 双精度浮点数
-- `DATE` - 日期
-- `TIMESTAMP` - 时间戳
-
 #### 配置示例
 
 **基础配置 - 读取整表：**

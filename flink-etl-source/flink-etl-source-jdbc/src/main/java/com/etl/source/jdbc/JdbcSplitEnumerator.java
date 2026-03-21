@@ -2,6 +2,7 @@ package com.etl.source.jdbc;
 
 import com.etl.core.source.BaseSplitEnumerator;
 import com.etl.source.jdbc.config.JdbcSourceConfig;
+import com.etl.source.jdbc.utils.JdbcSplitHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 

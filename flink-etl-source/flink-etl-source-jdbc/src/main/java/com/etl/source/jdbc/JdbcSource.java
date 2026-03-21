@@ -1,21 +1,19 @@
 package com.etl.source.jdbc;
 
 import com.etl.core.config.SourceConfig;
-import com.etl.core.schema.TypeConverter;
 import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseSplitReader;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
+import com.etl.core.utils.SqlUtils;
 import com.etl.source.jdbc.config.JdbcSourceConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.connector.source.*;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Preconditions;
 
-import java.sql.*;
 import java.util.function.Supplier;
 
 /**
@@ -112,35 +110,13 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
         String username = jdbcSourceConfig.getUsername();
         String password = jdbcSourceConfig.getPassword();
 
-        // 构建示例查询 SQL
-        String sampleQuery;
-        if (table != null) {
-            sampleQuery = "SELECT * FROM " + table + " WHERE 1=0";
-        } else {
-            sampleQuery = "SELECT * FROM (" + sql + ") AS t WHERE 1=0";
-        }
-        log.info("推断 Schema: {}", sampleQuery);
-
-        try (Connection conn = DriverManager.getConnection(url, username, password);
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sampleQuery)) {
-
-            // 从 ResultSetMetaData 推断类型
-            ResultSetMetaData metaData = rs.getMetaData();
-            int columnCount = metaData.getColumnCount();
-            String[] names = new String[columnCount];
-            TypeInformation<?>[] types = new TypeInformation<?>[columnCount];
-
-            for (int i = 1; i <= columnCount; i++) {
-                int index = i - 1;
-                names[index] = metaData.getColumnLabel(i);
-                types[index] = TypeConverter.fromSqlType(metaData.getColumnType(i));
-            }
-
-            return Types.ROW_NAMED(names, types);
-
-        } catch (SQLException e) {
-            throw new RuntimeException("从数据库推断 Schema 失败: " + e.getMessage(), e);
-        }
+        return SqlUtils.inferRowType(
+                table,
+                sql,
+                url,
+                username,
+                password
+        );
     }
+
 }

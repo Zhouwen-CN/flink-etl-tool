@@ -1,5 +1,7 @@
-package com.etl.source.jdbc;
+package com.etl.source.jdbc.utils;
 
+import com.etl.core.utils.SqlUtils;
+import com.etl.source.jdbc.RangeSplit;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.*;
@@ -30,10 +32,16 @@ public final class JdbcSplitHelper {
      * @return 分片列表
      */
     public static List<RangeSplit> calculateSplits(String url, String username, String password,
-                                                    String table, String sql, String splitColumn,
-                                                    int parallelism) {
+                                                   String table, String sql, String splitColumn,
+                                                   int parallelism) {
         // 1. 查询分片列范围
-        String rangeQuery = buildRangeQuery(table, sql, splitColumn);
+
+        String rangeQuery = buildRangeQuery(
+                url,
+                table,
+                sql,
+                splitColumn
+        );
         log.info("查询分片范围: {}", rangeQuery);
 
         long min = 0L;
@@ -85,13 +93,16 @@ public final class JdbcSplitHelper {
     /**
      * 构建范围查询 SQL（获取分片列的 MIN 和 MAX 值）
      *
+     * @param url         数据库连接 url
      * @param table       表名（可能为 null）
      * @param sql         自定义 SQL（可能为 null）
      * @param splitColumn 分片列名
      * @return 查询 SQL
      */
-    public static String buildRangeQuery(String table, String sql, String splitColumn) {
+    private static String buildRangeQuery(String url, String table, String sql, String splitColumn) {
+        splitColumn = SqlUtils.quoteIdentifier(splitColumn, url);
         if (table != null) {
+            table = SqlUtils.quoteIdentifier(table, url);
             return String.format("SELECT MIN(%s), MAX(%s) FROM %s", splitColumn, splitColumn, table);
         } else {
             return String.format("SELECT MIN(%s), MAX(%s) FROM (%s) AS t", splitColumn, splitColumn, sql);
@@ -101,6 +112,7 @@ public final class JdbcSplitHelper {
     /**
      * 构建分片数据查询 SQL
      *
+     * @param url         数据库连接 url
      * @param table       表名（可能为 null）
      * @param sql         自定义 SQL（可能为 null）
      * @param splitColumn 分片列名
@@ -108,8 +120,10 @@ public final class JdbcSplitHelper {
      * @param end         结束值
      * @return 查询 SQL
      */
-    public static String buildSplitQuery(String table, String sql, String splitColumn, long start, long end) {
+    public static String buildSplitQuery(String url, String table, String sql, String splitColumn, long start, long end) {
+        splitColumn = SqlUtils.quoteIdentifier(splitColumn, url);
         if (table != null) {
+            table = SqlUtils.quoteIdentifier(table, url);
             return String.format("SELECT * FROM %s WHERE %s BETWEEN %d AND %d", table, splitColumn, start, end);
         } else {
             return String.format("SELECT * FROM (%s) AS t WHERE %s BETWEEN %d AND %d", sql, splitColumn, start, end);

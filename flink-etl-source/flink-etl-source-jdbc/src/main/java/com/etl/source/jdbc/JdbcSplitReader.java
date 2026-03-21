@@ -2,6 +2,7 @@ package com.etl.source.jdbc;
 
 import com.etl.core.source.BaseSplitReader;
 import com.etl.source.jdbc.config.JdbcSourceConfig;
+import com.etl.source.jdbc.utils.JdbcSplitHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
 import org.apache.flink.connector.base.source.reader.RecordsWithSplitIds;
@@ -102,8 +103,13 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
             }
 
             // 构建分片查询 SQL
-            String querySql = JdbcSplitHelper.buildSplitQuery(table, sql, splitColumn,
+            String querySql = JdbcSplitHelper.buildSplitQuery(
+                    url,
+                    table,
+                    sql,
+                    splitColumn,
                     split.getStart(), split.getEnd());
+
             log.debug("执行查询: {}", querySql);
 
             // 执行查询
