@@ -1,5 +1,4 @@
 {
-  "$schema": "../schema/job-config.schema.json",
   "job": {
     "name": "mysql-to-console",
     "mode": "batch",

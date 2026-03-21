@@ -167,6 +167,13 @@ public class JdbcSource extends AbstractSplitSource<...> {
 - **可序列化**：配置对象实现 `Serializable`，支持 Flink 检查点序列化
 - **职责分离**：Source 负责配置解析校验，Enumerator/Reader 只关注业务逻辑
 
+## 文档维护
+
+**重要：** 每次修改或新增 Source、Sink、Transform 插件时，必须同步更新 [PLUGINS.md](PLUGINS.md) 文档，包括：
+- 配置参数说明
+- 配置示例
+- 使用说明
+
 ## 配置文件格式
 
 配置采用 DataX 风格的 JSON 结构，使用 Table API 进行数据流转：
@@ -227,8 +234,6 @@ public class JdbcSource extends AbstractSplitSource<...> {
 - `batchSize`: 批量读取大小（可选，默认 100）
 - `queryTimeout`: 查询超时时间（可选，单位秒）
 - `schema`: 字段定义数组（可选，用于定义输出字段名和类型）
-
-JDBC Source 是通用的关系型数据库数据源，通过 `JdbcDialect` 接口支持不同数据库方言。目前支持 MySQL（通过 `MySQLDialect`），可通过实现 `JdbcDialect` 接口扩展支持 PostgreSQL、Oracle 等其他数据库。
 
 **LocalFile source 配置项：**
 - `path`: 文件路径（支持通配符 `*`）
