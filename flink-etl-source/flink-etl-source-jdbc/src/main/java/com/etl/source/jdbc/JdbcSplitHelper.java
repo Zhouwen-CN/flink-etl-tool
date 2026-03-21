@@ -1,7 +1,9 @@
 package com.etl.source.jdbc;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.Range;
 
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -87,6 +89,37 @@ public final class JdbcSplitHelper {
             return String.format("SELECT * FROM %s WHERE %s BETWEEN %d AND %d", table, splitColumn, start, end);
         } else {
             return String.format("SELECT * FROM (%s) AS t WHERE %s BETWEEN %d AND %d", sql, splitColumn, start, end);
+        }
+    }
+
+    /**
+     * 查询数据库获取分片列的范围
+     *
+     * @param url         数据库连接 URL
+     * @param username    用户名
+     * @param password    密码
+     * @param table       表名（可能为 null）
+     * @param sql         自定义 SQL（可能为 null）
+     * @param splitColumn 分片列名
+     * @return 分片列的范围 [min, max]
+     */
+    public static Range<Long> getSplitColumnRange(String url, String username, String password,
+                                                   String table, String sql, String splitColumn) {
+        String querySql = buildRangeQuery(table, sql, splitColumn);
+        log.info("查询分片范围: {}", querySql);
+
+        try (Connection conn = DriverManager.getConnection(url, username, password);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(querySql)) {
+
+            if (rs.next()) {
+                long min = rs.getLong(1);
+                long max = rs.getLong(2);
+                return Range.between(min, max);
+            }
+            return Range.between(0L, 0L);
+        } catch (SQLException e) {
+            throw new RuntimeException("获取分片范围失败: " + e.getMessage(), e);
         }
     }
 }

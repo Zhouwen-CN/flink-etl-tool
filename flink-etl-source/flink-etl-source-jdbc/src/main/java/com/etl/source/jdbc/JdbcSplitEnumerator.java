@@ -7,7 +7,6 @@ import org.apache.commons.lang3.Range;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 
 import java.io.IOException;
-import java.sql.*;
 import java.util.List;
 
 /**
@@ -64,7 +63,7 @@ public class JdbcSplitEnumerator extends BaseSplitEnumerator<RangeSplit, RangeEn
         String splitColumn = jdbcSourceConfig.getSplitColumn();
 
         // 查询分片列范围
-        Range<Long> range = getSplitColumnRange(url, username, password, table, sql, splitColumn);
+        Range<Long> range = JdbcSplitHelper.getSplitColumnRange(url, username, password, table, sql, splitColumn);
         log.info("分片列范围: [{}, {}]", range.getMinimum(), range.getMaximum());
 
         // 使用 JdbcSplitHelper 计算分片
@@ -74,29 +73,6 @@ public class JdbcSplitEnumerator extends BaseSplitEnumerator<RangeSplit, RangeEn
 
         addPendingSplits(splits);
         log.info("JDBC SplitEnumerator 启动完成，分片数: {}", splits.size());
-    }
-
-    /**
-     * 查询数据库获取分片列的范围
-     */
-    private Range<Long> getSplitColumnRange(String url, String username, String password,
-                                            String table, String sql, String splitColumn) {
-        String querySql = JdbcSplitHelper.buildRangeQuery(table, sql, splitColumn);
-        log.info("查询分片范围: {}", querySql);
-
-        try (Connection conn = DriverManager.getConnection(url, username, password);
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(querySql)) {
-
-            if (rs.next()) {
-                long min = rs.getLong(1);
-                long max = rs.getLong(2);
-                return Range.between(min, max);
-            }
-            return Range.between(0L, 0L);
-        } catch (SQLException e) {
-            throw new RuntimeException("获取分片范围失败: " + e.getMessage(), e);
-        }
     }
 
     @Override
