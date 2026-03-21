@@ -9,7 +9,7 @@
   - [LocalFile Source](#localfile-source)
 - [Sink 插件](#sink-插件)
   - [Console Sink](#console-sink)
-  - [MySQL Sink](#mysql-sink)
+  - [JDBC Sink](#jdbc-sink)
 - [Transform 插件](#transform-插件)
   - [SQL Transform](#sql-transform)
 
@@ -28,7 +28,7 @@
 | `url` | 是 | - | JDBC 连接 URL，格式：`jdbc:mysql://host:port/database` |
 | `username` | 是 | - | 数据库用户名 |
 | `password` | 是 | - | 数据库密码 |
-| `table` | 条件必填 | - | 表名。与 `sql` 二选一 |
+| `table` | 条件必填 | - | 表名。与 `sql` 二选一，优先 |
 | `sql` | 条件必填 | - | 自定义查询 SQL。与 `table` 二选一 |
 | `splitColumn` | 是 | - | 分片列名，通常为主键列 |
 | `batchSize` | 否 | 100 | 批量读取大小 |
@@ -222,9 +222,9 @@ Schema 为数组格式，每项包含 `name` 和 `type`：
 
 ---
 
-### MySQL Sink
+### JDBC Sink
 
-将数据写入 MySQL 数据库，支持批量写入和 upsert 模式。
+将数据写入 JDBC 兼容数据库，支持 table 和 sql 两种配置模式。
 
 #### 配置参数
 
@@ -233,18 +233,25 @@ Schema 为数组格式，每项包含 `name` 和 `type`：
 | `url` | 是 | - | JDBC 连接 URL |
 | `username` | 是 | - | 数据库用户名 |
 | `password` | 是 | - | 数据库密码 |
-| `table` | 是 | - | 目标表名 |
+| `table` | 条件必填 | - | 目标表名。与 `sql` 二选一，优先 |
+| `sql` | 条件必填 | - | 自定义 SQL，支持具名占位符 `:paramName` |
 | `batchSize` | 否 | `100` | 批量写入大小 |
-| `writeMode` | 否 | `insert` | 写入模式：`insert` 或 `upsert` |
+
+#### 两种模式
+
+| 模式 | 说明 |
+|------|------|
+| `table` 模式 | 自动生成 `INSERT INTO table(col1, col2, ...) VALUES(?, ?...)`，列名从 Row 字段名获取 |
+| `sql` 模式 | 自定义 SQL，使用具名占位符 `:paramName`，可实现 upsert 等复杂逻辑 |
 
 #### 配置示例
 
-**INSERT 模式：**
+**table 模式 - 自动生成 INSERT：**
 
 ```json
 {
   "sink": {
-    "type": "mysql",
+    "type": "jdbc",
     "inputTable": "output_data",
     "config": {
       "url": "jdbc:mysql://localhost:3306/mydb",
@@ -257,36 +264,58 @@ Schema 为数组格式，每项包含 `name` 和 `type`：
 }
 ```
 
-**Upsert 模式：**
+**sql 模式 - 具名占位符：**
 
 ```json
 {
   "sink": {
-    "type": "mysql",
+    "type": "jdbc",
     "inputTable": "output_data",
     "config": {
       "url": "jdbc:mysql://localhost:3306/mydb",
       "username": "root",
       "password": "password",
-      "table": "target_table",
-      "batchSize": 500,
-      "writeMode": "upsert"
+      "sql": "INSERT INTO employee(last_name, email) VALUES(:lastName, :email)",
+      "batchSize": 100
     }
   }
 }
 ```
 
-#### 写入模式说明
+**sql 模式 - 实现 upsert（MySQL）：**
 
-| 模式 | 说明 |
-|------|------|
-| `insert` | 直接插入数据，主键冲突会报错 |
-| `upsert` | 使用 `INSERT ... ON DUPLICATE KEY UPDATE`，主键冲突时更新 |
+```json
+{
+  "sink": {
+    "type": "jdbc",
+    "inputTable": "output_data",
+    "config": {
+      "url": "jdbc:mysql://localhost:3306/mydb",
+      "username": "root",
+      "password": "password",
+      "sql": "INSERT INTO user_table(id, name, email) VALUES(:id, :name, :email) ON DUPLICATE KEY UPDATE name=VALUES(name), email=VALUES(email)",
+      "batchSize": 100
+    }
+  }
+}
+```
 
-#### 列名说明
+#### 具名占位符说明
 
-- 列名从运行时 Row 的字段名中动态获取，无需在配置中指定
-- Row 字段名应与目标表列名一致
+- 格式：`:paramName`，如 `:id`、`:name`、`:email`
+- 参数名必须与 Row 字段名严格匹配
+- 支持字母、数字、下划线，以字母或下划线开头
+
+#### 多数据库支持
+
+JDBC Sink 自动识别数据库类型并使用对应的标识符转义：
+
+| 数据库 | 标识符转义 | URL 示例 |
+|--------|-----------|----------|
+| MySQL | `` `name` `` | `jdbc:mysql://host:3306/db` |
+| PostgreSQL | `"name"` | `jdbc:postgresql://host:5432/db` |
+| SQLite | `"name"` | `jdbc:sqlite:/path/to/db` |
+| SQL Server | `[name]` | `jdbc:sqlserver://host:1433;databaseName=db` |
 
 ---
 
@@ -408,12 +437,12 @@ Schema 为数组格式，每项包含 `name` 和 `type`：
 }
 ```
 
-### CSV 文件到 MySQL
+### CSV 文件到 JDBC
 
 ```json
 {
   "job": {
-    "name": "csv-to-mysql",
+    "name": "csv-to-jdbc",
     "mode": "batch",
     "parallelism": 2
   },
@@ -433,21 +462,20 @@ Schema 为数组格式，每项包含 `name` 和 `type`：
     }
   },
   "sink": {
-    "type": "mysql",
+    "type": "jdbc",
     "inputTable": "csv_data",
     "config": {
       "url": "jdbc:mysql://localhost:3306/mydb",
       "username": "root",
       "password": "password",
       "table": "import_data",
-      "batchSize": 500,
-      "writeMode": "insert"
+      "batchSize": 500
     }
   }
 }
 ```
 
-### MySQL 到 MySQL（数据同步）
+### MySQL 到 MySQL（数据同步 + upsert）
 
 ```json
 {
@@ -456,29 +484,32 @@ Schema 为数组格式，每项包含 `name` 和 `type`：
     "mode": "batch",
     "parallelism": 4
   },
-  "source": {
-    "type": "jdbc",
-    "outputTable": "source_data",
-    "config": {
-      "url": "jdbc:mysql://source-host:3306/source_db",
-      "username": "root",
-      "password": "password",
-      "table": "source_table",
-      "splitColumn": "id",
-      "batchSize": 1000
+  "sources": [
+    {
+      "type": "jdbc",
+      "outputTable": "source_data",
+      "config": {
+        "url": "jdbc:mysql://source-host:3306/source_db",
+        "username": "root",
+        "password": "password",
+        "table": "source_table",
+        "splitColumn": "id",
+        "batchSize": 1000
+      }
     }
-  },
-  "sink": {
-    "type": "mysql",
-    "inputTable": "source_data",
-    "config": {
-      "url": "jdbc:mysql://target-host:3306/target_db",
-      "username": "root",
-      "password": "password",
-      "table": "target_table",
-      "batchSize": 500,
-      "writeMode": "upsert"
+  ],
+  "sinks": [
+    {
+      "type": "jdbc",
+      "inputTable": "source_data",
+      "config": {
+        "url": "jdbc:mysql://target-host:3306/target_db",
+        "username": "root",
+        "password": "password",
+        "sql": "INSERT INTO target_table(id, name, email) VALUES(:id, :name, :email) ON DUPLICATE KEY UPDATE name=VALUES(name), email=VALUES(email)",
+        "batchSize": 500
+      }
     }
-  }
+  ]
 }
 ```
