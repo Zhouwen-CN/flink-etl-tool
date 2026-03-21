@@ -31,8 +31,7 @@ flink-etl-tool/
 ├── flink-etl-core/               # 核心框架（SPI 接口、配置解析、Job 编排、Source 抽象层）
 ├── flink-etl-client/             # 客户端启动器（打包入口）
 ├── flink-etl-source/             # Source 插件父模块
-│   ├── flink-etl-source-jdbc/    # JDBC 通用实现
-│   ├── flink-etl-source-mysql/   # MySQL Source 插件
+│   ├── flink-etl-source-jdbc/    # JDBC 通用实现（支持 MySQL、PostgreSQL 等关系型数据库）
 │   └── flink-etl-source-localfile/  # 本地文件 Source 插件
 ├── flink-etl-sink/               # Sink 插件父模块
 │   ├── flink-etl-sink-console/   # Console Sink 插件
@@ -181,7 +180,7 @@ public class JdbcSource extends AbstractSplitSource<...> {
   },
   "sources": [
     {
-      "type": "mysql",
+      "type": "jdbc",
       "outputTable": "source_table",
       "config": { ... }
     }
@@ -215,10 +214,10 @@ public class JdbcSource extends AbstractSplitSource<...> {
 - `name`: Job 名称
 - `mode`: 执行模式，支持 `batch`（批处理）或 `streaming`（流处理）
 - `parallelism`: 并行度配置（可选），不设置则使用 Flink 默认值
-  - 对于支持分片的 Source（如 MySQL），分片数量等于并行度
+  - 对于支持分片的 Source（如 JDBC），分片数量等于并行度
   - 如果数据量小于并行度，实际分片数会自动调整为数据量
 
-**MySQL source 配置项：**
+**JDBC source 配置项：**
 - `url`: 数据库连接 URL
 - `table`: 表名（与 `sql` 二选一）
 - `sql`: 自定义查询 SQL（与 `table` 二选一）
@@ -228,6 +227,8 @@ public class JdbcSource extends AbstractSplitSource<...> {
 - `batchSize`: 批量读取大小（可选，默认 100）
 - `queryTimeout`: 查询超时时间（可选，单位秒）
 - `schema`: 字段定义数组（可选，用于定义输出字段名和类型）
+
+JDBC Source 是通用的关系型数据库数据源，通过 `JdbcDialect` 接口支持不同数据库方言。目前支持 MySQL（通过 `MySQLDialect`），可通过实现 `JdbcDialect` 接口扩展支持 PostgreSQL、Oracle 等其他数据库。
 
 **LocalFile source 配置项：**
 - `path`: 文件路径（支持通配符 `*`）
