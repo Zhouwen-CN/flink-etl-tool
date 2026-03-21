@@ -3,7 +3,6 @@ package com.etl.source.mysql;
 import com.etl.core.config.SourceConfig;
 import com.etl.core.spi.SourcePlugin;
 import com.etl.source.jdbc.JdbcSource;
-import com.etl.source.jdbc.dialect.MySQLDialect;
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.Source;
@@ -24,7 +23,6 @@ public class MySQLSourcePlugin implements SourcePlugin {
     @Override
     public Source<?, ?, ?> createSource(SourceConfig config) {
         log.info("创建 MySQL Source");
-        MySQLDialect dialect = new MySQLDialect();
-        return new JdbcSource(config, dialect);
+        return new JdbcSource(config);
     }
 }
