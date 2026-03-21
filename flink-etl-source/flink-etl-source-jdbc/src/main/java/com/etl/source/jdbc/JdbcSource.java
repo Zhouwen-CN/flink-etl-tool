@@ -33,7 +33,7 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
         Preconditions.checkNotNull(url, "url is null");
 
         // MySQL 需要添加 useCursorFetch 参数，使 batchSize 生效
-        if (url.contains("jdbc:mysql:") && !url.contains("useCursorFetch=true")) {
+        if (url.contains(":mysql:") && !url.contains("useCursorFetch=true")) {
             url = url.contains("?") ? url + "&useCursorFetch=true" : url + "?useCursorFetch=true";
             log.info("MySQL URL 添加 useCursorFetch 参数");
         }

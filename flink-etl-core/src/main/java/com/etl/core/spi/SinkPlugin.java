@@ -17,4 +17,13 @@ public interface SinkPlugin extends Plugin {
      * @return Flink SinkFunction，强制消费 Row 类型
      */
     SinkFunction<Row> createSink(SinkConfig config);
+
+    /**
+     * 所有 sink 默认的 batchSize
+     *
+     * @return 批次大小
+     */
+    default int getDefaultBatchSize() {
+        return 100;
+    }
 }

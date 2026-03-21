@@ -28,7 +28,7 @@ public class JdbcSinkPlugin implements SinkPlugin {
         String password = config.getString("password");
         String table = config.getString("table");
         String sql = config.getString("sql");
-        int batchSize = config.getInteger("batchSize", 100);
+        int batchSize = config.getInteger("batchSize", getDefaultBatchSize());
 
         // 必要参数校验
         if (url == null) {
@@ -50,7 +50,7 @@ public class JdbcSinkPlugin implements SinkPlugin {
                 .username(username)
                 .password(password)
                 .table(table)
-                .sql(table != null ? null : sql)  // table 优先
+                .sql(sql)
                 .batchSize(batchSize)
                 .build();
 

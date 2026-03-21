@@ -35,7 +35,7 @@ flink-etl-tool/
 │   └── flink-etl-source-localfile/  # 本地文件 Source 插件
 ├── flink-etl-sink/               # Sink 插件父模块
 │   ├── flink-etl-sink-console/   # Console Sink 插件
-│   └── flink-etl-sink-mysql/     # MySQL Sink 插件
+│   └── flink-etl-sink-jdbc/      # JDBC Sink 插件（支持 MySQL、PostgreSQL 等）
 └── flink-etl-transform/          # Transform 插件（SQL Transform）
 ```
 
@@ -253,6 +253,18 @@ JDBC Source 是通用的关系型数据库数据源，通过 `JdbcDialect` 接�
 - 支持多个 Transform 组成处理链
 - 当前支持 `sql` 类型，通过 SQL 语句进行数据转换
 - SQL 中引用的表名为上游的 `outputTable`
+
+**JDBC Sink 配置项：**
+- `url`: 数据库连接 URL
+- `username`: 用户名
+- `password`: 密码
+- `table`: 目标表名（与 `sql` 二选一，优先）
+- `sql`: 自定义 SQL，支持具名占位符 `:paramName`（与 `table` 二选一）
+- `batchSize`: 批量写入大小（可选，默认 100）
+
+JDBC Sink 支持两种模式：
+- **table 模式**：自动生成 `INSERT INTO table(col1, col2, ...) VALUES(?, ?...)`，字段名从 Row 获取
+- **sql 模式**：自定义 SQL，使用具名占位符，如 `INSERT INTO t(name, email) VALUES(:name, :email)`
 
 示例配置位于 `docs/examples/` 目录。
 

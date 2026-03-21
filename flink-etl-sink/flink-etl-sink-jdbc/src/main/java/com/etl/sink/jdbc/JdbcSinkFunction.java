@@ -79,6 +79,7 @@ public class JdbcSinkFunction extends RichSinkFunction<Row> {
     }
 
     private void initStatement(Row row) throws SQLException {
+        // table 优先
         if (config.getTable() != null) {
             // table 模式：从 Row 字段名生成 INSERT SQL
             Set<String> fieldNames = row.getFieldNames(true);

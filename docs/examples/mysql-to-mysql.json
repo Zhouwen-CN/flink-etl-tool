@@ -23,10 +23,9 @@
       "inputTable": "source_data",
       "config": {
         "url": "jdbc:mysql://118.145.119.51:3306/test_db",
-        "table": "user_table_2",
+        "sql": "INSERT INTO user_table_2 (id,name,age,email) VALUES(:id,:name,:age,:email) ON DUPLICATE KEY UPDATE name=VALUES(name),age=VALUES(age),email=VALUES(email)",
         "username": "root",
-        "password": "Zw$8rb8*",
-        "writeMode": "upsert"
+        "password": "Zw$8rb8*"
       }
     }
   ]
