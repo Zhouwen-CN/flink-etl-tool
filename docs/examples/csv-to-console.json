@@ -24,7 +24,7 @@
       }
     },
     {
-      "type": "mysql",
+      "type": "jdbc",
       "outputTable": "mysql_source",
       "config": {
         "url": "jdbc:mysql://118.145.119.51:3306/test_db",

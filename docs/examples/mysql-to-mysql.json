@@ -6,7 +6,7 @@
   },
   "sources": [
     {
-      "type": "mysql",
+      "type": "jdbc",
       "outputTable": "source_data",
       "config": {
         "url": "jdbc:mysql://118.145.119.51:3306/test_db",
@@ -19,7 +19,7 @@
   ],
   "sinks": [
     {
-      "type": "mysql",
+      "type": "jdbc",
       "inputTable": "source_data",
       "config": {
         "url": "jdbc:mysql://118.145.119.51:3306/test_db",
