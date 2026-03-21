@@ -2,7 +2,6 @@ package com.etl.source.jdbc;
 
 import com.etl.core.source.BaseSplitReader;
 import com.etl.source.jdbc.config.JdbcSourceConfig;
-import com.etl.source.jdbc.dialect.JdbcDialect;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
 import org.apache.flink.connector.base.source.reader.RecordsWithSplitIds;
@@ -39,7 +38,6 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
     private final String splitColumn;
     private final int batchSize;
     private final Integer queryTimeout;
-    private final JdbcDialect dialect;
 
     private final Queue<RangeSplit> pendingSplits = new ArrayDeque<>();
     private final Set<String> finishedSplits = new HashSet<>();
@@ -52,16 +50,15 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
     private boolean hasNextRecord;
     private int currentOffset;
 
-    public JdbcSplitReader(JdbcSourceConfig jdbcSourceConfig) {
-        this.url = jdbcSourceConfig.getUrl();
-        this.username = jdbcSourceConfig.getUsername();
-        this.password = jdbcSourceConfig.getPassword();
-        this.table = jdbcSourceConfig.getTable();
-        this.sql = jdbcSourceConfig.getSql();
-        this.splitColumn = jdbcSourceConfig.getSplitColumn();
-        this.batchSize = jdbcSourceConfig.getBatchSize();
-        this.queryTimeout = jdbcSourceConfig.getQueryTimeout();
-        this.dialect = jdbcSourceConfig.getDialect();
+    public JdbcSplitReader(JdbcSourceConfig config) {
+        this.url = config.getUrl();
+        this.username = config.getUsername();
+        this.password = config.getPassword();
+        this.table = config.getTable();
+        this.sql = config.getSql();
+        this.splitColumn = config.getSplitColumn();
+        this.batchSize = config.getBatchSize();
+        this.queryTimeout = config.getQueryTimeout();
     }
 
     @Override
@@ -105,7 +102,7 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
             }
 
             // 构建分片查询 SQL
-            String querySql = dialect.buildSplitQuery(table, sql, splitColumn,
+            String querySql = JdbcSplitHelper.buildSplitQuery(table, sql, splitColumn,
                     split.getStart(), split.getEnd());
             log.debug("执行查询: {}", querySql);
 
@@ -130,10 +127,17 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
 
         try {
             int recordsInBatch = 0;
+            ResultSetMetaData metaData = currentResultSet.getMetaData();
+            int columnCount = metaData.getColumnCount();
 
             // 读取一批记录
             while (hasNextRecord && recordsInBatch < batchSize) {
-                Row row = dialect.createRow(currentResultSet);
+                // 内联 createRow 逻辑
+                Row row = new Row(columnCount);
+                for (int i = 1; i <= columnCount; i++) {
+                    row.setField(i - 1, currentResultSet.getObject(i));
+                }
+
                 builder.add(currentSplit.splitId(), row);
                 recordsInBatch++;
                 currentOffset++;
