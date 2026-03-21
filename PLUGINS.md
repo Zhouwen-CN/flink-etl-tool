@@ -37,13 +37,15 @@
 
 #### schema 格式
 
-Schema 为数组格式，每项包含 `name` 和 `type`：
+Schema 为对象格式，键为字段名，值为类型：
 
 ```json
-"schema": [
-  { "name": "id", "type": "INT" },
-  { "name": "name", "type": "STRING" }
-]
+"schema": {
+  "id": "LONG",
+  "name": "STRING",
+  "age": "INT",
+  "email": "STRING"
+}
 ```
 
 支持的数据类型：
@@ -121,15 +123,25 @@ Schema 为数组格式，每项包含 `name` 和 `type`：
 
 #### schema 格式
 
+Schema 为对象格式，键为字段名，值为类型：
+
 ```json
-"schema": [
-  { "name": "id", "type": "LONG" },
-  { "name": "name", "type": "STRING" },
-  { "name": "age", "type": "INT" }
-]
+"schema": {
+  "id": "LONG",
+  "name": "STRING",
+  "age": "INT",
+  "email": "STRING"
+}
 ```
 
-支持的数据类型：`STRING`、`BOOLEAN`、`INT`、`LONG`、`DOUBLE`、`DATE`、`TIMESTAMP`
+支持的数据类型：
+- `STRING` - 字符串类型
+- `BOOLEAN` - 布尔类型
+- `INT` - 32位整数
+- `LONG` - 64位长整数
+- `DOUBLE` - 双精度浮点数
+- `DATE` - 日期
+- `TIMESTAMP` - 时间戳
 
 #### 配置示例
 
@@ -146,12 +158,12 @@ Schema 为数组格式，每项包含 `name` 和 `type`：
       "encoding": "UTF-8",
       "delimiter": ",",
       "skipHeader": true,
-      "schema": [
-        { "name": "id", "type": "LONG" },
-        { "name": "name", "type": "STRING" },
-        { "name": "age", "type": "INT" },
-        { "name": "email", "type": "STRING" }
-      ]
+      "schema": {
+        "id": "LONG",
+        "name": "STRING",
+        "age": "INT",
+        "email": "STRING"
+      }
     }
   }
 }
@@ -169,10 +181,10 @@ Schema 为数组格式，每项包含 `name` 和 `type`：
       "format": "csv",
       "recursive": true,
       "skipHeader": true,
-      "schema": [
-        { "name": "id", "type": "STRING" },
-        { "name": "value", "type": "DOUBLE" }
-      ]
+      "schema": {
+        "id": "STRING",
+        "value": "DOUBLE"
+      }
     }
   }
 }
@@ -258,24 +270,6 @@ Schema 为数组格式，每项包含 `name` 和 `type`：
       "username": "root",
       "password": "password",
       "table": "target_table",
-      "batchSize": 100
-    }
-  }
-}
-```
-
-**sql 模式 - 具名占位符：**
-
-```json
-{
-  "sink": {
-    "type": "jdbc",
-    "inputTable": "output_data",
-    "config": {
-      "url": "jdbc:mysql://localhost:3306/mydb",
-      "username": "root",
-      "password": "password",
-      "sql": "INSERT INTO employee(last_name, email) VALUES(:lastName, :email)",
       "batchSize": 100
     }
   }
@@ -408,18 +402,20 @@ JDBC Sink 自动识别数据库类型并使用对应的标识符转义：
     "mode": "batch",
     "parallelism": 4
   },
-  "source": {
-    "type": "jdbc",
-    "outputTable": "users",
-    "config": {
-      "url": "jdbc:mysql://localhost:3306/mydb",
-      "username": "root",
-      "password": "password",
-      "table": "users",
-      "splitColumn": "id",
-      "batchSize": 1000
+  "sources": [
+    {
+      "type": "jdbc",
+      "outputTable": "users",
+      "config": {
+        "url": "jdbc:mysql://localhost:3306/mydb",
+        "username": "root",
+        "password": "password",
+        "table": "users",
+        "splitColumn": "id",
+        "batchSize": 1000
+      }
     }
-  },
+  ],
   "transforms": [
     {
       "type": "sql",
@@ -429,11 +425,13 @@ JDBC Sink 自动识别数据库类型并使用对应的标识符转义：
       }
     }
   ],
-  "sink": {
-    "type": "console",
-    "inputTable": "active_users",
-    "config": {}
-  }
+  "sinks": [
+    {
+      "type": "console",
+      "inputTable": "active_users",
+      "config": {}
+    }
+  ]
 }
 ```
 
@@ -446,32 +444,36 @@ JDBC Sink 自动识别数据库类型并使用对应的标识符转义：
     "mode": "batch",
     "parallelism": 2
   },
-  "source": {
-    "type": "localfile",
-    "outputTable": "csv_data",
-    "config": {
-      "path": "/data/input/*.csv",
-      "format": "csv",
-      "skipHeader": true,
-      "schema": [
-        { "name": "id", "type": "LONG" },
-        { "name": "name", "type": "STRING" },
-        { "name": "age", "type": "INT" },
-        { "name": "email", "type": "STRING" }
-      ]
+  "sources": [
+    {
+      "type": "localfile",
+      "outputTable": "csv_data",
+      "config": {
+        "path": "/data/input/*.csv",
+        "format": "csv",
+        "skipHeader": true,
+        "schema": {
+          "id": "LONG",
+          "name": "STRING",
+          "age": "INT",
+          "email": "STRING"
+        }
+      }
     }
-  },
-  "sink": {
-    "type": "jdbc",
-    "inputTable": "csv_data",
-    "config": {
-      "url": "jdbc:mysql://localhost:3306/mydb",
-      "username": "root",
-      "password": "password",
-      "table": "import_data",
-      "batchSize": 500
+  ],
+  "sinks": [
+    {
+      "type": "jdbc",
+      "inputTable": "csv_data",
+      "config": {
+        "url": "jdbc:mysql://localhost:3306/mydb",
+        "username": "root",
+        "password": "password",
+        "table": "import_data",
+        "batchSize": 500
+      }
     }
-  }
+  ]
 }
 ```
 
