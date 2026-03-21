@@ -5,7 +5,7 @@
 ## 目录
 
 - [Source 插件](#source-插件)
-  - [MySQL Source](#mysql-source)
+  - [JDBC Source](#jdbc-source)
   - [LocalFile Source](#localfile-source)
 - [Sink 插件](#sink-插件)
   - [Console Sink](#console-sink)
@@ -17,9 +17,9 @@
 
 ## Source 插件
 
-### MySQL Source
+### JDBC Source
 
-从 MySQL 数据库读取数据，支持主键范围分片并行读取。
+从 JDBC 兼容数据库读取数据，支持主键范围分片并行读取。
 
 #### 配置参数
 
@@ -62,7 +62,7 @@ Schema 为数组格式，每项包含 `name` 和 `type`：
 ```json
 {
   "source": {
-    "type": "mysql",
+    "type": "jdbc",
     "outputTable": "users",
     "config": {
       "url": "jdbc:mysql://localhost:3306/mydb",
@@ -81,7 +81,7 @@ Schema 为数组格式，每项包含 `name` 和 `type`：
 ```json
 {
   "source": {
-    "type": "mysql",
+    "type": "jdbc",
     "outputTable": "active_users",
     "config": {
       "url": "jdbc:mysql://localhost:3306/mydb",
@@ -380,7 +380,7 @@ Schema 为数组格式，每项包含 `name` 和 `type`：
     "parallelism": 4
   },
   "source": {
-    "type": "mysql",
+    "type": "jdbc",
     "outputTable": "users",
     "config": {
       "url": "jdbc:mysql://localhost:3306/mydb",
@@ -457,7 +457,7 @@ Schema 为数组格式，每项包含 `name` 和 `type`：
     "parallelism": 4
   },
   "source": {
-    "type": "mysql",
+    "type": "jdbc",
     "outputTable": "source_data",
     "config": {
       "url": "jdbc:mysql://source-host:3306/source_db",
