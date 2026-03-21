@@ -11,9 +11,9 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>flink-etl-sink-mysql</artifactId>
-    <name>Flink ETL Sink - MySQL</name>
-    <description>MySQL Sink 插件</description>
+    <artifactId>flink-etl-sink-jdbc</artifactId>
+    <name>Flink ETL Sink - JDBC</name>
+    <description>JDBC Sink 插件</description>
 
     <dependencies>
         <!-- MySQL 驱动 -->

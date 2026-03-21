@@ -51,7 +51,7 @@
         </dependency>
         <dependency>
             <groupId>com.etl</groupId>
-            <artifactId>flink-etl-sink-mysql</artifactId>
+            <artifactId>flink-etl-sink-jdbc</artifactId>
             <version>${project.version}</version>
         </dependency>
 
