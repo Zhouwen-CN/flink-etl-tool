@@ -100,28 +100,6 @@
 | `recursive` | 否 | `false` | 是否递归匹配子目录 |
 | `schema` | 是 | - | Schema 定义，包含字段名和类型 |
 
-#### schema 格式
-
-Schema 为对象格式，键为字段名，值为类型：
-
-```json
-"schema": {
-  "id": "LONG",
-  "name": "STRING",
-  "age": "INT",
-  "email": "STRING"
-}
-```
-
-支持的数据类型：
-- `STRING` - 字符串类型
-- `BOOLEAN` - 布尔类型
-- `INT` - 32位整数
-- `LONG` - 64位长整数
-- `DOUBLE` - 双精度浮点数
-- `DATE` - 日期
-- `TIMESTAMP` - 时间戳
-
 #### 配置示例
 
 **CSV 文件读取：**
