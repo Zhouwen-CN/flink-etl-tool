@@ -1,5 +1,6 @@
 package com.etl.source.localfile.format;
 
+import com.etl.core.exception.SchemaConfigException;
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.TypeConverter;
 import com.etl.source.localfile.config.LocalFileSourceConfig;
@@ -8,6 +9,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.java.typeutils.ObjectArrayTypeInfo;
+import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.types.Row;
 
 import java.io.BufferedReader;
@@ -30,9 +35,39 @@ public class CsvFormatPlugin implements FileFormatPlugin {
         return "csv";
     }
 
+    /**
+     * 检查是否为复杂类型
+     */
+    private boolean isComplexType(TypeInformation<?> type) {
+        return type instanceof RowTypeInfo
+            || type instanceof BasicArrayTypeInfo
+            || type instanceof ObjectArrayTypeInfo;
+    }
+
+    /**
+     * 校验 schema 不包含复杂类型
+     */
+    private void validateSchema(EtlSchema schema) {
+        if (schema == null) {
+            throw new SchemaConfigException("CSV Source 必须配置 schema");
+        }
+        for (int i = 0; i < schema.getFieldCount(); i++) {
+            TypeInformation<?> type = schema.getFieldType(i);
+            if (isComplexType(type)) {
+                throw new SchemaConfigException(
+                    "CSV 格式不支持复杂类型字段 '" + schema.getFieldName(i) + "'。" +
+                    "请使用简单类型：STRING, BOOLEAN, INT, LONG, DOUBLE, DECIMAL, TIMESTAMP");
+            }
+        }
+    }
+
     @Override
     public Iterable<Row> parse(LocalFileSourceConfig localFileSourceConfig, InputStream inputStream) {
         EtlSchema schema = localFileSourceConfig.getSchema();
+
+        // 校验：CSV 格式不支持复杂类型
+        validateSchema(schema);
+
         Charset charset = Charset.forName(localFileSourceConfig.getEncoding());
         String delimiter = localFileSourceConfig.getDelimiter();
         boolean skipHeader = localFileSourceConfig.isSkipHeader();
