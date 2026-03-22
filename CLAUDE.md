@@ -66,7 +66,7 @@ flink-etl-tool/
 
 ### Source 抽象层架构
 
-项目参考 Clink 项目设计，实现了完整的 Source 抽象层，简化 Flink FLIP-27 Source API 的实现：
+项目实现了完整的 Source 抽象层，简化 Flink FLIP-27 Source API 的实现：
 
 **核心抽象类：**
 - `AbstractSplitSource<SplitT, CheckpointT>` - Source 基类（core 模块）

@@ -120,9 +120,20 @@ public class JdbcSinkFunction extends RichSinkFunction<Row> {
     }
 
     private void flush() throws SQLException {
-        statement.executeBatch();
-        connection.commit();
-        log.debug("已写入 {} 条记录", pendingCount);
-        pendingCount = 0;
+        try {
+            statement.executeBatch();
+            connection.commit();
+            log.debug("已写入 {} 条记录", pendingCount);
+        } catch (SQLException e) {
+            // 执行失败时回滚事务
+            try {
+                connection.rollback();
+            } catch (SQLException rollbackEx) {
+                log.warn("事务回滚失败", rollbackEx);
+            }
+            throw e;
+        } finally {
+            pendingCount = 0;
+        }
     }
 }

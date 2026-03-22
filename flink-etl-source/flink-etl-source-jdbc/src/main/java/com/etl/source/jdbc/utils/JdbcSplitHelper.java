@@ -35,7 +35,6 @@ public final class JdbcSplitHelper {
                                                    String table, String sql, String splitColumn,
                                                    int parallelism) {
         // 1. 查询分片列范围
-
         String rangeQuery = buildRangeQuery(
                 url,
                 table,
@@ -46,17 +45,28 @@ public final class JdbcSplitHelper {
 
         long min = 0L;
         long max = 0L;
+        boolean hasData = false;
 
         try (Connection conn = DriverManager.getConnection(url, username, password);
              Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(rangeQuery)) {
 
             if (rs.next()) {
-                min = rs.getLong(1);
-                max = rs.getLong(2);
+                // 检查是否为 NULL（空表时 MIN/MAX 返回 NULL）
+                hasData = rs.getObject(1) != null;
+                if (hasData) {
+                    min = rs.getLong(1);
+                    max = rs.getLong(2);
+                }
             }
         } catch (SQLException e) {
             throw new RuntimeException("获取分片范围失败: " + e.getMessage(), e);
+        }
+
+        // 空表检查
+        if (!hasData) {
+            log.warn("表为空，不创建分片");
+            return new ArrayList<>();
         }
 
         log.info("分片列范围: [{}, {}]", min, max);
