@@ -233,7 +233,7 @@ public class JdbcSource extends AbstractSplitSource<...> {
 - `splitColumn`: 分片列名（通常为主键）
 - `batchSize`: 批量读取大小（可选，默认 100）
 - `queryTimeout`: 查询超时时间（可选，单位秒）
-- `schema`: 字段定义数组（可选，用于定义输出字段名和类型）
+- `schema`: 字段定义对象（可选，用于定义输出字段名和类型，格式见下文 schema 配置）
 
 **LocalFile source 配置项：**
 - `path`: 文件路径（支持通配符 `*`）
@@ -242,17 +242,58 @@ public class JdbcSource extends AbstractSplitSource<...> {
 - `delimiter`: CSV 分隔符（可选，默认 `,`）
 - `skipHeader`: 是否跳过首行（可选，默认 true）
 - `recursive`: 是否递归扫描目录（可选，默认 false）
-- `schema`: 字段定义数组（必填）
+- `schema`: 字段定义对象（必填，格式见下文 schema 配置）
 
-**schema 格式：**
+**schema 配置：**
+
+schema 使用对象格式定义字段名和类型：
+
 ```json
-"schema": [
-  { "name": "id", "type": "INT" },
-  { "name": "name", "type": "STRING" }
-]
+"schema": {
+  "id": "LONG",
+  "name": "STRING",
+  "age": "INT"
+}
 ```
 
-支持的类型：`INT`, `LONG`, `STRING`, `DOUBLE`, `BOOLEAN`, `DATE`, `TIMESTAMP`
+**简单类型：**
+- `STRING` - 字符串类型
+- `BOOLEAN` - 布尔类型
+- `INT` - 整型
+- `LONG` - 长整型
+- `DOUBLE` - 双精度浮点
+- `DECIMAL` - 高精度十进制
+- `TIMESTAMP` - 时间戳
+
+**复杂类型：**
+
+支持 ARRAY 和 OBJECT 类型，可任意嵌套：
+
+```json
+"schema": {
+  "id": "LONG",
+  "name": "STRING",
+  "hobby": "ARRAY<STRING>",
+  "address": {
+    "city": "STRING",
+    "zipcodes": "ARRAY<INT>"
+  },
+  "friends": [
+    {
+      "name": "STRING",
+      "age": "INT",
+      "tags": "ARRAY<STRING>"
+    }
+  ]
+}
+```
+
+**类型说明：**
+- `ARRAY<简单类型>` - 简单类型数组，如 `ARRAY<STRING>`、`ARRAY<INT>`
+- `OBJECT` - 对象类型，使用 `{}` 定义子字段
+- `ARRAY<OBJECT>` - 对象数组，使用 `[{}]` 定义，数组第一个元素定义对象结构
+
+**注意：** CSV 格式仅支持简单类型，不支持 ARRAY 和 OBJECT 类型
 
 **transforms 配置说明：**
 - 支持多个 Transform 组成处理链

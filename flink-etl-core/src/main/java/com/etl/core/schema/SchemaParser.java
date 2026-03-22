@@ -49,7 +49,6 @@ public class SchemaParser {
     /**
      * 解析对象格式：{ "fieldName": "TYPE" | { ... } | [...] }
      */
-    @SuppressWarnings("unchecked")
     private static EtlSchema parseObjectFormat(Map<String, Object> schemaConfig) {
         List<String> names = new ArrayList<>();
         List<TypeInformation<?>> types = new ArrayList<>();
@@ -162,7 +161,6 @@ public class SchemaParser {
      * 解析 OBJECT 类型
      * 返回 RowTypeInfo
      */
-    @SuppressWarnings("unchecked")
     private static TypeInformation<?> parseObjectType(String fieldName, Map<String, Object> objectDef) {
         List<String> fieldNames = new ArrayList<>();
         List<TypeInformation<?>> fieldTypes = new ArrayList<>();
@@ -187,9 +185,9 @@ public class SchemaParser {
      */
     @SuppressWarnings("unchecked")
     private static TypeInformation<?> parseObjectArrayType(String fieldName, List<?> arrayDef) {
-        if (arrayDef.isEmpty()) {
+        if (arrayDef.size() != 1) {
             throw new SchemaConfigException(
-                "字段 '" + fieldName + "' 的数组类型定义不能为空");
+                    "字段 '" + fieldName + "' 的数组类型定义长度 != 1");
         }
 
         // 数组元素定义（只取第一个元素作为模板）
