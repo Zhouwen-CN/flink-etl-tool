@@ -7,6 +7,7 @@
 - [Source 插件](#source-插件)
   - [JDBC Source](#jdbc-source)
   - [LocalFile Source](#localfile-source)
+- [Schema 配置](#schema-配置)
 - [Sink 插件](#sink-插件)
   - [Console Sink](#console-sink)
   - [JDBC Sink](#jdbc-sink)
@@ -181,6 +182,110 @@ Schema 为对象格式，键为字段名，值为类型：
 - 分片数量等于匹配到的文件数量
 - Schema 配置必须与文件列数一致
 - CSV 数据会根据 Schema 中定义的类型自动转换
+
+---
+
+## Schema 配置
+
+Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OBJECT）。
+
+### 简单类型
+
+支持的简单类型：`STRING`, `BOOLEAN`, `INT`, `LONG`, `DOUBLE`, `DECIMAL`, `TIMESTAMP`
+
+```json
+{
+  "schema": {
+    "id": "LONG",
+    "name": "STRING",
+    "age": "INT"
+  }
+}
+```
+
+### ARRAY<简单类型>
+
+数组类型，元素为简单类型：
+
+```json
+{
+  "schema": {
+    "tags": "ARRAY<STRING>",
+    "scores": "ARRAY<INT>"
+  }
+}
+```
+
+### OBJECT 类型
+
+嵌套对象类型，内部定义子字段：
+
+```json
+{
+  "schema": {
+    "address": {
+      "city": "STRING",
+      "street": "STRING"
+    }
+  }
+}
+```
+
+### OBJECT 嵌套 ARRAY
+
+对象内部包含数组字段：
+
+```json
+{
+  "schema": {
+    "address": {
+      "city": "STRING",
+      "zipcodes": "ARRAY<INT>"
+    }
+  }
+}
+```
+
+### ARRAY<OBJECT>
+
+对象数组类型，使用数组形式定义：
+
+```json
+{
+  "schema": {
+    "friends": [
+      {"name": "STRING", "age": "INT"}
+    ]
+  }
+}
+```
+
+### 完整嵌套示例
+
+综合使用各种类型的完整示例：
+
+```json
+{
+  "schema": {
+    "id": "LONG",
+    "name": "STRING",
+    "hobby": "ARRAY<STRING>",
+    "address": {
+      "city": "STRING",
+      "zipcodes": "ARRAY<INT>"
+    },
+    "friends": [
+      {
+        "name": "STRING",
+        "age": "INT",
+        "tags": "ARRAY<STRING>"
+      }
+    ]
+  }
+}
+```
+
+**注意：** CSV 格式仅支持简单类型，复杂类型（ARRAY、OBJECT）用于 JDBC Source 或 JSON 文件格式。
 
 ---
 
