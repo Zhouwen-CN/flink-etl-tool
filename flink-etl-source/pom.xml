@@ -19,6 +19,7 @@
     <modules>
         <module>flink-etl-source-jdbc</module>
         <module>flink-etl-source-localfile</module>
+        <module>flink-etl-source-http</module>
     </modules>
 
     <dependencies>
