@@ -6,6 +6,7 @@ import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseSplitReader;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
+import com.etl.core.utils.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.Boundedness;
 import org.apache.flink.api.connector.source.SourceReader;
@@ -13,8 +14,6 @@ import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.api.connector.source.SplitEnumerator;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.core.JsonProcessingException;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Preconditions;
 
@@ -27,8 +26,6 @@ import java.util.function.Supplier;
  */
 @Slf4j
 public class HttpSource extends AbstractSplitSource<HttpSplit, HttpEnumCheckpoint> {
-
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final HttpSourceConfig httpSourceConfig;
 
@@ -72,11 +69,7 @@ public class HttpSource extends AbstractSplitSource<HttpSplit, HttpEnumCheckpoin
             if (!(bodyObj instanceof Map)) {
                 throw new IllegalArgumentException("body 必须是对象格式 {key: value}");
             }
-            try {
-                body = OBJECT_MAPPER.writeValueAsString(bodyObj);
-            } catch (JsonProcessingException e) {
-                throw new IllegalArgumentException("body 序列化失败: " + e.getMessage(), e);
-            }
+            body = JsonUtils.toJson(bodyObj);
         }
 
         // JSONPath（可选）

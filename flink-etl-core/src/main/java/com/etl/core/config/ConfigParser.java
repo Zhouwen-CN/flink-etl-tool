@@ -1,9 +1,8 @@
 package com.etl.core.config;
 
 
+import com.etl.core.utils.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.DeserializationFeature;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.File;
 import java.util.HashSet;
@@ -14,11 +13,6 @@ import java.util.Set;
  */
 @Slf4j
 public class ConfigParser {
-    private static final ObjectMapper mapper = new ObjectMapper();
-
-    static {
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-    }
 
     /**
      * 从文件解析 Job 配置
@@ -30,7 +24,7 @@ public class ConfigParser {
         log.info("解析配置文件: {}", configPath);
 
         try {
-            JobConfig config = mapper.readValue(new File(configPath), JobConfig.class);
+            JobConfig config = JsonUtils.fromFile(new File(configPath), JobConfig.class);
             validate(config);
             log.info("配置文件解析成功");
             return config;
@@ -51,7 +45,7 @@ public class ConfigParser {
         log.info("从字符串解析配置");
 
         try {
-            JobConfig config = mapper.readValue(json, JobConfig.class);
+            JobConfig config = JsonUtils.fromJson(json, JobConfig.class);
             validate(config);
             log.info("配置解析成功");
             return config;

@@ -1,4 +1,4 @@
-package com.etl.core.source.serde;
+package com.etl.core.utils;
 
 
 import java.io.*;

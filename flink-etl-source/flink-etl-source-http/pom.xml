@@ -15,11 +15,4 @@
     <name>Flink ETL Source - HTTP</name>
     <description>HTTP Source 插件，支持从 REST API 获取 JSON 数据</description>
 
-    <dependencies>
-        <!-- JSONPath 解析 -->
-        <dependency>
-            <groupId>com.jayway.jsonpath</groupId>
-            <artifactId>json-path</artifactId>
-        </dependency>
-    </dependencies>
 </project>

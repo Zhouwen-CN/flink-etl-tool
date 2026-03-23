@@ -1,12 +1,14 @@
 package com.etl.source.http;
 
 import com.etl.core.schema.EtlSchema;
-import com.jayway.jsonpath.DocumentContext;
-import com.jayway.jsonpath.JsonPath;
+import com.etl.core.utils.JsonUtils;
 import com.jayway.jsonpath.PathNotFoundException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.java.typeutils.ObjectArrayTypeInfo;
+import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.node.ArrayNode;
 import org.apache.flink.types.Row;
 
@@ -23,8 +25,6 @@ import java.util.List;
 @Slf4j
 public class JsonToRowConverter {
 
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
     /**
      * 从 JSON 字符串提取数据并转换为 Row 列表
      *
@@ -37,27 +37,18 @@ public class JsonToRowConverter {
         List<Row> rows = new ArrayList<>();
 
         try {
-            // 解析 JSON
-            DocumentContext document = JsonPath.parse(jsonResponse);
+            JsonNode rootNode;
 
-            // 提取 root
-            Object root;
-            if (dataPath != null && !dataPath.isEmpty()) {
-                try {
-                    root = document.read(dataPath);
-                } catch (PathNotFoundException e) {
-                    throw new IllegalArgumentException("JSONPath 提取失败: " + dataPath, e);
-                }
-            } else {
-                root = document.json();
+            // 解析 JSON
+            try {
+                rootNode = JsonUtils.getByJsonPath(jsonResponse, dataPath);
+            } catch (PathNotFoundException e) {
+                throw new IllegalArgumentException("JSONPath 提取失败: " + dataPath, e);
             }
 
-            if (root == null) {
+            if (rootNode == null) {
                 throw new IllegalArgumentException("提取的数据为空");
             }
-
-            // 转换为 JsonNode 便于处理
-            JsonNode rootNode = OBJECT_MAPPER.valueToTree(root);
 
             // 根据 root 类型处理
             if (rootNode.isArray()) {
@@ -103,7 +94,7 @@ public class JsonToRowConverter {
     /**
      * 根据 TypeInformation 转换值
      */
-    private static Object convertValue(JsonNode node, org.apache.flink.api.common.typeinfo.TypeInformation<?> type) {
+    private static Object convertValue(JsonNode node, TypeInformation<?> type) {
         if (node == null || node.isNull()) {
             return null;
         }
@@ -133,7 +124,7 @@ public class JsonToRowConverter {
                 return convertRow(node, type);
             default:
                 // 尝试作为嵌套 Row 处理
-                if (type instanceof org.apache.flink.api.java.typeutils.RowTypeInfo) {
+                if (type instanceof RowTypeInfo) {
                     return convertRow(node, type);
                 }
                 return node.asText();
@@ -143,7 +134,7 @@ public class JsonToRowConverter {
     /**
      * 转换数组类型
      */
-    private static Object[] convertArray(JsonNode node, org.apache.flink.api.common.typeinfo.TypeInformation<?> type) {
+    private static Object[] convertArray(JsonNode node, TypeInformation<?> type) {
         if (!node.isArray()) {
             throw new IllegalArgumentException("期望数组类型，但得到: " + node.getNodeType());
         }
@@ -151,15 +142,13 @@ public class JsonToRowConverter {
         List<Object> list = new ArrayList<>();
         for (JsonNode element : node) {
             // 简单类型数组的元素类型
-            if (type instanceof org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo) {
-                org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo<?, ?> arrayTypeInfo =
-                        (org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo<?, ?>) type;
-                org.apache.flink.api.common.typeinfo.TypeInformation<?> componentType = arrayTypeInfo.getComponentInfo();
+            if (type instanceof BasicArrayTypeInfo) {
+                BasicArrayTypeInfo<?, ?> arrayTypeInfo = (BasicArrayTypeInfo<?, ?>) type;
+                TypeInformation<?> componentType = arrayTypeInfo.getComponentInfo();
                 list.add(convertValue(element, componentType));
-            } else if (type instanceof org.apache.flink.api.java.typeutils.ObjectArrayTypeInfo) {
-                org.apache.flink.api.java.typeutils.ObjectArrayTypeInfo<?, ?> arrayTypeInfo =
-                        (org.apache.flink.api.java.typeutils.ObjectArrayTypeInfo<?, ?>) type;
-                org.apache.flink.api.common.typeinfo.TypeInformation<?> componentType = arrayTypeInfo.getComponentInfo();
+            } else if (type instanceof ObjectArrayTypeInfo) {
+                ObjectArrayTypeInfo<?, ?> arrayTypeInfo = (ObjectArrayTypeInfo<?, ?>) type;
+                TypeInformation<?> componentType = arrayTypeInfo.getComponentInfo();
                 list.add(convertValue(element, componentType));
             } else {
                 list.add(element.asText());
@@ -172,14 +161,14 @@ public class JsonToRowConverter {
     /**
      * 转换嵌套 Row 类型
      */
-    private static Row convertRow(JsonNode node, org.apache.flink.api.common.typeinfo.TypeInformation<?> type) {
+    private static Row convertRow(JsonNode node, TypeInformation<?> type) {
         if (!node.isObject()) {
             throw new IllegalArgumentException("期望对象类型，但得到: " + node.getNodeType());
         }
 
-        org.apache.flink.api.java.typeutils.RowTypeInfo rowTypeInfo = (org.apache.flink.api.java.typeutils.RowTypeInfo) type;
+        RowTypeInfo rowTypeInfo = (RowTypeInfo) type;
         String[] fieldNames = rowTypeInfo.getFieldNames();
-        org.apache.flink.api.common.typeinfo.TypeInformation<?>[] fieldTypes = rowTypeInfo.getFieldTypes();
+        TypeInformation<?>[] fieldTypes = rowTypeInfo.getFieldTypes();
 
         Row row = Row.withPositions(fieldNames.length);
         for (int i = 0; i < fieldNames.length; i++) {
