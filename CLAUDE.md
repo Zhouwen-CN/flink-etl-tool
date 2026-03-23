@@ -273,23 +273,23 @@ schema 使用对象格式定义字段名和类型：
 "schema": {
   "id": "LONG",
   "name": "STRING",
-  "hobby": "ARRAY<STRING>",
+  "hobby": ["STRING"],
   "address": {
     "city": "STRING",
-    "zipcodes": "ARRAY<INT>"
+    "zipcodes": ["INT"]
   },
   "friends": [
     {
       "name": "STRING",
       "age": "INT",
-      "tags": "ARRAY<STRING>"
+      "tags": ["STRING"]
     }
   ]
 }
 ```
 
 **类型说明：**
-- `ARRAY<简单类型>` - 简单类型数组，如 `ARRAY<STRING>`、`ARRAY<INT>`
+- `["简单类型"]` - 简单类型数组，如 `["STRING"]`、`["INT"]`
 - `OBJECT` - 对象类型，使用 `{}` 定义子字段
 - `ARRAY<OBJECT>` - 对象数组，使用 `[{}]` 定义，数组第一个元素定义对象结构
 

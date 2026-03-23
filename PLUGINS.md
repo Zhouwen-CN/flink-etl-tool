@@ -229,7 +229,7 @@
       "schema": {
         "id": "LONG",
         "name": "STRING",
-        "tags": "ARRAY<STRING>",
+        "tags": ["STRING"],
         "address": {
           "city": "STRING",
           "zip": "STRING"
@@ -245,7 +245,7 @@
 - 未配置 `dataPath` 时，使用整个响应体作为数据源
 - 配置 `dataPath` 后，使用 JSONPath 提取结果作为数据源
 - Schema 始终描述单条记录的结构
-- 支持复杂类型：`ARRAY<简单类型>` 和 `OBJECT`（嵌套结构）
+- 支持复杂类型：`["简单类型"]`（数组）和 `OBJECT`（嵌套结构）
 
 ---
 
@@ -267,15 +267,15 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 }
 ```
 
-### ARRAY<简单类型>
+### 基础类型数组
 
-数组类型，元素为简单类型：
+数组类型，元素为简单类型，使用 JSON 数组格式：
 
 ```json
 {
   "schema": {
-    "tags": "ARRAY<STRING>",
-    "scores": "ARRAY<INT>"
+    "tags": ["STRING"],
+    "scores": ["INT"]
   }
 }
 ```
@@ -304,7 +304,7 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
   "schema": {
     "address": {
       "city": "STRING",
-      "zipcodes": "ARRAY<INT>"
+      "zipcodes": ["INT"]
     }
   }
 }
@@ -333,16 +333,16 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
   "schema": {
     "id": "LONG",
     "name": "STRING",
-    "hobby": "ARRAY<STRING>",
+    "hobby": ["STRING"],
     "address": {
       "city": "STRING",
-      "zipcodes": "ARRAY<INT>"
+      "zipcodes": ["INT"]
     },
     "friends": [
       {
         "name": "STRING",
         "age": "INT",
-        "tags": "ARRAY<STRING>"
+        "tags": ["STRING"]
       }
     ]
   }
