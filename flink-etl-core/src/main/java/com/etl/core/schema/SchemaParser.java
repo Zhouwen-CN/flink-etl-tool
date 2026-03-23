@@ -19,17 +19,14 @@ import java.util.Map;
  * <p>配置格式：
  * <ul>
  *   <li>简单类型：{ "fieldName": "TYPE" }</li>
- *   <li>ARRAY<简单类型>：{ "tags": "ARRAY<STRING>" }</li>
+ *   <li>基础类型数组：{ "tags": ["STRING"] }</li>
  *   <li>OBJECT 类型：{ "address": { "city": "STRING" } }</li>
- *   <li>ARRAY<OBJECT>：{ "friends": [{"name": "STRING"}] }</li>
+ *   <li>对象数组：{ "friends": [{"name": "STRING"}] }</li>
  * </ul>
  *
  * <p>支持类型：STRING, BOOLEAN, INT, LONG, DOUBLE, DECIMAL, TIMESTAMP
  */
 public class SchemaParser {
-
-    private static final String ARRAY_TYPE_PREFIX = "ARRAY<";
-    private static final String TYPE_SUFFIX = ">";
 
     @SuppressWarnings("unchecked")
     public static EtlSchema parse(Object schemaConfig) {
@@ -81,34 +78,17 @@ public class SchemaParser {
     @SuppressWarnings("unchecked")
     private static TypeInformation<?> parseType(String fieldName, Object typeObj) {
         if (typeObj instanceof String) {
-            return parseStringType(fieldName, (String) typeObj);
+            return parseSimpleType(fieldName, (String) typeObj);
         } else if (typeObj instanceof Map) {
             // OBJECT 类型
             return parseObjectType(fieldName, (Map<String, Object>) typeObj);
         } else if (typeObj instanceof List) {
-            // ARRAY<OBJECT> 类型
-            return parseObjectArrayType(fieldName, (List<?>) typeObj);
+            // 数组类型：["STRING"] 或 [{"name": "STRING"}]
+            return parseArrayType(fieldName, (List<?>) typeObj);
         } else {
             throw new SchemaConfigException(
                 "字段 '" + fieldName + "' 的类型必须是字符串、对象或数组");
         }
-    }
-
-    /**
-     * 解析字符串类型定义
-     * 支持：简单类型（如 "STRING"）和数组类型（如 "ARRAY<STRING>"）
-     */
-    private static TypeInformation<?> parseStringType(String fieldName, String typeStr) {
-        String trimmed = typeStr.trim().toUpperCase();
-
-        // 检查是否是 ARRAY<TYPE> 格式
-        if (trimmed.startsWith(ARRAY_TYPE_PREFIX) && trimmed.endsWith(TYPE_SUFFIX)) {
-            String elementTypeStr = trimmed.substring(ARRAY_TYPE_PREFIX.length(), trimmed.length() - 1).trim();
-            return parseArrayType(fieldName, elementTypeStr);
-        }
-
-        // 简单类型
-        return parseSimpleType(fieldName, typeStr);
     }
 
     /**
@@ -138,24 +118,6 @@ public class SchemaParser {
     }
 
     /**
-     * 解析 ARRAY<简单类型>
-     * 返回 BasicArrayTypeInfo
-     */
-    private static TypeInformation<?> parseArrayType(String fieldName, String elementTypeStr) {
-        TypeInformation<?> elementType = parseSimpleType(fieldName + "[]", elementTypeStr);
-
-        if (elementType instanceof BasicTypeInfo) {
-            BasicTypeInfo<?> basicTypeInfo = (BasicTypeInfo<?>) elementType;
-            return BasicArrayTypeInfo.getInfoFor(
-                Array.newInstance(basicTypeInfo.getTypeClass(), 0).getClass()
-            );
-        }
-
-        // 对于非基本类型，使用 ObjectArrayTypeInfo
-        return Types.OBJECT_ARRAY(elementType);
-    }
-
-    /**
      * 解析 OBJECT 类型
      * 返回 RowTypeInfo
      */
@@ -178,25 +140,45 @@ public class SchemaParser {
     }
 
     /**
-     * 解析 ARRAY<OBJECT> 类型
-     * 返回 ObjectArrayTypeInfo<RowTypeInfo>
+     * 解析数组类型
+     * 支持两种格式：
+     * - 基础类型数组：["STRING"], ["INT"]
+     * - 对象数组：[{"name": "STRING", "age": "INT"}]
      */
     @SuppressWarnings("unchecked")
-    private static TypeInformation<?> parseObjectArrayType(String fieldName, List<?> arrayDef) {
+    private static TypeInformation<?> parseArrayType(String fieldName, List<?> arrayDef) {
         if (arrayDef.size() != 1) {
             throw new SchemaConfigException(
-                    "字段 '" + fieldName + "' 的数组类型定义长度 != 1");
+                "字段 '" + fieldName + "' 的数组类型定义长度必须为 1");
         }
 
-        // 数组元素定义（只取第一个元素作为模板）
         Object elementDef = arrayDef.get(0);
-        if (!(elementDef instanceof Map)) {
-            throw new SchemaConfigException(
-                "字段 '" + fieldName + "' 的数组元素必须是对象");
-        }
 
-        // 解析元素类型（OBJECT）
-        TypeInformation<?> elementType = parseObjectType(fieldName + "[]", (Map<String, Object>) elementDef);
+        if (elementDef instanceof String) {
+            // 基础类型数组：["STRING"]
+            return parseBasicArrayType(fieldName, (String) elementDef);
+        } else if (elementDef instanceof Map) {
+            // 对象数组：[{"name": "STRING"}]
+            TypeInformation<?> elementType = parseObjectType(fieldName + "[]", (Map<String, Object>) elementDef);
+            return Types.OBJECT_ARRAY(elementType);
+        } else {
+            throw new SchemaConfigException(
+                "字段 '" + fieldName + "' 的数组元素类型必须是字符串（基础类型）或对象");
+        }
+    }
+
+    /**
+     * 解析基础类型数组：["STRING"], ["INT"]
+     */
+    private static TypeInformation<?> parseBasicArrayType(String fieldName, String elementTypeName) {
+        TypeInformation<?> elementType = parseSimpleType(fieldName + "[]", elementTypeName);
+
+        if (elementType instanceof BasicTypeInfo) {
+            BasicTypeInfo<?> basicTypeInfo = (BasicTypeInfo<?>) elementType;
+            return BasicArrayTypeInfo.getInfoFor(
+                Array.newInstance(basicTypeInfo.getTypeClass(), 0).getClass()
+            );
+        }
 
         return Types.OBJECT_ARRAY(elementType);
     }

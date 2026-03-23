@@ -76,22 +76,22 @@ class SchemaParserTest {
     // ========== 复杂类型测试 ==========
 
     @Test
-    void testParseArraySimpleType() {
+    void testParseArraySimpleTypeNewFormat() {
         Map<String, Object> schemaConfig = new LinkedHashMap<>();
-        schemaConfig.put("tags", "ARRAY<STRING>");
-        schemaConfig.put("scores", "ARRAY<INT>");
+        schemaConfig.put("tags", List.of("STRING"));
+        schemaConfig.put("scores", List.of("INT"));
 
         EtlSchema schema = SchemaParser.parse(schemaConfig);
 
         assertEquals(2, schema.getFieldCount());
 
-        // tags: ARRAY<STRING> → BasicArrayTypeInfo
+        // tags: ["STRING"] → BasicArrayTypeInfo
         TypeInformation<?> tagsType = schema.getFieldType(0);
         assertTrue(tagsType instanceof BasicArrayTypeInfo);
         BasicArrayTypeInfo<?, ?> arrayInfo = (BasicArrayTypeInfo<?, ?>) tagsType;
         assertEquals(Types.STRING, arrayInfo.getComponentInfo());
 
-        // scores: ARRAY<INT> → BasicArrayTypeInfo
+        // scores: ["INT"] → BasicArrayTypeInfo
         TypeInformation<?> scoresType = schema.getFieldType(1);
         assertTrue(scoresType instanceof BasicArrayTypeInfo);
         BasicArrayTypeInfo<?, ?> scoresArrayInfo = (BasicArrayTypeInfo<?, ?>) scoresType;
@@ -123,7 +123,7 @@ class SchemaParserTest {
         Map<String, Object> schemaConfig = new LinkedHashMap<>();
         Map<String, Object> addressDef = new LinkedHashMap<>();
         addressDef.put("city", "STRING");
-        addressDef.put("zipcodes", "ARRAY<INT>");
+        addressDef.put("zipcodes", List.of("INT"));
         schemaConfig.put("address", addressDef);
 
         EtlSchema schema = SchemaParser.parse(schemaConfig);
@@ -164,7 +164,7 @@ class SchemaParserTest {
 
         Map<String, Object> friendDef = new LinkedHashMap<>();
         friendDef.put("name", "STRING");
-        friendDef.put("tags", "ARRAY<STRING>");
+        friendDef.put("tags", List.of("STRING"));
         schemaConfig.put("friends", List.of(friendDef));
 
         EtlSchema schema = SchemaParser.parse(schemaConfig);
@@ -182,16 +182,16 @@ class SchemaParserTest {
     void testParseCompleteNestedStructure() {
         Map<String, Object> schemaConfig = new LinkedHashMap<>();
         schemaConfig.put("id", "LONG");
-        schemaConfig.put("hobby", "ARRAY<STRING>");
+        schemaConfig.put("hobby", List.of("STRING"));
 
         Map<String, Object> addressDef = new LinkedHashMap<>();
         addressDef.put("city", "STRING");
-        addressDef.put("zipcodes", "ARRAY<INT>");
+        addressDef.put("zipcodes", List.of("INT"));
         schemaConfig.put("address", addressDef);
 
         Map<String, Object> friendDef = new LinkedHashMap<>();
         friendDef.put("name", "STRING");
-        friendDef.put("tags", "ARRAY<STRING>");
+        friendDef.put("tags", List.of("STRING"));
         schemaConfig.put("friends", List.of(friendDef));
 
         EtlSchema schema = SchemaParser.parse(schemaConfig);
@@ -203,11 +203,33 @@ class SchemaParserTest {
         assertTrue(schema.getFieldType(3) instanceof ObjectArrayTypeInfo);
     }
 
-    @Test
-    void testParseInvalidArrayFormat() {
-        Map<String, Object> schemaConfig = new LinkedHashMap<>();
-        schemaConfig.put("tags", "ARRAY<INVALID>");
+    // ========== 异常情况测试 ==========
 
+    @Test
+    void testParseEmptyArrayThrowsException() {
+        Map<String, Object> schemaConfig = new LinkedHashMap<>();
+        schemaConfig.put("tags", List.of());
+        assertThrows(SchemaConfigException.class, () -> SchemaParser.parse(schemaConfig));
+    }
+
+    @Test
+    void testParseArrayWithInvalidBasicTypeThrowsException() {
+        Map<String, Object> schemaConfig = new LinkedHashMap<>();
+        schemaConfig.put("tags", List.of("INVALID"));
+        assertThrows(SchemaConfigException.class, () -> SchemaParser.parse(schemaConfig));
+    }
+
+    @Test
+    void testParseArrayWithMultipleElementsThrowsException() {
+        Map<String, Object> schemaConfig = new LinkedHashMap<>();
+        schemaConfig.put("tags", List.of("STRING", "INT"));
+        assertThrows(SchemaConfigException.class, () -> SchemaParser.parse(schemaConfig));
+    }
+
+    @Test
+    void testParseArrayWithNonStringElementThrowsException() {
+        Map<String, Object> schemaConfig = new LinkedHashMap<>();
+        schemaConfig.put("tags", List.of(123));
         assertThrows(SchemaConfigException.class, () -> SchemaParser.parse(schemaConfig));
     }
 }
