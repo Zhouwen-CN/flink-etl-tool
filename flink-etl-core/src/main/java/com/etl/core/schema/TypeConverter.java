@@ -209,24 +209,66 @@ public class TypeConverter {
     }
 
     /**
-     * 将 JsonNode 数组转换为 Object[]
+     * 将 JsonNode 数组转换为具体类型的数组
+     * Flink 的 BasicArrayTypeInfo 要求返回具体类型的数组（如 String[]、int[] 等）
      *
      * @param node JsonNode 数组节点
      * @param arrayType 数组类型信息
-     * @return Object 数组
+     * @return 具体类型的数组
      */
-    private static Object[] convertJsonArray(JsonNode node, TypeInformation<?> arrayType) {
+    private static Object convertJsonArray(JsonNode node, TypeInformation<?> arrayType) {
         if (node == null || !node.isArray()) {
             throw new IllegalArgumentException("期望数组类型，但得到: " + (node == null ? "null" : node.getNodeType()));
         }
 
-        List<Object> list = new ArrayList<>();
-        for (JsonNode element : node) {
-            TypeInformation<?> componentType = getComponentType(arrayType);
-            list.add(convertFromJsonNode(element, componentType));
-        }
+        int size = node.size();
+        TypeInformation<?> componentType = getComponentType(arrayType);
 
-        return list.toArray();
+        // 根据元素类型创建对应的数组类型
+        if (Types.STRING.equals(componentType)) {
+            String[] array = new String[size];
+            int i = 0;
+            for (JsonNode element : node) {
+                array[i++] = element.isNull() ? null : element.asText();
+            }
+            return array;
+        } else if (Types.INT.equals(componentType)) {
+            int[] array = new int[size];
+            int i = 0;
+            for (JsonNode element : node) {
+                array[i++] = element.isNull() ? 0 : element.asInt();
+            }
+            return array;
+        } else if (Types.LONG.equals(componentType)) {
+            long[] array = new long[size];
+            int i = 0;
+            for (JsonNode element : node) {
+                array[i++] = element.isNull() ? 0L : element.asLong();
+            }
+            return array;
+        } else if (Types.DOUBLE.equals(componentType)) {
+            double[] array = new double[size];
+            int i = 0;
+            for (JsonNode element : node) {
+                array[i++] = element.isNull() ? 0.0 : element.asDouble();
+            }
+            return array;
+        } else if (Types.BOOLEAN.equals(componentType)) {
+            boolean[] array = new boolean[size];
+            int i = 0;
+            for (JsonNode element : node) {
+                array[i++] = element.isNull() ? false : element.asBoolean();
+            }
+            return array;
+        } else {
+            // 对于其他类型（如 Row 数组），返回 Object[]
+            Object[] array = new Object[size];
+            int i = 0;
+            for (JsonNode element : node) {
+                array[i++] = convertFromJsonNode(element, componentType);
+            }
+            return array;
+        }
     }
 
     /**
