@@ -69,14 +69,13 @@ public class HttpSource extends AbstractSplitSource<HttpSplit, HttpEnumCheckpoin
         String body = null;
         Object bodyObj = config.get("body");
         if (bodyObj != null) {
-            if (bodyObj instanceof String) {
-                body = (String) bodyObj;
-            } else {
-                try {
-                    body = OBJECT_MAPPER.writeValueAsString(bodyObj);
-                } catch (JsonProcessingException e) {
-                    throw new IllegalArgumentException("body 序列化失败: " + e.getMessage(), e);
-                }
+            if (!(bodyObj instanceof Map)) {
+                throw new IllegalArgumentException("body 必须是对象格式 {key: value}");
+            }
+            try {
+                body = OBJECT_MAPPER.writeValueAsString(bodyObj);
+            } catch (JsonProcessingException e) {
+                throw new IllegalArgumentException("body 序列化失败: " + e.getMessage(), e);
             }
         }
 
