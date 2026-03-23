@@ -209,12 +209,11 @@ public class TypeConverter {
     }
 
     /**
-     * 将 JsonNode 数组转换为具体类型的数组
-     * Flink 的 BasicArrayTypeInfo 要求返回具体类型的数组（如 String[]、int[] 等）
+     * 将 JsonNode 数组转换为包装类型数组
      *
      * @param node JsonNode 数组节点
      * @param arrayType 数组类型信息
-     * @return 具体类型的数组
+     * @return 包装类型数组（Integer[], Long[], String[] 等）
      */
     private static Object convertJsonArray(JsonNode node, TypeInformation<?> arrayType) {
         if (node == null || !node.isArray()) {
@@ -224,7 +223,6 @@ public class TypeConverter {
         int size = node.size();
         TypeInformation<?> componentType = getComponentType(arrayType);
 
-        // 根据元素类型创建对应的数组类型
         if (Types.STRING.equals(componentType)) {
             String[] array = new String[size];
             int i = 0;
@@ -233,42 +231,50 @@ public class TypeConverter {
             }
             return array;
         } else if (Types.INT.equals(componentType)) {
-            int[] array = new int[size];
+            Integer[] array = new Integer[size];
             int i = 0;
             for (JsonNode element : node) {
-                array[i++] = element.isNull() ? 0 : element.asInt();
+                array[i++] = element.isNull() ? null : element.asInt();
             }
             return array;
         } else if (Types.LONG.equals(componentType)) {
-            long[] array = new long[size];
+            Long[] array = new Long[size];
             int i = 0;
             for (JsonNode element : node) {
-                array[i++] = element.isNull() ? 0L : element.asLong();
+                array[i++] = element.isNull() ? null : element.asLong();
             }
             return array;
         } else if (Types.DOUBLE.equals(componentType)) {
-            double[] array = new double[size];
+            Double[] array = new Double[size];
             int i = 0;
             for (JsonNode element : node) {
-                array[i++] = element.isNull() ? 0.0 : element.asDouble();
+                array[i++] = element.isNull() ? null : element.asDouble();
             }
             return array;
         } else if (Types.BOOLEAN.equals(componentType)) {
-            boolean[] array = new boolean[size];
+            Boolean[] array = new Boolean[size];
             int i = 0;
             for (JsonNode element : node) {
-                array[i++] = element.isNull() ? false : element.asBoolean();
+                array[i++] = element.isNull() ? null : element.asBoolean();
             }
             return array;
-        } else {
-            // 对于其他类型（如 Row 数组），返回 Object[]
-            Object[] array = new Object[size];
+        } else if (Types.BIG_DEC.equals(componentType)) {
+            BigDecimal[] array = new BigDecimal[size];
             int i = 0;
             for (JsonNode element : node) {
-                array[i++] = convertFromJsonNode(element, componentType);
+                array[i++] = element.isNull() ? null : new BigDecimal(element.asText());
+            }
+            return array;
+        } else if (Types.LOCAL_DATE_TIME.equals(componentType)) {
+            LocalDateTime[] array = new LocalDateTime[size];
+            int i = 0;
+            for (JsonNode element : node) {
+                array[i++] = element.isNull() ? null : LocalDateTime.parse(node.asText(), DEFAULT_TIMESTAMP_FORMAT);
             }
             return array;
         }
+
+        throw new IllegalArgumentException("不支持的基本类型数组: " + componentType);
     }
 
     /**

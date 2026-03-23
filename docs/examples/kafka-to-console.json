@@ -1,25 +1,40 @@
 {
   "job": {
     "name": "kafka-to-console",
-    "mode": "streaming"
+    "mode": "stream"
   },
   "sources": [
     {
       "type": "kafka",
       "outputTable": "user_events",
       "config": {
-        "bootstrapServers": "localhost:9092",
+        "bootstrapServers": "118.145.119.51:8080",
         "groupId": "etl-consumer",
-        "topics": ["user-events"],
+        "topics": [
+          "test-topic"
+        ],
         "startingOffsets": "earliest",
         "schema": {
-          "userId": "LONG",
-          "eventType": "STRING",
-          "timestamp": "LONG",
-          "data": {
-            "name": "STRING",
-            "value": "DOUBLE"
-          }
+          "id": "LONG",
+          "name": "STRING",
+          "hobby": [
+            "STRING"
+          ],
+          "address": {
+            "city": "STRING",
+            "zipcodes": [
+              "INT"
+            ]
+          },
+          "friends": [
+            {
+              "name": "STRING",
+              "age": "INT",
+              "tags": [
+                "STRING"
+              ]
+            }
+          ]
         }
       }
     }

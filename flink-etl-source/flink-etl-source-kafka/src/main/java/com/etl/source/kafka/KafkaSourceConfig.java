@@ -119,7 +119,6 @@ public class KafkaSourceConfig implements Serializable {
     /**
      * 解析 topics 列表
      */
-    @SuppressWarnings("unchecked")
     private static List<String> parseTopics(SourceConfig config) {
         Object topicsObj = config.get("topics");
         if (topicsObj == null) {
@@ -147,7 +146,7 @@ public class KafkaSourceConfig implements Serializable {
         if (propsObj instanceof Map) {
             ((Map<String, Object>) propsObj).forEach((key, value) -> {
                 if (key != null && value != null) {
-                    properties.setProperty(key.toString(), value.toString());
+                    properties.setProperty(key, value.toString());
                 }
             });
         }

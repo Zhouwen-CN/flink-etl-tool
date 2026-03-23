@@ -58,6 +58,35 @@ public final class JsonUtils {
     }
 
     /**
+     * byte数组 转 jsonNode
+     *
+     * @param bytes byte数组
+     * @return jsonNode
+     */
+    public static JsonNode readTree(byte[] bytes) {
+        try {
+            return MAPPER.readTree(bytes);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("JSON 反序列化失败: " + e.getMessage(), e);
+        }
+    }
+
+
+    /**
+     * 字符串 转 jsonNode
+     *
+     * @param json json 字符串
+     * @return jsonNode
+     */
+    public static JsonNode readTree(String json) {
+        try {
+            return MAPPER.readTree(json);
+        } catch (JsonProcessingException e) {
+            throw new IllegalArgumentException("JSON 反序列化失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
      * JSON 字符串转对象
      *
      * @param json  JSON 字符串
@@ -111,11 +140,7 @@ public final class JsonUtils {
             Object read = JsonPath.read(json, jsonPath);
             jsonNode = valueToTree(read);
         } else {
-            try {
-                jsonNode = MAPPER.readTree(json);
-            } catch (JsonProcessingException e) {
-                jsonNode = null;
-            }
+            jsonNode = readTree(json);
         }
 
         return jsonNode;

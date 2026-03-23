@@ -2,12 +2,11 @@ package com.etl.source.kafka;
 
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.TypeConverter;
-import org.apache.flink.api.common.serialization.DeserializationSchema;
+import com.etl.core.utils.JsonUtils;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDeserializationSchema;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Collector;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -29,9 +28,6 @@ public class JsonToRowDeserializationSchema implements KafkaRecordDeserializatio
 
     private final EtlSchema schema;
 
-    /** ObjectMapper 用于 JSON 解析，使用 transient 标记，序列化时会忽略 */
-    private transient ObjectMapper objectMapper;
-
     /**
      * 构造函数
      *
@@ -42,19 +38,13 @@ public class JsonToRowDeserializationSchema implements KafkaRecordDeserializatio
     }
 
     @Override
-    public void open(DeserializationSchema.InitializationContext context) throws Exception {
-        // 初始化 ObjectMapper（在任务启动时初始化，避免序列化问题）
-        this.objectMapper = new ObjectMapper();
-    }
-
-    @Override
     public void deserialize(ConsumerRecord<byte[], byte[]> record, Collector<Row> out) throws IOException {
         if (record.value() == null || record.value().length == 0) {
             return;
         }
 
         // 解析 JSON
-        JsonNode jsonNode = objectMapper.readTree(record.value());
+        JsonNode jsonNode = JsonUtils.readTree(record.value());
 
         // 使用 TypeConverter.convertJsonToRows 方法，支持 JSONObject 和 JSONArray
         List<Row> rows = TypeConverter.convertJsonToRows(jsonNode, schema);
