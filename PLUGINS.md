@@ -7,6 +7,7 @@
 - [Source 插件](#source-插件)
   - [JDBC Source](#jdbc-source)
   - [LocalFile Source](#localfile-source)
+  - [HTTP Source](#http-source)
 - [Schema 配置](#schema-配置)
 - [Sink 插件](#sink-插件)
   - [Console Sink](#console-sink)
@@ -160,6 +161,91 @@
 - 分片数量等于匹配到的文件数量
 - Schema 配置必须与文件列数一致
 - CSV 数据会根据 Schema 中定义的类型自动转换
+
+---
+
+### HTTP Source
+
+从 HTTP API 获取 JSON 数据，支持 GET 和 POST 请求。
+
+#### 配置参数
+
+| 参数 | 必填 | 默认值 | 说明 |
+|------|:----:|--------|------|
+| `url` | 是 | - | 请求 URL |
+| `method` | 否 | `GET` | HTTP 方法，支持 `GET`、`POST` |
+| `headers` | 否 | `{}` | 请求头，键值对形式 |
+| `params` | 否 | `{}` | 查询参数，键值对形式 |
+| `body` | 否 | `null` | 请求体，JSON 对象形式 |
+| `dataPath` | 否 | `null` | JSONPath 表达式，提取数据 |
+| `schema` | 是 | - | Schema 定义，描述单条记录结构 |
+
+#### dataPath 结果处理
+
+| 提取结果类型 | 处理方式 |
+|-------------|---------|
+| JSONArray | 遍历数组，每个元素作为一行数据发送 |
+| JSONObject | 作为单行数据发送 |
+| 其他类型 | 抛出异常，提示数据格式错误 |
+
+#### 配置示例
+
+**GET 请求，直接返回数组：**
+
+```json
+{
+  "source": {
+    "type": "http",
+    "outputTable": "users",
+    "config": {
+      "url": "https://api.example.com/users",
+      "schema": {
+        "id": "LONG",
+        "name": "STRING",
+        "email": "STRING"
+      }
+    }
+  }
+}
+```
+
+**POST 请求，带请求体和 JSONPath 提取：**
+
+```json
+{
+  "source": {
+    "type": "http",
+    "outputTable": "users",
+    "config": {
+      "url": "https://api.example.com/users/query",
+      "method": "POST",
+      "headers": {
+        "Authorization": "Bearer token123"
+      },
+      "body": {
+        "status": "active"
+      },
+      "dataPath": "$.data.items",
+      "schema": {
+        "id": "LONG",
+        "name": "STRING",
+        "tags": "ARRAY<STRING>",
+        "address": {
+          "city": "STRING",
+          "zip": "STRING"
+        }
+      }
+    }
+  }
+}
+```
+
+#### 数据解析说明
+
+- 未配置 `dataPath` 时，使用整个响应体作为数据源
+- 配置 `dataPath` 后，使用 JSONPath 提取结果作为数据源
+- Schema 始终描述单条记录的结构
+- 支持复杂类型：`ARRAY<简单类型>` 和 `OBJECT`（嵌套结构）
 
 ---
 
