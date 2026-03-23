@@ -46,10 +46,24 @@ public class HttpSource extends AbstractSplitSource<HttpSplit, HttpEnumCheckpoin
                 "method must be GET or POST");
 
         // 请求头（可选）
-        Map<String, String> headers = (Map<String, String>) config.get("headers");
+        Map<String, Object> headers = null;
+        Object headersObj = config.get("headers");
+        if (headersObj != null) {
+            if (!(headersObj instanceof Map)) {
+                throw new IllegalArgumentException("headers 必须是对象格式 {key: value}");
+            }
+            headers = (Map<String, Object>) headersObj;
+        }
 
         // 查询参数（可选）
-        Map<String, String> params = (Map<String, String>) config.get("params");
+        Map<String, Object> params = null;
+        Object paramsObj = config.get("params");
+        if (paramsObj != null) {
+            if (!(paramsObj instanceof Map)) {
+                throw new IllegalArgumentException("params 必须是对象格式 {key: value}");
+            }
+            params = (Map<String, Object>) paramsObj;
+        }
 
         // 请求体（可选）
         String body = null;
@@ -110,8 +124,7 @@ public class HttpSource extends AbstractSplitSource<HttpSplit, HttpEnumCheckpoin
     @Override
     public SourceReader<Row, HttpSplit> createReader(SourceReaderContext readerContext) {
         log.info("创建 SourceReader");
-        var splitReaderSupplier = (Supplier<BaseSplitReader<Row, HttpSplit>>) () ->
-                new HttpSplitReader();
+        var splitReaderSupplier = (Supplier<BaseSplitReader<Row, HttpSplit>>) HttpSplitReader::new;
         return new HttpSourceReader(splitReaderSupplier, readerContext);
     }
 

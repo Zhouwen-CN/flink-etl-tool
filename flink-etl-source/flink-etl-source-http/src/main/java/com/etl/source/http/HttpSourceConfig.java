@@ -21,9 +21,9 @@ public class HttpSourceConfig implements Serializable {
     /** HTTP 方法，GET 或 POST */
     private final String method;
     /** 请求头 */
-    private final Map<String, String> headers;
+    private final Map<String, Object> headers;
     /** 查询参数 */
-    private final Map<String, String> params;
+    private final Map<String, Object> params;
     /** 请求体（JSON 对象序列化后的字符串） */
     private final String body;
     /** JSONPath 表达式，提取数据 */

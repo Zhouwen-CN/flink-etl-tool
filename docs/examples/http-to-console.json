@@ -1,0 +1,36 @@
+{
+  "job": {
+    "name": "http-to-console",
+    "mode": "batch",
+    "parallelism": 1
+  },
+  "sources": [
+    {
+      "type": "http",
+      "outputTable": "api_data",
+      "config": {
+        "url": "https://api.oick.cn/api/hot",
+        "params":{
+          "apikey": "f1dafbeca1e9eeca5c93ce419cff8ae6",
+          "type": "douyin",
+          "test": 1
+        },
+        "dataPath":"$.data",
+        "schema": {
+          "index": "int",
+          "title": "string",
+          "hot": "string",
+          "url": "string",
+          "mobilUrl": "string"
+        }
+      }
+    }
+  ],
+  "sinks": [
+    {
+      "type": "console",
+      "inputTable": "api_data",
+      "config": {}
+    }
+  ]
+}

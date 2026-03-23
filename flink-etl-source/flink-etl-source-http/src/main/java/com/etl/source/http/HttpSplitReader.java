@@ -28,8 +28,6 @@ import java.util.Set;
  */
 @Slf4j
 public class HttpSplitReader implements BaseSplitReader<Row, HttpSplit> {
-
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final int CONNECT_TIMEOUT = 30000;
     private static final int READ_TIMEOUT = 60000;
 
@@ -87,10 +85,10 @@ public class HttpSplitReader implements BaseSplitReader<Row, HttpSplit> {
         if (config.getParams() != null && !config.getParams().isEmpty()) {
             StringBuilder urlBuilder = new StringBuilder(urlString);
             urlBuilder.append("?");
-            for (Map.Entry<String, String> entry : config.getParams().entrySet()) {
+            for (Map.Entry<String, Object> entry : config.getParams().entrySet()) {
                 urlBuilder.append(entry.getKey())
                         .append("=")
-                        .append(java.net.URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8))
+                        .append(java.net.URLEncoder.encode(String.valueOf(entry.getValue()), StandardCharsets.UTF_8))
                         .append("&");
             }
             urlString = urlBuilder.substring(0, urlBuilder.length() - 1);
@@ -107,8 +105,8 @@ public class HttpSplitReader implements BaseSplitReader<Row, HttpSplit> {
             // 设置请求头
             connection.setRequestProperty("Accept", "application/json");
             if (config.getHeaders() != null) {
-                for (Map.Entry<String, String> entry : config.getHeaders().entrySet()) {
-                    connection.setRequestProperty(entry.getKey(), entry.getValue());
+                for (Map.Entry<String, Object> entry : config.getHeaders().entrySet()) {
+                    connection.setRequestProperty(entry.getKey(), String.valueOf(entry.getValue()));
                 }
             }
 
