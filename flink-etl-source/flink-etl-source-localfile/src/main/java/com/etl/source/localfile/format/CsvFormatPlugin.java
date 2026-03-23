@@ -115,7 +115,7 @@ public class CsvFormatPlugin implements FileFormatPlugin {
                         }
 
                         String fieldName = schema.getFieldName(i);
-                        Object converted = TypeConverter.convert(value, fieldName, schema.getFieldType(i));
+                        Object converted = TypeConverter.convertFromValue(value, fieldName, schema.getFieldType(i));
                         row.setField(i, converted);
                     }
 

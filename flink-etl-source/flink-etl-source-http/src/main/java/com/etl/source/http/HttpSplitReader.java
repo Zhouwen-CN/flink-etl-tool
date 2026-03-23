@@ -1,10 +1,14 @@
 package com.etl.source.http;
 
+import com.etl.core.schema.TypeConverter;
 import com.etl.core.source.BaseSplitReader;
+import com.etl.core.utils.JsonUtils;
+import com.jayway.jsonpath.PathNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
 import org.apache.flink.connector.base.source.reader.RecordsWithSplitIds;
 import org.apache.flink.connector.base.source.reader.splitreader.SplitsChange;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
 import org.apache.flink.types.Row;
 
 import java.io.BufferedReader;
@@ -48,12 +52,16 @@ public class HttpSplitReader implements BaseSplitReader<Row, HttpSplit> {
             // 执行 HTTP 请求
             String jsonResponse = executeRequest(split.getConfig());
 
-            // 转换为 Row
-            List<Row> rows = JsonToRowConverter.convert(
-                    jsonResponse,
-                    split.getConfig().getDataPath(),
-                    split.getConfig().getSchema()
-            );
+            // 通过 JSONPath 提取数据
+            JsonNode rootNode;
+            try {
+                rootNode = JsonUtils.getByJsonPath(jsonResponse, split.getConfig().getDataPath());
+            } catch (PathNotFoundException e) {
+                throw new IllegalArgumentException("JSONPath 提取失败: " + split.getConfig().getDataPath(), e);
+            }
+
+            // 转换为 Row 列表
+            List<Row> rows = TypeConverter.convertJsonToRows(rootNode, split.getConfig().getSchema());
 
             log.info("HTTP 请求完成，获取 {} 条记录", rows.size());
 

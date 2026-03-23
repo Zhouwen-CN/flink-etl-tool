@@ -15,7 +15,7 @@
           "type": "douyin",
           "test": 1
         },
-        "dataPath":"$.data",
+        "dataPath": "$.data",
         "schema": {
           "index": "int",
           "title": "string",

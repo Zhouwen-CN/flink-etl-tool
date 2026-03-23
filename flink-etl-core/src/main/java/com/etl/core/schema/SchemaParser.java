@@ -5,8 +5,6 @@ import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
-import org.apache.flink.api.java.typeutils.ObjectArrayTypeInfo;
-import org.apache.flink.api.java.typeutils.RowTypeInfo;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -198,8 +196,8 @@ public class SchemaParser {
         }
 
         // 解析元素类型（OBJECT）
-        RowTypeInfo elementType = (RowTypeInfo) parseObjectType(fieldName + "[]", (Map<String, Object>) elementDef);
+        TypeInformation<?> elementType = parseObjectType(fieldName + "[]", (Map<String, Object>) elementDef);
 
-        return ObjectArrayTypeInfo.getInfoFor(Object[].class, elementType);
+        return Types.OBJECT_ARRAY(elementType);
     }
 }

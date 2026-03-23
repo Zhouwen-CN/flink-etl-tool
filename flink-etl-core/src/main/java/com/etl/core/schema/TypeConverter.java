@@ -1,13 +1,20 @@
 package com.etl.core.schema;
 
 import com.etl.core.exception.TypeConversionException;
+import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
+import org.apache.flink.api.java.typeutils.ObjectArrayTypeInfo;
+import org.apache.flink.api.java.typeutils.RowTypeInfo;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
+import org.apache.flink.types.Row;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 类型转换器
@@ -18,6 +25,11 @@ public class TypeConverter {
     private static final DateTimeFormatter DEFAULT_TIMESTAMP_FORMAT =
         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
+    private TypeConverter() {
+        // 私有构造函数，防止实例化
+    }
+
+    // region Object 转换（用于 CSV 等）
     /**
      * 将原始值转换为目标类型
      *
@@ -27,7 +39,7 @@ public class TypeConverter {
      * @return 转换后的值
      * @throws TypeConversionException 转换失败时抛出
      */
-    public static Object convert(Object value, String fieldName, TypeInformation<?> targetType) {
+    public static Object convertFromValue(Object value, String fieldName, TypeInformation<?> targetType) {
         if (value == null) {
             return null;
         }
@@ -38,9 +50,6 @@ public class TypeConverter {
         }
 
         String strValue = String.valueOf(value);
-        if (strValue.isEmpty()) {
-            return null;
-        }
 
         try {
             // 根据 TypeInformation 判断目标类型
@@ -68,6 +77,200 @@ public class TypeConverter {
         }
     }
 
+    /**
+     * 检查值是否已经是目标类型
+     */
+    private static boolean isCompatibleType(Object value, TypeInformation<?> targetType) {
+        if (Types.STRING.equals(targetType)) {
+            return value instanceof String;
+        } else if (Types.BOOLEAN.equals(targetType)) {
+            return value instanceof Boolean;
+        } else if (Types.INT.equals(targetType)) {
+            return value instanceof Integer;
+        } else if (Types.LONG.equals(targetType)) {
+            return value instanceof Long;
+        } else if (Types.DOUBLE.equals(targetType)) {
+            return value instanceof Double;
+        } else if (Types.BIG_DEC.equals(targetType)) {
+            return value instanceof BigDecimal;
+        } else if (Types.LOCAL_DATE_TIME.equals(targetType)) {
+            return value instanceof LocalDateTime || value instanceof java.sql.Timestamp;
+        }
+        return false;
+    }
+
+    /**
+     * 解析布尔值（支持多种格式）
+     */
+    private static Boolean parseBoolean(String value) {
+        if ("true".equalsIgnoreCase(value) || "1".equals(value) || "yes".equalsIgnoreCase(value)) {
+            return true;
+        }
+        if ("false".equalsIgnoreCase(value) || "0".equals(value) || "no".equalsIgnoreCase(value)) {
+            return false;
+        }
+        throw new NumberFormatException("无法解析为布尔值: " + value);
+    }
+    // endregion
+
+    // region JsonNode 转换（用于 JSON 数据）
+
+    /**
+     * 将 JsonNode 转换为 Row 列表
+     * 支持 JSONObject（单条记录）和 JSONArray（多条记录）
+     *
+     * @param node   JsonNode 节点
+     * @param schema Schema 定义
+     * @return Row 列表
+     */
+    public static List<Row> convertJsonToRows(JsonNode node, EtlSchema schema) {
+        List<Row> rows = new ArrayList<>();
+
+        if (node == null) {
+            throw new IllegalArgumentException("提取的数据为空");
+        }
+
+        if (node.isArray()) {
+            // JSONArray: 遍历数组
+            for (JsonNode element : node) {
+                Row row = convertJsonToRow(element, schema);
+                rows.add(row);
+            }
+        } else if (node.isObject()) {
+            // JSONObject: 单条记录
+            Row row = convertJsonToRow(node, schema);
+            rows.add(row);
+        } else {
+            throw new IllegalArgumentException("提取的数据既不是 JSONObject 也不是 JSONArray: " + node.getNodeType());
+        }
+
+        return rows;
+    }
+
+    /**
+     * 将 JsonNode 转换为 Flink Row
+     *
+     * @param node   JsonNode 节点
+     * @param schema Schema 定义
+     * @return Row 对象
+     */
+    private static Row convertJsonToRow(JsonNode node, EtlSchema schema) {
+        if (node == null || !node.isObject()) {
+            throw new IllegalArgumentException("期望对象类型，但得到: " + (node == null ? "null" : node.getNodeType()));
+        }
+
+        int fieldCount = schema.getFieldCount();
+        Row row = Row.withPositions(fieldCount);
+
+        for (int i = 0; i < fieldCount; i++) {
+            String fieldName = schema.getFieldName(i);
+            JsonNode fieldNode = node.get(fieldName);
+            Object value = convertFromJsonNode(fieldNode, schema.getFieldType(i));
+            row.setField(i, value);
+        }
+
+        return row;
+    }
+
+    /**
+     * 将 JsonNode 转换为目标类型
+     *
+     * @param node JsonNode 节点
+     * @param targetType 目标类型（Flink TypeInformation）
+     * @return 转换后的值
+     */
+    private static Object convertFromJsonNode(JsonNode node, TypeInformation<?> targetType) {
+        if (node == null || node.isNull()) {
+            return null;
+        }
+
+        if (Types.STRING.equals(targetType)) {
+            return node.asText();
+        } else if (Types.INT.equals(targetType)) {
+            return node.asInt();
+        } else if (Types.LONG.equals(targetType)) {
+            return node.asLong();
+        } else if (Types.DOUBLE.equals(targetType)) {
+            return node.asDouble();
+        } else if (Types.BOOLEAN.equals(targetType)) {
+            return node.asBoolean();
+        } else if (Types.BIG_DEC.equals(targetType)) {
+            return new BigDecimal(node.asText());
+        } else if (Types.LOCAL_DATE_TIME.equals(targetType)) {
+            return LocalDateTime.parse(node.asText(), DEFAULT_TIMESTAMP_FORMAT);
+        } else if (targetType instanceof RowTypeInfo) {
+            return convertJsonToRow(node, targetType);
+        } else if (targetType instanceof ObjectArrayTypeInfo || targetType instanceof BasicArrayTypeInfo) {
+            return convertJsonArray(node, targetType);
+        } else {
+            throw new IllegalArgumentException("不支持的类型 " + node + " : " + targetType);
+        }
+
+    }
+
+    /**
+     * 将 JsonNode 数组转换为 Object[]
+     *
+     * @param node JsonNode 数组节点
+     * @param arrayType 数组类型信息
+     * @return Object 数组
+     */
+    private static Object[] convertJsonArray(JsonNode node, TypeInformation<?> arrayType) {
+        if (node == null || !node.isArray()) {
+            throw new IllegalArgumentException("期望数组类型，但得到: " + (node == null ? "null" : node.getNodeType()));
+        }
+
+        List<Object> list = new ArrayList<>();
+        for (JsonNode element : node) {
+            TypeInformation<?> componentType = getComponentType(arrayType);
+            list.add(convertFromJsonNode(element, componentType));
+        }
+
+        return list.toArray();
+    }
+
+    /**
+     * 将 JsonNode 转换为 Flink Row（基于 RowTypeInfo）
+     *
+     * @param node JsonNode 节点
+     * @param rowTypeInfo Row 类型信息
+     * @return Row 对象
+     */
+    public static Row convertJsonToRow(JsonNode node, TypeInformation<?> rowTypeInfo) {
+        if (node == null || !node.isObject()) {
+            throw new IllegalArgumentException("期望对象类型，但得到: " + (node == null ? "null" : node.getNodeType()));
+        }
+
+        RowTypeInfo rowInfo = (RowTypeInfo) rowTypeInfo;
+        String[] fieldNames = rowInfo.getFieldNames();
+        TypeInformation<?>[] fieldTypes = rowInfo.getFieldTypes();
+
+        Row row = Row.withPositions(fieldNames.length);
+        for (int i = 0; i < fieldNames.length; i++) {
+            JsonNode fieldNode = node.get(fieldNames[i]);
+            Object value = convertFromJsonNode(fieldNode, fieldTypes[i]);
+            row.setField(i, value);
+        }
+
+        return row;
+    }
+
+    /**
+     * 获取数组元素类型
+     */
+    private static TypeInformation<?> getComponentType(TypeInformation<?> arrayType) {
+        TypeInformation<?> componentInfo = null;
+        if (arrayType instanceof BasicArrayTypeInfo) {
+            componentInfo = ((BasicArrayTypeInfo<?, ?>) arrayType).getComponentInfo();
+        } else if (arrayType instanceof ObjectArrayTypeInfo) {
+            componentInfo = ((ObjectArrayTypeInfo<?, ?>) arrayType).getComponentInfo();
+        }
+        return componentInfo;
+    }
+
+    // endregion
+
+    // region JDBC 类型映射
     /**
      * 根据 JDBC java.sql.Types 转换为 Flink TypeInformation
      * 从 FlinkTypeConverter 迁移
@@ -119,39 +322,5 @@ public class TypeConverter {
                 return Types.STRING;
         }
     }
-
-    /**
-     * 检查值是否已经是目标类型
-     */
-    private static boolean isCompatibleType(Object value, TypeInformation<?> targetType) {
-        if (Types.STRING.equals(targetType)) {
-            return value instanceof String;
-        } else if (Types.BOOLEAN.equals(targetType)) {
-            return value instanceof Boolean;
-        } else if (Types.INT.equals(targetType)) {
-            return value instanceof Integer;
-        } else if (Types.LONG.equals(targetType)) {
-            return value instanceof Long;
-        } else if (Types.DOUBLE.equals(targetType)) {
-            return value instanceof Double;
-        } else if (Types.BIG_DEC.equals(targetType)) {
-            return value instanceof BigDecimal;
-        } else if (Types.LOCAL_DATE_TIME.equals(targetType)) {
-            return value instanceof LocalDateTime || value instanceof java.sql.Timestamp;
-        }
-        return false;
-    }
-
-    /**
-     * 解析布尔值（支持多种格式）
-     */
-    private static Boolean parseBoolean(String value) {
-        if ("true".equalsIgnoreCase(value) || "1".equals(value) || "yes".equalsIgnoreCase(value)) {
-            return true;
-        }
-        if ("false".equalsIgnoreCase(value) || "0".equals(value) || "no".equalsIgnoreCase(value)) {
-            return false;
-        }
-        throw new NumberFormatException("无法解析为布尔值: " + value);
-    }
+    // endregion
 }

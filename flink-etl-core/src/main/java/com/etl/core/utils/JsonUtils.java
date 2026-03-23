@@ -111,7 +111,11 @@ public final class JsonUtils {
             Object read = JsonPath.read(json, jsonPath);
             jsonNode = valueToTree(read);
         } else {
-            jsonNode = valueToTree(json);
+            try {
+                jsonNode = MAPPER.readTree(json);
+            } catch (JsonProcessingException e) {
+                jsonNode = null;
+            }
         }
 
         return jsonNode;
