@@ -131,6 +131,13 @@ public class JdbcSinkFunction extends RichSinkFunction<Row> {
             } catch (SQLException rollbackEx) {
                 log.warn("事务回滚失败", rollbackEx);
             }
+            // 清除 statement 中的残留 batch 数据，重新创建 statement
+            try {
+                statement.close();
+            } catch (SQLException closeEx) {
+                log.warn("关闭 Statement 失败", closeEx);
+            }
+            statement = null;
             throw e;
         } finally {
             pendingCount = 0;

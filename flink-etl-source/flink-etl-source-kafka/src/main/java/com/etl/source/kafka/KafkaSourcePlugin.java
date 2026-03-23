@@ -45,6 +45,8 @@ public class KafkaSourcePlugin implements SourcePlugin {
             log.info("订阅 Topic 列表: {}", kafkaConfig.getTopics());
         } else {
             builder.setTopicPattern(Pattern.compile(kafkaConfig.getTopicPattern()));
+            // 每 10 秒检查一次新分区
+            builder.setProperty("partition.discovery.interval.ms", "10000");
             log.info("订阅 Topic 正则: {}", kafkaConfig.getTopicPattern());
         }
 

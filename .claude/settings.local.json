@@ -3,7 +3,8 @@
   "permissions": {
     "allow": [
       "Bash(*)",
-      "Read(*)"
+      "Read(*)",
+      "WebFetch(*)"
     ],
     "ask": [
       "Bash(git push *)",

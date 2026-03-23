@@ -9,7 +9,7 @@ import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.annotation.JsonVal
  */
 public enum ExecutionMode {
     BATCH("batch"),
-    STREAM("stream");
+    STREAM("streaming");
 
     private final String value;
 

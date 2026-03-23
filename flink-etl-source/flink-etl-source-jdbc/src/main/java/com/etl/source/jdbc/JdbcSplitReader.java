@@ -155,7 +155,7 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
             // 如果没有更多记录，标记分片完成
             if (!hasNextRecord) {
                 finishedSplits.add(currentSplit.splitId());
-                log.info("分片 {} 读取完成，共 {} 条记录", currentSplit.splitId(), currentOffset);
+                log.debug("分片 {} 读取完成，共 {} 条记录", currentSplit.splitId(), currentOffset);
 
                 // 关闭资源
                 closeCurrentSplit();

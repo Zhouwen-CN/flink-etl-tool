@@ -120,6 +120,11 @@ public class ConfigParser {
             if (sink.getInputTable() == null || sink.getInputTable().isEmpty()) {
                 throw new IllegalArgumentException("缺少 sinks[" + i + "].inputTable 配置");
             }
+            // 验证 inputTable 是否在上游定义
+            if (!outputTables.contains(sink.getInputTable())) {
+                throw new IllegalArgumentException("sinks[" + i + "].inputTable '" + sink.getInputTable()
+                        + "' 未在上游 source.outputTable 或 transform.outputTable 中定义");
+            }
         }
     }
 }

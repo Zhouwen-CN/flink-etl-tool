@@ -14,7 +14,10 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
 
 /**
  * 类型转换器
@@ -24,6 +27,59 @@ public class TypeConverter {
 
     private static final DateTimeFormatter DEFAULT_TIMESTAMP_FORMAT =
         DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+    // region 类型转换器映射（优化 if-else 链）
+
+    /** 字符串值转换器映射 */
+    private static final Map<TypeInformation<?>, Function<String, Object>> STRING_CONVERTERS = new HashMap<>();
+
+    /** 类型兼容性检查映射 */
+    private static final Map<TypeInformation<?>, Function<Object, Boolean>> TYPE_COMPATIBILITY_CHECKERS = new HashMap<>();
+
+    /** JsonNode 转换器映射 */
+    private static final Map<TypeInformation<?>, Function<JsonNode, Object>> JSON_NODE_CONVERTERS = new HashMap<>();
+
+    /** JsonNode 数组元素转换器映射 */
+    private static final Map<TypeInformation<?>, Function<JsonNode, Object>> JSON_ARRAY_ELEMENT_CONVERTERS = new HashMap<>();
+
+    static {
+        // 初始化字符串转换器
+        STRING_CONVERTERS.put(Types.STRING, v -> v);
+        STRING_CONVERTERS.put(Types.INT, Integer::parseInt);
+        STRING_CONVERTERS.put(Types.LONG, Long::parseLong);
+        STRING_CONVERTERS.put(Types.DOUBLE, Double::parseDouble);
+        STRING_CONVERTERS.put(Types.BOOLEAN, TypeConverter::parseBoolean);
+        STRING_CONVERTERS.put(Types.BIG_DEC, BigDecimal::new);
+        STRING_CONVERTERS.put(Types.LOCAL_DATE_TIME, v -> LocalDateTime.parse(v, DEFAULT_TIMESTAMP_FORMAT));
+
+        // 初始化类型兼容性检查器
+        TYPE_COMPATIBILITY_CHECKERS.put(Types.STRING, v -> v instanceof String);
+        TYPE_COMPATIBILITY_CHECKERS.put(Types.INT, v -> v instanceof Integer);
+        TYPE_COMPATIBILITY_CHECKERS.put(Types.LONG, v -> v instanceof Long);
+        TYPE_COMPATIBILITY_CHECKERS.put(Types.DOUBLE, v -> v instanceof Double);
+        TYPE_COMPATIBILITY_CHECKERS.put(Types.BOOLEAN, v -> v instanceof Boolean);
+        TYPE_COMPATIBILITY_CHECKERS.put(Types.BIG_DEC, v -> v instanceof BigDecimal);
+        TYPE_COMPATIBILITY_CHECKERS.put(Types.LOCAL_DATE_TIME, v -> v instanceof LocalDateTime || v instanceof java.sql.Timestamp);
+
+        // 初始化 JsonNode 转换器
+        JSON_NODE_CONVERTERS.put(Types.STRING, JsonNode::asText);
+        JSON_NODE_CONVERTERS.put(Types.INT, JsonNode::asInt);
+        JSON_NODE_CONVERTERS.put(Types.LONG, JsonNode::asLong);
+        JSON_NODE_CONVERTERS.put(Types.DOUBLE, JsonNode::asDouble);
+        JSON_NODE_CONVERTERS.put(Types.BOOLEAN, JsonNode::asBoolean);
+        JSON_NODE_CONVERTERS.put(Types.BIG_DEC, node -> new BigDecimal(node.asText()));
+        JSON_NODE_CONVERTERS.put(Types.LOCAL_DATE_TIME, node -> LocalDateTime.parse(node.asText(), DEFAULT_TIMESTAMP_FORMAT));
+
+        // 初始化 JsonNode 数组元素转换器（处理 null 情况）
+        JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.STRING, node -> node.isNull() ? null : node.asText());
+        JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.INT, node -> node.isNull() ? null : node.asInt());
+        JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.LONG, node -> node.isNull() ? null : node.asLong());
+        JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.DOUBLE, node -> node.isNull() ? null : node.asDouble());
+        JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.BOOLEAN, node -> node.isNull() ? null : node.asBoolean());
+        JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.BIG_DEC, node -> node.isNull() ? null : new BigDecimal(node.asText()));
+        JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.LOCAL_DATE_TIME, node -> node.isNull() ? null : LocalDateTime.parse(node.asText(), DEFAULT_TIMESTAMP_FORMAT));
+    }
+    // endregion
 
     private TypeConverter() {
         // 私有构造函数，防止实例化
@@ -52,26 +108,12 @@ public class TypeConverter {
         String strValue = String.valueOf(value);
 
         try {
-            // 根据 TypeInformation 判断目标类型
-            // 注意：使用 equals() 而不是 ==，因为反序列化后对象引用可能不同
-            if (Types.STRING.equals(targetType)) {
-                return strValue;
-            } else if (Types.BOOLEAN.equals(targetType)) {
-                return parseBoolean(strValue);
-            } else if (Types.INT.equals(targetType)) {
-                return Integer.parseInt(strValue);
-            } else if (Types.LONG.equals(targetType)) {
-                return Long.parseLong(strValue);
-            } else if (Types.DOUBLE.equals(targetType)) {
-                return Double.parseDouble(strValue);
-            } else if (Types.BIG_DEC.equals(targetType)) {
-                return new BigDecimal(strValue);
-            } else if (Types.LOCAL_DATE_TIME.equals(targetType)) {
-                return LocalDateTime.parse(strValue, DEFAULT_TIMESTAMP_FORMAT);
-            } else {
-                // 未知类型，返回原值
-                return value;
+            Function<String, Object> converter = STRING_CONVERTERS.get(targetType);
+            if (converter != null) {
+                return converter.apply(strValue);
             }
+            // 未知类型，返回原值
+            return value;
         } catch (NumberFormatException | DateTimeParseException e) {
             throw new TypeConversionException(fieldName, strValue, targetType, e);
         }
@@ -81,22 +123,8 @@ public class TypeConverter {
      * 检查值是否已经是目标类型
      */
     private static boolean isCompatibleType(Object value, TypeInformation<?> targetType) {
-        if (Types.STRING.equals(targetType)) {
-            return value instanceof String;
-        } else if (Types.BOOLEAN.equals(targetType)) {
-            return value instanceof Boolean;
-        } else if (Types.INT.equals(targetType)) {
-            return value instanceof Integer;
-        } else if (Types.LONG.equals(targetType)) {
-            return value instanceof Long;
-        } else if (Types.DOUBLE.equals(targetType)) {
-            return value instanceof Double;
-        } else if (Types.BIG_DEC.equals(targetType)) {
-            return value instanceof BigDecimal;
-        } else if (Types.LOCAL_DATE_TIME.equals(targetType)) {
-            return value instanceof LocalDateTime || value instanceof java.sql.Timestamp;
-        }
-        return false;
+        Function<Object, Boolean> checker = TYPE_COMPATIBILITY_CHECKERS.get(targetType);
+        return checker != null && checker.apply(value);
     }
 
     /**
@@ -184,28 +212,20 @@ public class TypeConverter {
             return null;
         }
 
-        if (Types.STRING.equals(targetType)) {
-            return node.asText();
-        } else if (Types.INT.equals(targetType)) {
-            return node.asInt();
-        } else if (Types.LONG.equals(targetType)) {
-            return node.asLong();
-        } else if (Types.DOUBLE.equals(targetType)) {
-            return node.asDouble();
-        } else if (Types.BOOLEAN.equals(targetType)) {
-            return node.asBoolean();
-        } else if (Types.BIG_DEC.equals(targetType)) {
-            return new BigDecimal(node.asText());
-        } else if (Types.LOCAL_DATE_TIME.equals(targetType)) {
-            return LocalDateTime.parse(node.asText(), DEFAULT_TIMESTAMP_FORMAT);
-        } else if (targetType instanceof RowTypeInfo) {
+        // 使用映射表转换基本类型
+        Function<JsonNode, Object> converter = JSON_NODE_CONVERTERS.get(targetType);
+        if (converter != null) {
+            return converter.apply(node);
+        }
+
+        // 处理复杂类型
+        if (targetType instanceof RowTypeInfo) {
             return convertJsonToRow(node, targetType);
         } else if (targetType instanceof ObjectArrayTypeInfo || targetType instanceof BasicArrayTypeInfo) {
             return convertJsonArray(node, targetType);
-        } else {
-            throw new IllegalArgumentException("不支持的类型 " + node + " : " + targetType);
         }
 
+        throw new IllegalArgumentException("不支持的类型: " + targetType);
     }
 
     /**
@@ -223,53 +243,57 @@ public class TypeConverter {
         int size = node.size();
         TypeInformation<?> componentType = getComponentType(arrayType);
 
+        // 获取元素转换器
+        Function<JsonNode, Object> elementConverter = JSON_ARRAY_ELEMENT_CONVERTERS.get(componentType);
+
+        // 根据类型创建对应数组
         if (Types.STRING.equals(componentType)) {
             String[] array = new String[size];
             int i = 0;
             for (JsonNode element : node) {
-                array[i++] = element.isNull() ? null : element.asText();
+                array[i++] = (String) elementConverter.apply(element);
             }
             return array;
         } else if (Types.INT.equals(componentType)) {
             Integer[] array = new Integer[size];
             int i = 0;
             for (JsonNode element : node) {
-                array[i++] = element.isNull() ? null : element.asInt();
+                array[i++] = (Integer) elementConverter.apply(element);
             }
             return array;
         } else if (Types.LONG.equals(componentType)) {
             Long[] array = new Long[size];
             int i = 0;
             for (JsonNode element : node) {
-                array[i++] = element.isNull() ? null : element.asLong();
+                array[i++] = (Long) elementConverter.apply(element);
             }
             return array;
         } else if (Types.DOUBLE.equals(componentType)) {
             Double[] array = new Double[size];
             int i = 0;
             for (JsonNode element : node) {
-                array[i++] = element.isNull() ? null : element.asDouble();
+                array[i++] = (Double) elementConverter.apply(element);
             }
             return array;
         } else if (Types.BOOLEAN.equals(componentType)) {
             Boolean[] array = new Boolean[size];
             int i = 0;
             for (JsonNode element : node) {
-                array[i++] = element.isNull() ? null : element.asBoolean();
+                array[i++] = (Boolean) elementConverter.apply(element);
             }
             return array;
         } else if (Types.BIG_DEC.equals(componentType)) {
             BigDecimal[] array = new BigDecimal[size];
             int i = 0;
             for (JsonNode element : node) {
-                array[i++] = element.isNull() ? null : new BigDecimal(element.asText());
+                array[i++] = (BigDecimal) elementConverter.apply(element);
             }
             return array;
         } else if (Types.LOCAL_DATE_TIME.equals(componentType)) {
             LocalDateTime[] array = new LocalDateTime[size];
             int i = 0;
             for (JsonNode element : node) {
-                array[i++] = element.isNull() ? null : LocalDateTime.parse(node.asText(), DEFAULT_TIMESTAMP_FORMAT);
+                array[i++] = (LocalDateTime) elementConverter.apply(element);
             }
             return array;
         }
