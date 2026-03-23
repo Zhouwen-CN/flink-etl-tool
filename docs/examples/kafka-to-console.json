@@ -1,0 +1,34 @@
+{
+  "job": {
+    "name": "kafka-to-console",
+    "mode": "streaming"
+  },
+  "sources": [
+    {
+      "type": "kafka",
+      "outputTable": "user_events",
+      "config": {
+        "bootstrapServers": "localhost:9092",
+        "groupId": "etl-consumer",
+        "topics": ["user-events"],
+        "startingOffsets": "earliest",
+        "schema": {
+          "userId": "LONG",
+          "eventType": "STRING",
+          "timestamp": "LONG",
+          "data": {
+            "name": "STRING",
+            "value": "DOUBLE"
+          }
+        }
+      }
+    }
+  ],
+  "sinks": [
+    {
+      "type": "console",
+      "inputTable": "user_events",
+      "config": {}
+    }
+  ]
+}
