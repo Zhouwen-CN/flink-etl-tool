@@ -8,6 +8,7 @@
   - [JDBC Source](#jdbc-source)
   - [LocalFile Source](#localfile-source)
   - [HTTP Source](#http-source)
+  - [Kafka Source](#kafka-source)
 - [Schema 配置](#schema-配置)
 - [Sink 插件](#sink-插件)
   - [Console Sink](#console-sink)
@@ -246,6 +247,87 @@
 - 配置 `dataPath` 后，使用 JSONPath 提取结果作为数据源
 - Schema 始终描述单条记录的结构
 - 支持复杂类型：`["简单类型"]`（数组）和 `OBJECT`（嵌套结构）
+
+---
+
+### Kafka Source
+
+从 Kafka 消费 JSON 格式消息，支持 Topic 列表和正则匹配两种订阅方式。
+
+#### 配置参数
+
+| 参数 | 必填 | 默认值 | 说明 |
+|------|:----:|--------|------|
+| `bootstrapServers` | 是 | - | Kafka 集群地址，如 `localhost:9092` |
+| `groupId` | 是 | - | 消费者组 ID |
+| `topics` | 条件必填 | - | Topic 列表，与 `topicPattern` 二选一 |
+| `topicPattern` | 条件必填 | - | Topic 正则表达式，与 `topics` 二选一 |
+| `startingOffsets` | 否 | `earliest` | 起始位置：`earliest`、`latest`、`committed` |
+| `properties` | 否 | `{}` | 额外的 Kafka consumer 配置 |
+| `schema` | 是 | - | 消息体字段定义 |
+
+**隐藏字段**：输出 Row 自动包含 `__topic__` 字段（STRING 类型），记录消息来源 Topic。
+
+#### 配置示例
+
+**Topic 列表模式：**
+
+```json
+{
+  "source": {
+    "type": "kafka",
+    "outputTable": "user_events",
+    "config": {
+      "bootstrapServers": "localhost:9092",
+      "groupId": "etl-consumer",
+      "topics": ["user-events", "order-events"],
+      "startingOffsets": "earliest",
+      "schema": {
+        "userId": "LONG",
+        "eventType": "STRING",
+        "timestamp": "LONG"
+      }
+    }
+  }
+}
+```
+
+**正则匹配模式：**
+
+```json
+{
+  "source": {
+    "type": "kafka",
+    "outputTable": "metrics",
+    "config": {
+      "bootstrapServers": "localhost:9092",
+      "groupId": "metrics-consumer",
+      "topicPattern": "metrics-.*",
+      "startingOffsets": "latest",
+      "properties": {
+        "fetch.max.bytes": "52428800"
+      },
+      "schema": {
+        "metric": "STRING",
+        "value": "DOUBLE",
+        "tags": ["STRING"]
+      }
+    }
+  }
+}
+```
+
+#### 数据解析说明
+
+- 支持 JSON 对象和 JSON 数组两种消息格式
+- JSON 数组会展开为多条 Row 记录
+- Schema 始终描述单条记录的结构
+- 自动追加 `__topic__` 字段记录消息来源
+
+#### 运行模式
+
+- 流式消费，持续运行（`mode: "streaming"`）
+- 支持 checkpoint 时自动提交 offset 到 Kafka
 
 ---
 
