@@ -14,7 +14,7 @@
         "topics": [
           "PUDONG_TOPS5_PAS_PLAN_DECLARE_ETL"
         ],
-        "startingOffsets": "earliest",
+        "startupMode": "earliest",
         "schema": {
           "op": "string",
           "before": {

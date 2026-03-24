@@ -11,7 +11,7 @@
         "bootstrapServers": "localhost:9092",
         "groupId": "metrics-consumer",
         "topicPattern": "metrics-.*",
-        "startingOffsets": "latest",
+        "startupMode": "latest",
         "properties": {
           "fetch.max.bytes": "52428800"
         },
