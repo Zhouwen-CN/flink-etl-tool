@@ -28,8 +28,8 @@ public class KafkaSourceConfig implements Serializable {
     private final List<String> topics;
     /** Topic 正则表达式（与 topics 二选一） */
     private final String topicPattern;
-    /** 起始位置 */
-    private final String startingOffsets;
+    /** 启动模式 */
+    private final StartupMode startupMode;
     /** 额外的 Kafka consumer 配置 */
     private final Properties kafkaProperties;
     /** Schema 定义 */
@@ -57,12 +57,8 @@ public class KafkaSourceConfig implements Serializable {
             throw new IllegalArgumentException("topics 和 topicPattern 至少需要配置一个");
         }
 
-        // 校验 startingOffsets
-        String startingOffsets = config.getString("startingOffsets", "earliest");
-        if (!isValidStartingOffset(startingOffsets)) {
-            throw new IllegalArgumentException(
-                    "startingOffsets 必须是 earliest、latest 或 committed，当前值: " + startingOffsets);
-        }
+        // 解析 startupMode（支持新旧配置名）
+        StartupMode startupMode = parseStartupMode(config);
 
         // 校验 schema
         EtlSchema schema = config.getSchema();
@@ -78,26 +74,39 @@ public class KafkaSourceConfig implements Serializable {
                 .groupId(groupId)
                 .topics(topics)
                 .topicPattern(topicPattern)
-                .startingOffsets(startingOffsets)
+                .startupMode(startupMode)
                 .kafkaProperties(kafkaProperties)
                 .schema(schema)
                 .build();
     }
 
     /**
-     * 获取 Flink OffsetsInitializer
+     * 解析启动模式配置
+     * 优先使用 startupMode，兼容旧的 startingOffsets
      */
-    public OffsetsInitializer getOffsetsInitializer() {
-        switch (startingOffsets.toLowerCase()) {
-            case "earliest":
-                return OffsetsInitializer.earliest();
-            case "latest":
-                return OffsetsInitializer.latest();
-            case "committed":
-                return OffsetsInitializer.committedOffsets();
-            default:
-                return OffsetsInitializer.earliest();
+    private static StartupMode parseStartupMode(SourceConfig config) {
+        // 优先读取新配置名
+        String startupModeValue = config.getString("startupMode");
+        if (startupModeValue != null) {
+            if (!StartupMode.isValid(startupModeValue)) {
+                throw new IllegalArgumentException(
+                        "startupMode 必须是 earliest、latest 或 committed，当前值: " + startupModeValue);
+            }
+            return StartupMode.fromConfigValue(startupModeValue);
         }
+
+        // 兼容旧配置名 startingOffsets
+        String legacyValue = config.getString("startingOffsets");
+        if (legacyValue != null) {
+            if (!StartupMode.isValid(legacyValue)) {
+                throw new IllegalArgumentException(
+                        "startingOffsets 必须是 earliest、latest 或 committed，当前值: " + legacyValue);
+            }
+            return StartupMode.fromConfigValue(legacyValue);
+        }
+
+        // 默认值
+        return StartupMode.EARLIEST;
     }
 
     /**
@@ -108,12 +117,11 @@ public class KafkaSourceConfig implements Serializable {
     }
 
     /**
-     * 校验 startingOffsets 值
+     * 获取 Flink OffsetsInitializer
+     * 封装枚举到 Flink 组件的转换，调用方无需了解枚举内部实现
      */
-    private static boolean isValidStartingOffset(String offset) {
-        return "earliest".equalsIgnoreCase(offset)
-                || "latest".equalsIgnoreCase(offset)
-                || "committed".equalsIgnoreCase(offset);
+    public OffsetsInitializer getOffsetsInitializer() {
+        return startupMode.toOffsetsInitializer();
     }
 
     /**
