@@ -262,7 +262,7 @@
 | `groupId` | 是 | - | 消费者组 ID |
 | `topics` | 条件必填 | - | Topic 列表，与 `topicPattern` 二选一 |
 | `topicPattern` | 条件必填 | - | Topic 正则表达式，与 `topics` 二选一 |
-| `startingOffsets` | 否 | `earliest` | 起始位置：`earliest`、`latest`、`committed` |
+| `startupMode` | 否 | `earliest` | 启动模式：`earliest`（从最早开始）、`latest`（从最新开始）、`committed`（从已提交 offset 开始） |
 | `properties` | 否 | `{}` | 额外的 Kafka consumer 配置 |
 | `schema` | 是 | - | 消息体字段定义 |
 
@@ -281,7 +281,7 @@
       "bootstrapServers": "localhost:9092",
       "groupId": "etl-consumer",
       "topics": ["user-events", "order-events"],
-      "startingOffsets": "earliest",
+      "startupMode": "earliest",
       "schema": {
         "userId": "LONG",
         "eventType": "STRING",
@@ -303,7 +303,7 @@
       "bootstrapServers": "localhost:9092",
       "groupId": "metrics-consumer",
       "topicPattern": "metrics-.*",
-      "startingOffsets": "latest",
+      "startupMode": "latest",
       "properties": {
         "fetch.max.bytes": "52428800"
       },
