@@ -9,10 +9,10 @@
       "type": "jdbc",
       "outputTable": "users",
       "config": {
-        "url": "jdbc:mysql://118.145.119.51:3306/test_db",
+        "url": "jdbc:mysql://127.0.0.1:3306/test_db",
         "table": "user_table",
         "username": "root",
-        "password": "Zw$8rb8*",
+        "password": "123456",
         "splitColumn": "id"
       }
     }

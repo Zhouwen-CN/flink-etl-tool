@@ -79,8 +79,6 @@ public class JobExecutor {
         // 开启检查点
         env.enableCheckpointing(Duration.ofMinutes(3).toMillis(), CheckpointingMode.AT_LEAST_ONCE);
         CheckpointConfig checkpointConfig = env.getCheckpointConfig();
-        // 检查点存储位置（平台设置）
-        // checkpointConfig.setCheckpointStorage("file:///D:\\tmp\\flink\\" + jobName);
         // 检查点超时
         checkpointConfig.setCheckpointTimeout(Duration.ofMinutes(3).toMillis());
         // 上一个checkpoint结束之后,多久才能发出另一个checkpoint

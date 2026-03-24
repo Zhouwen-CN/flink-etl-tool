@@ -9,10 +9,10 @@
       "type": "jdbc",
       "outputTable": "source_data",
       "config": {
-        "url": "jdbc:mysql://118.145.119.51:3306/test_db",
+        "url": "jdbc:mysql://127.0.0.1:3306/test_db",
         "table": "user_table",
         "username": "root",
-        "password": "Zw$8rb8*",
+        "password": "123456",
         "splitColumn": "id"
       }
     }
@@ -22,10 +22,10 @@
       "type": "jdbc",
       "inputTable": "source_data",
       "config": {
-        "url": "jdbc:mysql://118.145.119.51:3306/test_db",
+        "url": "jdbc:mysql://127.0.0.1:3306/test_db",
         "sql": "INSERT INTO user_table_2 (id,name,age,email) VALUES(:id,:name,:age,:email) ON DUPLICATE KEY UPDATE name=VALUES(name),age=VALUES(age),email=VALUES(email)",
         "username": "root",
-        "password": "Zw$8rb8*"
+        "password": "123456"
       }
     }
   ]

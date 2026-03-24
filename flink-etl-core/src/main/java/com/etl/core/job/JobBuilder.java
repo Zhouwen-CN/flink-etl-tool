@@ -15,6 +15,7 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.table.api.Table;
+import org.apache.flink.table.api.TableException;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.types.Row;
 
@@ -77,6 +78,8 @@ public class JobBuilder {
                 Table sinkTable = stEnv.from(sinkInputTable);
                 resultStream = stEnv.toDataStream(sinkTable);
                 log.info("Table 转换为 DataStream");
+            } catch (TableException e) {
+                throw new RuntimeException(e);
             } catch (Exception e) {
                 throw new IllegalArgumentException("无法从表 '" + sinkInputTable + "' 读取数据，请检查 inputTable 配置是否正确，或上游 source.outputTable / transform.outputTable 是否已正确配置", e);
             }

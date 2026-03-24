@@ -45,7 +45,7 @@ public class CliArgumentParser {
             return loadFromJsonString(params.get("config"));
         } else {
             printUsage();
-            throw new RuntimeException("Missing required argument");
+            throw new IllegalArgumentException("缺少必要参数：请指定 --file 或 --config");
         }
     }
 
@@ -112,17 +112,11 @@ public class CliArgumentParser {
             return null;
         }
 
-        String json = input;
-
-        // 检测是否为 Base64 编码，如果是则解码
-        if (isBase64Encoded(input)) {
-            log.info("检测到 Base64 编码的配置，正在解码...");
-            json = decodeBase64(input);
-            if (json == null) {
-                log.error("Base64 解码失败");
-                return null;
-            }
-            log.debug("解码后的配置内容长度: {}", json.length());
+        // 尝试解码 Base64（如果不是 Base64 则返回原字符串）
+        String json = tryDecodeBase64(input);
+        if (json == null) {
+            log.error("Base64 解码失败");
+            return null;
         }
 
         log.info("从命令行 JSON 字符串加载配置");
@@ -130,27 +124,31 @@ public class CliArgumentParser {
     }
 
     /**
-     * 判断字符串是否为有效的 Base64 编码
+     * 尝试解码 Base64 字符串
+     * <p>
+     * 如果输入是有效的 Base64 编码且解码后为 JSON 格式，返回解码后的字符串；
+     * 否则返回原始字符串。
      *
      * @param input 待检测的字符串
-     * @return 如果是有效的 Base64 编码返回 true，否则返回 false
+     * @return 解码后的字符串，解码失败返回 null（仅当确定是 Base64 但解码失败时）
      */
-    private static boolean isBase64Encoded(String input) {
+    private static String tryDecodeBase64(String input) {
         String trimmed = input.trim();
 
         // 空字符串或太短的字符串不可能是有效的 Base64 编码的 JSON
-        if (trimmed.length() < 2) {
-            return false;
+        // 最短的 JSON {} 编码后为 e30= (4字符)
+        if (trimmed.length() < 4) {
+            return input;
         }
 
         // Base64 编码的字符串长度必须是 4 的倍数
         if (trimmed.length() % 4 != 0) {
-            return false;
+            return input;
         }
 
         // 检查字符集是否符合 Base64 规范
         if (!BASE64_PATTERN.matcher(trimmed).matches()) {
-            return false;
+            return input;
         }
 
         // 尝试解码，验证是否为有效的 Base64
@@ -161,26 +159,15 @@ public class CliArgumentParser {
 
             // 简单校验解码后的内容是否像 JSON（以 { 或 [ 开头）
             String trimmedDecoded = decodedString.trim();
-            return trimmedDecoded.startsWith("{") || trimmedDecoded.startsWith("[");
+            if (trimmedDecoded.startsWith("{") || trimmedDecoded.startsWith("[")) {
+                log.info("检测到 Base64 编码的配置，已解码");
+                log.debug("解码后的配置内容长度: {}", decodedString.length());
+                return decodedString;
+            }
+            return input;
         } catch (IllegalArgumentException e) {
-            // 不是有效的 Base64 编码
-            return false;
-        }
-    }
-
-    /**
-     * 解码 Base64 字符串
-     *
-     * @param base64String Base64 编码的字符串
-     * @return 解码后的字符串，解码失败返回 null
-     */
-    private static String decodeBase64(String base64String) {
-        try {
-            byte[] decoded = Base64.getDecoder().decode(base64String.trim());
-            return new String(decoded, StandardCharsets.UTF_8);
-        } catch (IllegalArgumentException e) {
-            log.error("Base64 解码失败: {}", e.getMessage());
-            return null;
+            // 不是有效的 Base64 编码，返回原始输入
+            return input;
         }
     }
 }

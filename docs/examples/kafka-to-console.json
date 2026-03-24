@@ -1,49 +1,48 @@
 {
   "job": {
     "name": "kafka-to-console",
-    "mode": "streaming",
-    "parallelism": 1
+    "mode": "stream"
   },
   "sources": [
     {
       "type": "kafka",
-      "outputTable": "pas_plan_declare",
+      "outputTable": "user_events",
       "config": {
-        "bootstrapServers": "172.23.108.33:9092",
+        "bootstrapServers": "127.0.0.1:9092",
         "groupId": "etl-consumer",
         "topics": [
-          "PUDONG_TOPS5_PAS_PLAN_DECLARE_ETL"
+          "test-topic"
         ],
-        "startupMode": "earliest",
+        "startingOffsets": "earliest",
         "schema": {
-          "op": "string",
-          "before": {
-            "PPD_STATUS": "string",
-            "PPD_ID": "string",
-            "PPS_SENDDT": "timestamp"
+          "id": "LONG",
+          "name": "STRING",
+          "hobby": [
+            "STRING"
+          ],
+          "address": {
+            "city": "STRING",
+            "zipcodes": [
+              "INT"
+            ]
           },
-          "after": {
-            "PPD_STATUS": "string",
-            "PPD_ID": "string",
-            "PPS_SENDDT": "timestamp"
-          }
+          "friends": [
+            {
+              "name": "STRING",
+              "age": "INT",
+              "tags": [
+                "STRING"
+              ]
+            }
+          ]
         }
-      }
-    }
-  ],
-  "transforms": [
-    {
-      "type": "sql",
-      "outputTable": "pas_plan_declare_etl",
-      "config": {
-        "sql": "SELECT * FROM pas_plan_declare where op = 'u' and before.PPD_STATUS <> after.PPD_STATUS"
       }
     }
   ],
   "sinks": [
     {
       "type": "console",
-      "inputTable": "pas_plan_declare_etl",
+      "inputTable": "user_events",
       "config": {}
     }
   ]
