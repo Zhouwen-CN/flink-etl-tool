@@ -87,7 +87,7 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
     @Override
     public SourceReader<Row, RangeSplit> createReader(SourceReaderContext readerContext) {
         log.info("创建 SourceReader");
-        var splitReaderSupplier = (Supplier<BaseSplitReader<Row, RangeSplit>>) () ->
+        Supplier<BaseSplitReader<Row, RangeSplit>> splitReaderSupplier = () ->
                 new JdbcSplitReader(jdbcSourceConfig);
         return new JdbcSourceReader(splitReaderSupplier, readerContext);
     }

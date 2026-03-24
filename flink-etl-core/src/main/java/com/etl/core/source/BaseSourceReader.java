@@ -4,11 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.connector.base.source.reader.RecordEmitter;
-import org.apache.flink.connector.base.source.reader.RecordEvaluator;
 import org.apache.flink.connector.base.source.reader.SingleThreadMultiplexSourceReaderBase;
-import org.apache.flink.connector.base.source.reader.fetcher.SingleThreadFetcherManager;
 
-import javax.annotation.Nullable;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -30,11 +27,10 @@ import java.util.function.Supplier;
  *   <li>{@link #onSplitFinished(Map)} - 分片完成回调</li>
  * </ul>
  *
- * @param <E> 原始记录类型（从外部系统读取的原始数据）
- * @param <T> 输出记录类型（最终输出的数据）
+ * @param <E>      原始记录类型（从外部系统读取的原始数据）
+ * @param <T>      输出记录类型（最终输出的数据）
  * @param <SplitT> 分片类型
  * @param <StateT> 分片状态类型
- *
  * @see SingleThreadMultiplexSourceReaderBase
  */
 @Slf4j
@@ -45,9 +41,9 @@ public abstract class BaseSourceReader<E, T, SplitT extends BaseSourceSplit, Sta
      * 构造函数
      *
      * @param splitReaderSupplier 分片读取器供应器
-     * @param recordEmitter 记录发射器
-     * @param config 配置
-     * @param context 读取器上下文
+     * @param recordEmitter       记录发射器
+     * @param config              配置
+     * @param context             读取器上下文
      */
     public BaseSourceReader(
             Supplier<BaseSplitReader<E, SplitT>> splitReaderSupplier,
@@ -65,13 +61,13 @@ public abstract class BaseSourceReader<E, T, SplitT extends BaseSourceSplit, Sta
      * @param config 配置
      * @param context 读取器上下文
      */
-    public BaseSourceReader(
+    /*public BaseSourceReader(
             SingleThreadFetcherManager<E, SplitT> splitFetcherManager,
             RecordEmitter<E, T, StateT> recordEmitter,
             Configuration config,
             SourceReaderContext context) {
         super(splitFetcherManager, recordEmitter, config, context);
-    }
+    }*/
 
     /**
      * 构造函数（完整版本，支持 EOF 记录评估）
@@ -82,14 +78,14 @@ public abstract class BaseSourceReader<E, T, SplitT extends BaseSourceSplit, Sta
      * @param config 配置
      * @param context 读取器上下文
      */
-    public BaseSourceReader(
+    /*public BaseSourceReader(
             SingleThreadFetcherManager<E, SplitT> splitFetcherManager,
             RecordEmitter<E, T, StateT> recordEmitter,
             @Nullable RecordEvaluator<T> eofRecordEvaluator,
             Configuration config,
             SourceReaderContext context) {
         super(splitFetcherManager, recordEmitter, eofRecordEvaluator, config, context);
-    }
+    }*/
 
     /**
      * 启动读取器
@@ -109,7 +105,7 @@ public abstract class BaseSourceReader<E, T, SplitT extends BaseSourceSplit, Sta
      * @param finishedSplitIds 完成的分片 ID 和状态映射
      */
     @Override
-    protected void onSplitFinished(Map<String, StateT> finishedSplitIds){
+    protected void onSplitFinished(Map<String, StateT> finishedSplitIds) {
         // 分片完成时请求新分片
         log.info("分片完成: {}", finishedSplitIds.keySet());
         context.sendSplitRequest();
@@ -129,7 +125,7 @@ public abstract class BaseSourceReader<E, T, SplitT extends BaseSourceSplit, Sta
      * 将状态转换为分片类型
      * 用于检查点恢复
      *
-     * @param splitId 分片 ID
+     * @param splitId    分片 ID
      * @param splitState 分片状态
      * @return 分片
      */

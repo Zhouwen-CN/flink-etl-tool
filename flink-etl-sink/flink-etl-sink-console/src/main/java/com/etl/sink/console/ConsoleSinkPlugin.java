@@ -4,7 +4,6 @@ import com.etl.core.config.SinkConfig;
 import com.etl.core.spi.SinkPlugin;
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.flink.api.common.TaskInfo;
 import org.apache.flink.api.common.functions.RuntimeContext;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.streaming.api.functions.sink.RichSinkFunction;
@@ -17,7 +16,6 @@ import org.apache.flink.types.Row;
 @Slf4j
 @AutoService(SinkPlugin.class)
 public class ConsoleSinkPlugin implements SinkPlugin {
-    private static final long serialVersionUID = 1L;
 
     @Override
     public String getType() {
@@ -53,10 +51,9 @@ public class ConsoleSinkPlugin implements SinkPlugin {
             super.open(parameters);
             // 在 open() 中获取分片信息，只执行一次
             RuntimeContext ctx = getRuntimeContext();
-            TaskInfo taskInfo = ctx.getTaskInfo();
-            this.subtaskIndex = taskInfo.getIndexOfThisSubtask() + 1;
-            this.totalSubtasks = taskInfo.getNumberOfParallelSubtasks();
-            log.info("ConsoleSinkFunction 初始化, subtask[{}/{}]", taskInfo.getIndexOfThisSubtask(), totalSubtasks);
+            this.subtaskIndex = ctx.getIndexOfThisSubtask() + 1;
+            this.totalSubtasks = ctx.getNumberOfParallelSubtasks();
+            log.info("ConsoleSinkFunction 初始化, subtask[{}/{}]", subtaskIndex, totalSubtasks);
         }
 
         @Override

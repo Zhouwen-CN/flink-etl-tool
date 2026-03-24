@@ -17,6 +17,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.HashSet;
@@ -95,7 +96,7 @@ public class HttpSplitReader implements BaseSplitReader<Row, HttpSplit> {
             for (Map.Entry<String, Object> entry : config.getParams().entrySet()) {
                 urlBuilder.append(entry.getKey())
                         .append("=")
-                        .append(java.net.URLEncoder.encode(String.valueOf(entry.getValue()), StandardCharsets.UTF_8))
+                        .append(URLEncoder.encode(String.valueOf(entry.getValue()), "utf-8"))
                         .append("&");
             }
             urlString = urlBuilder.substring(0, urlBuilder.length() - 1);

@@ -23,14 +23,6 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- 运行时 web -->
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-runtime-web</artifactId>
-            <version>${flink.version}</version>
-            <scope>provided</scope>
-        </dependency>
-
         <!-- Source 插件 -->
         <dependency>
             <groupId>com.etl</groupId>

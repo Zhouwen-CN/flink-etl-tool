@@ -4,7 +4,6 @@ import com.etl.core.config.JobConfig;
 import com.etl.core.config.SinkConfig;
 import com.etl.core.config.SourceConfig;
 import com.etl.core.config.TransformConfig;
-import com.etl.core.schema.EtlSchema;
 import com.etl.core.spi.PluginLoader;
 import com.etl.core.spi.SinkPlugin;
 import com.etl.core.spi.SourcePlugin;
@@ -45,7 +44,7 @@ public class JobBuilder {
             String sourceType = sourceConfig.getType();
             SourcePlugin sourcePlugin = PluginLoader.loadSourcePlugin(sourceType);
             Source source = sourcePlugin.createSource(sourceConfig);
-            DataStream<Row> sourceStream = env.fromSource(source, WatermarkStrategy.noWatermarks(), sourceType);
+            DataStream<Row> sourceStream = env.fromSource(source, WatermarkStrategy.noWatermarks(), sourceType + " source");
 
             // DataStream<Row> -> Table
             String sourceOutputTable = sourceConfig.getOutputTable();
@@ -83,10 +82,11 @@ public class JobBuilder {
             }
 
             // Sink 消费 DataStream
-            SinkPlugin sinkPlugin = PluginLoader.loadSinkPlugin(sinkConfig.getType());
+            String sinkType = sinkConfig.getType();
+            SinkPlugin sinkPlugin = PluginLoader.loadSinkPlugin(sinkType);
             SinkFunction<Row> sink = sinkPlugin.createSink(sinkConfig);
-            resultStream.addSink(sink);
-            log.info("Sink 创建成功: {}", sinkConfig.getType());
+            resultStream.addSink(sink).name(sinkType + " sink");
+            log.info("Sink 创建成功: {}", sinkType);
         }
 
         log.info("Flink Job 构建完成");

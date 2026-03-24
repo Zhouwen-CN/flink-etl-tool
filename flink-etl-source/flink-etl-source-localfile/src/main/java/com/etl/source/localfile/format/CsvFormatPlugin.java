@@ -77,7 +77,7 @@ public class CsvFormatPlugin implements FileFormatPlugin {
 
         @Override
         public Iterator<Row> iterator() {
-            return new Iterator<>() {
+            return new Iterator<Row>() {
                 private final Iterator<CSVRecord> csvIterator = parser.iterator();
                 private boolean headerSkipped = false;
 

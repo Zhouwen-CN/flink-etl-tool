@@ -352,9 +352,8 @@ JDBC Sink 支持两种模式：
 
 ## 技术栈
 
-- Java 11
-- Apache Flink 1.19.0
+- Java 1.8
+- Apache Flink 1.15.2
 - Flink Table API（DataStream 与 Table 互转）
-- Jackson 2.15.2 (JSON 解析)
 - SLF4J + Log4j2 (日志)
 - Maven (构建)

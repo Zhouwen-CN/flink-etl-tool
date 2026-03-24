@@ -181,7 +181,7 @@ public class LocalFileSplitEnumerator extends BaseSplitEnumerator<LocalFileSplit
 
     @Override
     public LocalFileEnumCheckpoint snapshotState(long checkpointId) {
-        List<LocalFileSplit> pending = List.copyOf(pendingSplits);
+        List<LocalFileSplit> pending = new ArrayList<>(pendingSplits);
         log.info("创建检查点 {}，待处理分片数: {}", checkpointId, pending.size());
         return new LocalFileEnumCheckpoint(pending);
     }

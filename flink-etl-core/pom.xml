@@ -16,58 +16,6 @@
     <description>核心框架模块</description>
 
     <dependencies>
-        <!-- Flink -->
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-streaming-java</artifactId>
-        </dependency>
-        <!-- Flink clients -->
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-clients</artifactId>
-        </dependency>
-        <!-- Flink Connector Base - 提供 SourceReaderBase 等基础类 -->
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-connector-base</artifactId>
-        </dependency>
-        <!-- Flink Table Common - 提供类型系统支持 -->
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-table-common</artifactId>
-        </dependency>
-        <!-- Flink Table Runtime - 提供 ExecutorFactory 实现 -->
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-table-runtime</artifactId>
-        </dependency>
-        <!-- Flink Table API Java Bridge - 用于 DataStream 和 Table 互转 -->
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-table-api-java-bridge</artifactId>
-        </dependency>
-        <!-- Flink Table Planner Loader - 提供 PlannerFactory 和 ExecutorFactory -->
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-table-planner-loader</artifactId>
-        </dependency>
-
-        <!-- 日志 -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
-        <!-- Log4j2 核心 -->
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-        </dependency>
-        <!-- Log4j2 与 SLF4J 的桥接 -->
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-slf4j-impl</artifactId>
-        </dependency>
-
         <!-- JSONPath 解析 -->
         <dependency>
             <groupId>com.jayway.jsonpath</groupId>

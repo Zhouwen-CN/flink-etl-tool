@@ -31,7 +31,7 @@ public class NamedParameterSqlParser {
     public static ParsedSql parse(String sql) {
         List<String> paramNames = new ArrayList<>();
         Matcher matcher = NAMED_PARAM_PATTERN.matcher(sql);
-        StringBuilder sb = new StringBuilder();
+        StringBuffer sb = new StringBuffer();
 
         while (matcher.find()) {
             paramNames.add(matcher.group(1));

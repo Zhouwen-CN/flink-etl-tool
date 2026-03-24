@@ -116,7 +116,7 @@ public class HttpSource extends AbstractSplitSource<HttpSplit, HttpEnumCheckpoin
     @Override
     public SourceReader<Row, HttpSplit> createReader(SourceReaderContext readerContext) {
         log.info("创建 SourceReader");
-        var splitReaderSupplier = (Supplier<BaseSplitReader<Row, HttpSplit>>) HttpSplitReader::new;
+        Supplier<BaseSplitReader<Row, HttpSplit>> splitReaderSupplier = HttpSplitReader::new;
         return new HttpSourceReader(splitReaderSupplier, readerContext);
     }
 

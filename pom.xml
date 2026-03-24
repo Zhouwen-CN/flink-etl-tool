@@ -15,18 +15,22 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
-        <flink.version>1.19.0</flink.version>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+
+        <flink.version>1.15.2</flink.version>
+        <kafka.connector.version>1.15.2</kafka.connector.version>
+
         <slf4j.version>1.7.36</slf4j.version>
         <log4j2.version>2.20.0</log4j2.version>
+
         <mysql.connector.version>8.0.33</mysql.connector.version>
+        <commons-csv.version>1.10.0</commons-csv.version>
+        <json-path.version>2.9.0</json-path.version>
+
         <junit.version>5.9.3</junit.version>
         <lombok.version>1.18.30</lombok.version>
         <auto-service.version>1.1.1</auto-service.version>
-        <commons-csv.version>1.10.0</commons-csv.version>
-        <json-path.version>2.9.0</json-path.version>
-        <kafka.connector.version>3.3.0-1.19</kafka.connector.version>
     </properties>
 
     <modules>
@@ -39,66 +43,6 @@
 
     <dependencyManagement>
         <dependencies>
-            <!-- Flink 依赖 -->
-            <dependency>
-                <groupId>org.apache.flink</groupId>
-                <artifactId>flink-streaming-java</artifactId>
-                <version>${flink.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.flink</groupId>
-                <artifactId>flink-clients</artifactId>
-                <version>${flink.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.flink</groupId>
-                <artifactId>flink-connector-base</artifactId>
-                <version>${flink.version}</version>
-            </dependency>
-            <!-- Flink Table Common - 类型系统支持 -->
-            <dependency>
-                <groupId>org.apache.flink</groupId>
-                <artifactId>flink-table-common</artifactId>
-                <version>${flink.version}</version>
-            </dependency>
-            <!-- Flink Table API Java Bridge - DataStream 和 Table 互转 -->
-            <dependency>
-                <groupId>org.apache.flink</groupId>
-                <artifactId>flink-table-api-java-bridge</artifactId>
-                <version>${flink.version}</version>
-            </dependency>
-            <!-- Flink Table Runtime - 提供 ExecutorFactory 实现 -->
-            <dependency>
-                <groupId>org.apache.flink</groupId>
-                <artifactId>flink-table-runtime</artifactId>
-                <version>${flink.version}</version>
-            </dependency>
-            <!-- Flink Table Planner Loader - 提供 PlannerFactory 和 ExecutorFactory -->
-            <dependency>
-                <groupId>org.apache.flink</groupId>
-                <artifactId>flink-table-planner-loader</artifactId>
-                <version>${flink.version}</version>
-            </dependency>
-
-            <!-- 日志 -->
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-api</artifactId>
-                <version>${slf4j.version}</version>
-            </dependency>
-            <!-- Log4j2 核心 -->
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-core</artifactId>
-                <version>${log4j2.version}</version>
-            </dependency>
-            <!-- Log4j2 与 SLF4J 的桥接 -->
-            <dependency>
-                <groupId>org.apache.logging.log4j</groupId>
-                <artifactId>log4j-slf4j-impl</artifactId>
-                <version>${log4j2.version}</version>
-            </dependency>
-
             <!-- MySQL 驱动 -->
             <dependency>
                 <groupId>com.mysql</groupId>
@@ -106,13 +50,7 @@
                 <version>${mysql.connector.version}</version>
             </dependency>
 
-            <!-- Google Auto Service - SPI 注解处理器 -->
-            <dependency>
-                <groupId>com.google.auto.service</groupId>
-                <artifactId>auto-service</artifactId>
-                <version>${auto-service.version}</version>
-            </dependency>
-
+            <!-- csv -->
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-csv</artifactId>
@@ -125,17 +63,96 @@
                 <artifactId>json-path</artifactId>
                 <version>${json-path.version}</version>
             </dependency>
-
-            <!-- Flink Kafka Connector -->
-            <dependency>
-                <groupId>org.apache.flink</groupId>
-                <artifactId>flink-connector-kafka</artifactId>
-                <version>${kafka.connector.version}</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
     <dependencies>
+        <!-- Flink 依赖 -->
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-streaming-java</artifactId>
+            <version>${flink.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-clients</artifactId>
+            <version>${flink.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-connector-base</artifactId>
+            <version>${flink.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- Flink Table Common - 类型系统支持 -->
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-table-common</artifactId>
+            <version>${flink.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- Flink Table Runtime - 提供 ExecutorFactory 实现 -->
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-table-runtime</artifactId>
+            <version>${flink.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- 运行时 web -->
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-runtime-web</artifactId>
+            <version>${flink.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Flink Table API Java Bridge - DataStream 和 Table 互转 -->
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-table-api-java-bridge</artifactId>
+            <version>${flink.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- Flink Table Planner Loader - 提供 PlannerFactory 和 ExecutorFactory -->
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-table-planner-loader</artifactId>
+            <version>${flink.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Flink Kafka Connector -->
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-connector-kafka</artifactId>
+            <version>${kafka.connector.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- 日志 -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- Log4j2 核心 -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log4j2.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- Log4j2 与 SLF4J 的桥接 -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j-impl</artifactId>
+            <version>${log4j2.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -158,17 +175,4 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version>
-                <configuration>
-                    <release>11</release>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>

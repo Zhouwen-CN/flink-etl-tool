@@ -134,7 +134,7 @@ public class LocalFileSource extends AbstractSplitSource<LocalFileSplit, LocalFi
         log.info("创建 SourceReader");
 
         // 创建 SplitReader 供应器
-        var splitReaderSupplier = (Supplier<BaseSplitReader<Row, LocalFileSplit>>) () ->
+        Supplier<BaseSplitReader<Row, LocalFileSplit>> splitReaderSupplier = () ->
                 new LocalFileSplitReader(localFileSourceConfig);
 
         // 创建 Reader

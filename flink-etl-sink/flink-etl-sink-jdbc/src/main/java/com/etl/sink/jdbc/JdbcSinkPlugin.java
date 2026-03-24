@@ -24,25 +24,34 @@ public class JdbcSinkPlugin implements SinkPlugin {
     @Override
     public SinkFunction<Row> createSink(SinkConfig config) {
         String url = config.getString("url");
-        String username = config.getString("username");
-        String password = config.getString("password");
-        String table = config.getString("table");
-        String sql = config.getString("sql");
-        int batchSize = config.getInteger("batchSize", getDefaultBatchSize());
-
         // 必要参数校验
         if (url == null) {
             throw new IllegalArgumentException("JDBC Sink 缺少必要配置: url");
         }
+
+        // MySQL 需要添加 useCursorFetch 参数，使 batchSize 生效
+        if (url.contains(":mysql:") && !url.contains("rewriteBatchedStatements=true")) {
+            url = url.contains("?") ? url + "&rewriteBatchedStatements=true" : url + "?rewriteBatchedStatements=true";
+            log.info("MySQL URL 添加 rewriteBatchedStatements 参数");
+        }
+
+        String username = config.getString("username");
         if (username == null) {
             throw new IllegalArgumentException("JDBC Sink 缺少必要配置: username");
         }
+
+        String password = config.getString("password");
         if (password == null) {
             throw new IllegalArgumentException("JDBC Sink 缺少必要配置: password");
         }
+
+        String table = config.getString("table");
+        String sql = config.getString("sql");
         if (table == null && sql == null) {
             throw new IllegalArgumentException("JDBC Sink 需要配置 table 或 sql");
         }
+
+        int batchSize = config.getInteger("batchSize", getDefaultBatchSize());
 
         // table 优先
         JdbcSinkConfig jdbcConfig = JdbcSinkConfig.builder()

@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -54,7 +55,7 @@ public class JdbcSplitEnumerator extends BaseSplitEnumerator<RangeSplit, RangeEn
 
     @Override
     public RangeEnumCheckpoint snapshotState(long checkpointId) {
-        List<RangeSplit> pending = List.copyOf(pendingSplits);
+        List<RangeSplit> pending = new ArrayList<>(pendingSplits);
         log.info("创建检查点 {}，待处理分片数: {}", checkpointId, pending.size());
         return new RangeEnumCheckpoint(pending);
     }

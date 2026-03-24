@@ -9,7 +9,11 @@ import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.CoreOptions;
 import org.apache.flink.configuration.ExecutionOptions;
 import org.apache.flink.configuration.TaskManagerOptions;
+import org.apache.flink.streaming.api.CheckpointingMode;
+import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+
+import java.time.Duration;
 
 /**
  * Job 执行器
@@ -71,6 +75,23 @@ public class JobExecutor {
         }
 
         env.configure(configuration);
+
+        // 开启检查点
+        env.enableCheckpointing(Duration.ofMinutes(3).toMillis(), CheckpointingMode.AT_LEAST_ONCE);
+        CheckpointConfig checkpointConfig = env.getCheckpointConfig();
+        // 检查点存储位置（平台设置）
+        // checkpointConfig.setCheckpointStorage("file:///D:\\tmp\\flink\\" + jobName);
+        // 检查点超时
+        checkpointConfig.setCheckpointTimeout(Duration.ofMinutes(3).toMillis());
+        // 上一个checkpoint结束之后,多久才能发出另一个checkpoint
+        checkpointConfig.setMinPauseBetweenCheckpoints(500L);
+        // 检查点最大并发数量
+        checkpointConfig.setMaxConcurrentCheckpoints(1);
+        // 可容忍检查点失败次数
+        checkpointConfig.setTolerableCheckpointFailureNumber(3);
+        // 取消作业时,是否保留checkpoint数据
+        checkpointConfig.setExternalizedCheckpointCleanup(CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
+
         return env;
     }
 }
