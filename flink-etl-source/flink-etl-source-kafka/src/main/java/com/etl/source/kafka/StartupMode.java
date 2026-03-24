@@ -1,44 +1,44 @@
 package com.etl.source.kafka;
 
+import lombok.Getter;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
+import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 
 /**
  * Kafka Source 启动模式枚举
  */
+@Getter
 public enum StartupMode {
-    /** 从最早的记录开始消费 */
+    /** 从最早位点开始消费 */
     EARLIEST("earliest") {
         @Override
         public OffsetsInitializer toOffsetsInitializer() {
             return OffsetsInitializer.earliest();
         }
     },
-    /** 从最新的记录开始消费 */
+    /** 从最末尾位点开始消费 */
     LATEST("latest") {
         @Override
         public OffsetsInitializer toOffsetsInitializer() {
             return OffsetsInitializer.latest();
         }
     },
-    /** 从已提交的 offset 开始消费 */
+    /** 从消费组提交的位点开始消费，如果提交位点不存在，使用最早位点 */
     COMMITTED("committed") {
         @Override
         public OffsetsInitializer toOffsetsInitializer() {
-            return OffsetsInitializer.committedOffsets();
+            return OffsetsInitializer.committedOffsets(OffsetResetStrategy.EARLIEST);
         }
     };
 
+    /**
+     * -- GETTER --
+     *  获取配置值
+     */
     private final String configValue;
 
     StartupMode(String configValue) {
         this.configValue = configValue;
-    }
-
-    /**
-     * 获取配置值
-     */
-    public String getConfigValue() {
-        return configValue;
     }
 
     /**
@@ -53,9 +53,6 @@ public enum StartupMode {
      * @return 对应的启动模式，如果未找到则返回 EARLIEST
      */
     public static StartupMode fromConfigValue(String value) {
-        if (value == null) {
-            return EARLIEST;
-        }
         for (StartupMode mode : values()) {
             if (mode.configValue.equalsIgnoreCase(value)) {
                 return mode;
@@ -71,9 +68,6 @@ public enum StartupMode {
      * @return 是否有效
      */
     public static boolean isValid(String value) {
-        if (value == null) {
-            return false;
-        }
         for (StartupMode mode : values()) {
             if (mode.configValue.equalsIgnoreCase(value)) {
                 return true;

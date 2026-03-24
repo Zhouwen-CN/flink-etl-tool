@@ -82,7 +82,7 @@ public class KafkaSourceConfig implements Serializable {
 
     /**
      * 解析启动模式配置
-     * 优先使用 startupMode，兼容旧的 startingOffsets
+     * 优先使用 startupMode
      */
     private static StartupMode parseStartupMode(SourceConfig config) {
         // 优先读取新配置名
@@ -93,16 +93,6 @@ public class KafkaSourceConfig implements Serializable {
                         "startupMode 必须是 earliest、latest 或 committed，当前值: " + startupModeValue);
             }
             return StartupMode.fromConfigValue(startupModeValue);
-        }
-
-        // 兼容旧配置名 startingOffsets
-        String legacyValue = config.getString("startingOffsets");
-        if (legacyValue != null) {
-            if (!StartupMode.isValid(legacyValue)) {
-                throw new IllegalArgumentException(
-                        "startingOffsets 必须是 earliest、latest 或 committed，当前值: " + legacyValue);
-            }
-            return StartupMode.fromConfigValue(legacyValue);
         }
 
         // 默认值
