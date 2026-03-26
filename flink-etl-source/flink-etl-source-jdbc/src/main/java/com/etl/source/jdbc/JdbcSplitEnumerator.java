@@ -1,6 +1,7 @@
 package com.etl.source.jdbc;
 
 import com.etl.core.source.BaseSplitEnumerator;
+import com.etl.source.jdbc.SplitStrategy;
 import com.etl.source.jdbc.config.JdbcSourceConfig;
 import com.etl.source.jdbc.utils.JdbcSplitHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -40,14 +41,27 @@ public class JdbcSplitEnumerator extends BaseSplitEnumerator<RangeSplit, RangeEn
     public void start() {
         log.info("JDBC SplitEnumerator 启动，开始计算分片");
 
-        List<RangeSplit> splits = JdbcSplitHelper.calculateNumericSplits(
-                jdbcSourceConfig.getUrl(),
-                jdbcSourceConfig.getUsername(),
-                jdbcSourceConfig.getPassword(),
-                jdbcSourceConfig.getTable(),
-                jdbcSourceConfig.getSql(),
-                jdbcSourceConfig.getSplitColumn(),
-                context.currentParallelism());
+        List<RangeSplit> splits;
+
+        // 根据分片策略决定分片方式
+        if (jdbcSourceConfig.getSplitStrategy() == SplitStrategy.FULL_TABLE_SCAN) {
+            // 全表扫描模式，生成单个分片
+            log.warn("使用单分片全表扫描模式");
+            splits = JdbcSplitHelper.createFullTableScanSplits(
+                    jdbcSourceConfig.getUrl(),
+                    jdbcSourceConfig.getTable(),
+                    jdbcSourceConfig.getSql());
+        } else {
+            // 数值范围分片模式
+            splits = JdbcSplitHelper.calculateNumericSplits(
+                    jdbcSourceConfig.getUrl(),
+                    jdbcSourceConfig.getUsername(),
+                    jdbcSourceConfig.getPassword(),
+                    jdbcSourceConfig.getTable(),
+                    jdbcSourceConfig.getSql(),
+                    jdbcSourceConfig.getSplitColumn(),
+                    context.currentParallelism());
+        }
 
         addPendingSplits(splits);
         log.info("JDBC SplitEnumerator 启动完成，分片数: {}", splits.size());
