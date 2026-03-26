@@ -6,33 +6,36 @@ import lombok.Getter;
 
 
 /**
- * 范围分片
- * 表示一个数据范围，如 [1, 10000]
+ * JDBC 分片
+ * 存储分片 ID 和该分片的查询 SQL
  *
- * <p>实现了 {@link BaseSourceSplit} 接口，支持序列化和状态管理
+ * <p>设计说明：
+ * <ul>
+ *   <li>直接存储查询 SQL，职责清晰（Enumerator 负责生成 SQL，Reader 只执行）</li>
+ *   <li>支持任意复杂的分片条件，便于扩展新分片类型</li>
+ *   <li>分片 ID 用于状态管理和调试</li>
+ * </ul>
  */
 @Getter
 public class RangeSplit implements BaseSourceSplit {
 
     private static final long serialVersionUID = DefaultSplitSerializer.VERSION;
 
+    /** 分片 ID，用于状态管理和调试 */
     private final String splitId;
-    private final String columnName;
-    private final long start;
-    private final long end;
+
+    /** 该分片的查询 SQL */
+    private final String querySql;
 
     /**
      * 构造函数
      *
-     * @param columnName 分片列名
-     * @param start 起始值（包含）
-     * @param end 结束值（包含）
+     * @param splitId  分片 ID
+     * @param querySql 该分片的查询 SQL
      */
-    public RangeSplit(String columnName, long start, long end) {
-        this.columnName = columnName;
-        this.start = start;
-        this.end = end;
-        this.splitId = columnName + "_" + start + "_" + end;
+    public RangeSplit(String splitId, String querySql) {
+        this.splitId = splitId;
+        this.querySql = querySql;
     }
 
     @Override
@@ -40,23 +43,11 @@ public class RangeSplit implements BaseSourceSplit {
         return splitId;
     }
 
-    /**
-     * 获取分片包含的记录数量
-     *
-     * @return 记录数量
-     */
-    public long getRecordCount() {
-        return end - start + 1;
-    }
-
     @Override
     public String toString() {
         return "RangeSplit{" +
                 "splitId='" + splitId + '\'' +
-                ", columnName='" + columnName + '\'' +
-                ", start=" + start +
-                ", end=" + end +
-                ", recordCount=" + getRecordCount() +
+                ", querySql='" + querySql + '\'' +
                 '}';
     }
 }

@@ -92,7 +92,12 @@ public final class JdbcSplitHelper {
         long currentStart = min;
         for (int i = 0; i < actualSplitCount && currentStart <= max; i++) {
             long currentEnd = Math.min(currentStart + splitSize - 1, max);
-            splits.add(new RangeSplit(splitColumn, currentStart, currentEnd));
+
+            // 生成该分片的查询 SQL
+            String querySql = buildSplitQuery(url, table, sql, splitColumn, currentStart, currentEnd);
+            String splitId = splitColumn + "_" + currentStart + "_" + currentEnd;
+            splits.add(new RangeSplit(splitId, querySql));
+
             currentStart = currentEnd + 1;
         }
 

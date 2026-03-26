@@ -16,9 +16,6 @@ public class RangeSplitState extends BaseSplitState<RangeSplit> {
 
     private static final long serialVersionUID = 1L;
 
-    /** 当前读取位置，用于断点续读 */
-    private long currentPosition;
-
     /**
      * 构造函数
      *
@@ -26,14 +23,12 @@ public class RangeSplitState extends BaseSplitState<RangeSplit> {
      */
     public RangeSplitState(RangeSplit split) {
         super(split);
-        this.currentPosition = split.getStart();
     }
 
     @Override
     public String toString() {
         return "RangeSplitState{" +
                 "split=" + getSplit() +
-                ", currentPosition=" + currentPosition +
                 ", recordsRead=" + getRecordsRead() +
                 '}';
     }
