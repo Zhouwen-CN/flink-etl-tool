@@ -1,5 +1,6 @@
 package com.etl.source.jdbc.config;
 
+import com.etl.source.jdbc.SplitStrategy;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -23,8 +24,10 @@ public class JdbcSourceConfig implements Serializable {
     private final String table;
     /** 自定义 SQL */
     private final String sql;
-    /** 分片列名 */
+    /** 分片列名（可选），不配置则使用单分片全表扫描模式 */
     private final String splitColumn;
+    /** 分片策略，根据 splitColumn 是否配置决定 */
+    private final SplitStrategy splitStrategy;
     /** 批大小，默认100 */
     private final Integer batchSize;
     /** 查询超时 */
