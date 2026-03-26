@@ -1,4 +1,6 @@
-package com.etl.source.jdbc;
+package com.etl.source.jdbc.enums;
+
+import lombok.Getter;
 
 import java.sql.Types;
 
@@ -37,12 +39,28 @@ public enum SplitStrategy {
      */
     FULL_TABLE_SCAN("全表扫描", new int[]{});
 
+    @Getter
     private final String description;
     private final int[] supportedJdbcTypes;
 
     SplitStrategy(String description, int[] supportedJdbcTypes) {
         this.description = description;
         this.supportedJdbcTypes = supportedJdbcTypes;
+    }
+
+    /**
+     * 根据 JDBC 类型查找匹配的分片策略
+     *
+     * @param jdbcType JDBC 类型常量（来自 java.sql.Types）
+     * @return 匹配的分片策略，如果没有匹配则返回 null
+     */
+    public static SplitStrategy fromJdbcType(int jdbcType) {
+        for (SplitStrategy strategy : values()) {
+            if (strategy.supports(jdbcType)) {
+                return strategy;
+            }
+        }
+        return null;
     }
 
     /**
@@ -72,7 +90,4 @@ public enum SplitStrategy {
         return "TINYINT, SMALLINT, INTEGER, BIGINT, REAL, FLOAT, DOUBLE, DECIMAL, NUMERIC";
     }
 
-    public String getDescription() {
-        return description;
-    }
 }

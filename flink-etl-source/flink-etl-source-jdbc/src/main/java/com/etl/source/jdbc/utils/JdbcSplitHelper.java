@@ -2,7 +2,7 @@ package com.etl.source.jdbc.utils;
 
 import com.etl.core.utils.SqlUtils;
 import com.etl.source.jdbc.RangeSplit;
-import com.etl.source.jdbc.SplitStrategy;
+import com.etl.source.jdbc.enums.SplitStrategy;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.*;
@@ -163,34 +163,5 @@ public final class JdbcSplitHelper {
             querySql = "SELECT * FROM (" + sql + ") AS t";
         }
         return Collections.singletonList(new RangeSplit("full_table_scan", querySql));
-    }
-
-    /**
-     * 校验分片列类型是否支持分片
-     *
-     * @param url         数据库连接 URL
-     * @param username    用户名
-     * @param password    密码
-     * @param table       表名（可能为 null）
-     * @param sql         自定义 SQL（可能为 null）
-     * @param splitColumn 分片列名
-     * @param strategy    分片策略
-     * @throws IllegalArgumentException 如果分片列类型不支持
-     */
-    public static void validateSplitColumnType(String url, String username, String password,
-                                                String table, String sql, String splitColumn,
-                                                SplitStrategy strategy) {
-        int jdbcType = SqlUtils.getColumnType(table, sql, splitColumn, url, username, password);
-
-        if (!strategy.supports(jdbcType)) {
-            throw new IllegalArgumentException(
-                    String.format("分片列 '%s' 的类型不支持 %s。支持的类型: %s",
-                            splitColumn,
-                            strategy.getDescription(),
-                            strategy.getSupportedTypeNames())
-            );
-        }
-
-        log.info("分片列 '{}' 类型校验通过，使用策略: {}", splitColumn, strategy.getDescription());
     }
 }

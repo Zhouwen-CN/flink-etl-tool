@@ -7,7 +7,7 @@ import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
 import com.etl.core.utils.SqlUtils;
 import com.etl.source.jdbc.config.JdbcSourceConfig;
-import com.etl.source.jdbc.utils.JdbcSplitHelper;
+import com.etl.source.jdbc.enums.SplitStrategy;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.connector.source.*;
@@ -51,18 +51,16 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
             log.warn("未配置 splitColumn，将使用单分片全表扫描模式，无法并行读取。建议配置 splitColumn 以启用并行分片读取。");
             splitStrategy = SplitStrategy.FULL_TABLE_SCAN;
         } else {
-            // 配置了 splitColumn，校验类型并使用数值分片策略
-            splitStrategy = SplitStrategy.NUMERIC;
-
-            // 校验分片列类型
-            JdbcSplitHelper.validateSplitColumnType(
-                    url,
-                    username,
-                    password,
-                    table,
-                    sql,
-                    splitColumn,
-                    splitStrategy);
+            // 配置了 splitColumn，自动匹配分片策略
+            int jdbcType = SqlUtils.getColumnType(table, sql, splitColumn, url, username, password);
+            splitStrategy = SplitStrategy.fromJdbcType(jdbcType);
+            // 如果没有匹配的策略，抛出明确的错误
+            if (splitStrategy == null) {
+                throw new IllegalArgumentException(
+                        String.format("分片列 '%s' 的 JDBC 类型(%d)不支持分片。支持的类型: %s",
+                                splitColumn, jdbcType, SplitStrategy.NUMERIC.getSupportedTypeNames()));
+            }
+            log.info("分片列 '{}' 使用策略: {}", splitColumn, splitStrategy.getDescription());
         }
 
         Integer batchSize = config.getInteger("batchSize", super.getDefaultBatchSize());
