@@ -40,7 +40,7 @@ public class JdbcSplitEnumerator extends BaseSplitEnumerator<RangeSplit, RangeEn
     public void start() {
         log.info("JDBC SplitEnumerator 启动，开始计算分片");
 
-        List<RangeSplit> splits = JdbcSplitHelper.calculateSplits(
+        List<RangeSplit> splits = JdbcSplitHelper.calculateNumericSplits(
                 jdbcSourceConfig.getUrl(),
                 jdbcSourceConfig.getUsername(),
                 jdbcSourceConfig.getPassword(),

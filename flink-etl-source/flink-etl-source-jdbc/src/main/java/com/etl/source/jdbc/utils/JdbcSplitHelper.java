@@ -2,10 +2,12 @@ package com.etl.source.jdbc.utils;
 
 import com.etl.core.utils.SqlUtils;
 import com.etl.source.jdbc.RangeSplit;
+import com.etl.source.jdbc.SplitStrategy;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -31,9 +33,9 @@ public final class JdbcSplitHelper {
      * @param parallelism 并行度（期望的分片数量）
      * @return 分片列表
      */
-    public static List<RangeSplit> calculateSplits(String url, String username, String password,
-                                                   String table, String sql, String splitColumn,
-                                                   int parallelism) {
+    public static List<RangeSplit> calculateNumericSplits(String url, String username, String password,
+                                                          String table, String sql, String splitColumn,
+                                                          int parallelism) {
         // 1. 查询分片列范围
         String rangeQuery = buildRangeQuery(
                 url,
@@ -143,5 +145,52 @@ public final class JdbcSplitHelper {
         } else {
             return String.format("SELECT * FROM (%s) AS t WHERE %s BETWEEN %d AND %d", sql, splitColumn, start, end);
         }
+    }
+
+    /**
+     * 创建全表扫描分片
+     *
+     * @param url    数据库连接 URL（用于标识符转义）
+     * @param table  表名（可能为 null）
+     * @param sql    自定义 SQL（可能为 null）
+     * @return 包含单个全表扫描分片的列表
+     */
+    public static List<RangeSplit> createFullTableScanSplits(String url, String table, String sql) {
+        String querySql;
+        if (table != null) {
+            querySql = "SELECT * FROM " + SqlUtils.quoteIdentifier(table, url);
+        } else {
+            querySql = "SELECT * FROM (" + sql + ") AS t";
+        }
+        return Collections.singletonList(new RangeSplit("full_table_scan", querySql));
+    }
+
+    /**
+     * 校验分片列类型是否支持分片
+     *
+     * @param url         数据库连接 URL
+     * @param username    用户名
+     * @param password    密码
+     * @param table       表名（可能为 null）
+     * @param sql         自定义 SQL（可能为 null）
+     * @param splitColumn 分片列名
+     * @param strategy    分片策略
+     * @throws IllegalArgumentException 如果分片列类型不支持
+     */
+    public static void validateSplitColumnType(String url, String username, String password,
+                                                String table, String sql, String splitColumn,
+                                                SplitStrategy strategy) {
+        int jdbcType = SqlUtils.getColumnType(table, sql, splitColumn, url, username, password);
+
+        if (!strategy.supports(jdbcType)) {
+            throw new IllegalArgumentException(
+                    String.format("分片列 '%s' 的类型不支持 %s。支持的类型: %s",
+                            splitColumn,
+                            strategy.getDescription(),
+                            strategy.getSupportedTypeNames())
+            );
+        }
+
+        log.info("分片列 '{}' 类型校验通过，使用策略: {}", splitColumn, strategy.getDescription());
     }
 }
