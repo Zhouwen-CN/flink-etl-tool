@@ -1,9 +1,12 @@
 package com.etl.sink.jdbc.config;
 
+import com.etl.core.dialect.JdbcDialect;
+import com.etl.core.dialect.WriteMode;
 import lombok.Builder;
 import lombok.Getter;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * JDBC Sink 配置
@@ -25,4 +28,10 @@ public class JdbcSinkConfig implements Serializable {
     private final String sql;
     /** 批量写入大小，默认 100 */
     private final Integer batchSize;
+    /** 写入模式：INSERT 或 UPSERT */
+    private final WriteMode mode;
+    /** Upsert 模式下的主键/唯一键字段列表 */
+    private final List<String> keyFields;
+    /** 数据库方言 */
+    private final JdbcDialect dialect;
 }
