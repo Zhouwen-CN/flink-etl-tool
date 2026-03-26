@@ -1,6 +1,7 @@
 package com.etl.sink.jdbc;
 
-import com.etl.core.utils.SqlUtils;
+import com.etl.core.dialect.JdbcDialect;
+import com.etl.core.dialect.WriteMode;
 import com.etl.sink.jdbc.config.JdbcSinkConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.configuration.Configuration;
@@ -81,19 +82,25 @@ public class JdbcSinkFunction extends RichSinkFunction<Row> {
     private void initStatement(Row row) throws SQLException {
         // table 优先
         if (config.getTable() != null) {
-            // table 模式：从 Row 字段名生成 INSERT SQL
+            // table 模式：从 Row 字段名生成 SQL
             Set<String> fieldNames = row.getFieldNames(true);
             if (fieldNames == null || fieldNames.isEmpty()) {
                 throw new IllegalStateException("Row 没有字段名信息，请使用 Row.withNames()");
             }
             columns = fieldNames.toArray(new String[0]);
-            String sql = SqlUtils.getInsertSql(
-                    config.getUrl(),
-                    config.getTable(),
-                    columns
-            );
+
+            String sql;
+            JdbcDialect dialect = config.getDialect();
+            if (config.getMode() == WriteMode.UPSERT) {
+                // Upsert 模式
+                sql = dialect.getUpsertSql(config.getTable(), columns, config.getKeyFields());
+                log.info("JDBC Sink upsert 模式: table={}, keyFields={}", config.getTable(), config.getKeyFields());
+            } else {
+                // Insert 模式
+                sql = dialect.getInsertSql(config.getTable(), columns);
+                log.info("JDBC Sink insert 模式: table={}, columns={}", config.getTable(), Arrays.toString(columns));
+            }
             statement = connection.prepareStatement(sql);
-            log.info("JDBC Sink table 模式: table={}, columns={}", config.getTable(), Arrays.toString(columns));
         } else {
             // sql 模式：解析具名占位符
             NamedParameterSqlParser.ParsedSql parsed = NamedParameterSqlParser.parse(config.getSql());
