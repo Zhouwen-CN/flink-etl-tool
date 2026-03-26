@@ -499,6 +499,8 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 | `password` | 是 | - | 数据库密码 |
 | `table` | 条件必填 | - | 目标表名。与 `sql` 二选一，优先 |
 | `sql` | 条件必填 | - | 自定义 SQL，支持具名占位符 `:paramName` |
+| `mode` | 否 | `insert` | 写入模式：`insert`（插入）或 `upsert`（存在则更新） |
+| `keyFields` | upsert 必填 | - | Upsert 模式的主键/唯一键字段，多个字段用逗号分隔 |
 | `batchSize` | 否 | `100` | 批量写入大小 |
 
 #### 两种模式
@@ -544,6 +546,32 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
     }
   }
 }
+```
+
+**table 模式 upsert（MySQL）：**
+
+```json
+{
+  "sink": {
+    "type": "jdbc",
+    "inputTable": "output_data",
+    "config": {
+      "url": "jdbc:mysql://localhost:3306/mydb",
+      "username": "root",
+      "password": "password",
+      "table": "user_table",
+      "mode": "upsert",
+      "keyFields": "id",
+      "batchSize": 100
+    }
+  }
+}
+```
+
+生成的 SQL：
+```sql
+INSERT INTO `user_table` (`id`, `name`, `email`) VALUES (?, ?, ?)
+ON DUPLICATE KEY UPDATE `name`=VALUES(`name`), `email`=VALUES(`email`)
 ```
 
 #### 具名占位符说明
