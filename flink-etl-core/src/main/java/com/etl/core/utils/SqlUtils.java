@@ -96,4 +96,41 @@ public final class SqlUtils {
         return String.format("INSERT INTO %s (%s) VALUES (%s)",
                 SqlUtils.quoteIdentifier(table, url), colList, placeholders);
     }
+
+    /**
+     * 获取指定列的 JDBC 类型
+     *
+     * @param table       表名（可能为 null）
+     * @param sql         自定义 SQL（可能为 null）
+     * @param columnName  列名
+     * @param url         数据库连接 URL
+     * @param username    用户名
+     * @param password    密码
+     * @return JDBC 类型常量（来自 java.sql.Types）
+     * @throws RuntimeException 如果列不存在或查询失败
+     */
+    public static int getColumnType(String table, String sql, String columnName,
+                                    String url, String username, String password) {
+        // 构建查询语句
+        String sampleQuery;
+        if (table != null) {
+            sampleQuery = "SELECT " + quoteIdentifier(columnName, url) + " FROM " + table + " WHERE 1=0";
+        } else {
+            sampleQuery = "SELECT " + quoteIdentifier(columnName, url) + " FROM (" + sql + ") AS t WHERE 1=0";
+        }
+
+        try (Connection conn = DriverManager.getConnection(url, username, password);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sampleQuery)) {
+
+            ResultSetMetaData metaData = rs.getMetaData();
+            if (metaData.getColumnCount() < 1) {
+                throw new RuntimeException("无法获取列 '" + columnName + "' 的类型信息");
+            }
+            return metaData.getColumnType(1);
+
+        } catch (SQLException e) {
+            throw new RuntimeException("获取列 '" + columnName + "' 的类型失败: " + e.getMessage(), e);
+        }
+    }
 }
