@@ -1,5 +1,6 @@
 package com.etl.source.jdbc.config;
 
+import com.etl.core.dialect.JdbcDialect;
 import com.etl.source.jdbc.enums.SplitStrategy;
 import lombok.Builder;
 import lombok.Getter;
@@ -32,4 +33,6 @@ public class JdbcSourceConfig implements Serializable {
     private final Integer batchSize;
     /** 查询超时 */
     private final Integer queryTimeout;
+    /** 数据库方言 */
+    private final JdbcDialect dialect;
 }

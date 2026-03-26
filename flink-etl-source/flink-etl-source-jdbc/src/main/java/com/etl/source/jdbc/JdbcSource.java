@@ -1,6 +1,8 @@
 package com.etl.source.jdbc;
 
 import com.etl.core.config.SourceConfig;
+import com.etl.core.dialect.JdbcDialect;
+import com.etl.core.dialect.JdbcDialects;
 import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseSplitReader;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
@@ -25,17 +27,16 @@ import java.util.function.Supplier;
 public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpoint> {
 
     private final JdbcSourceConfig jdbcSourceConfig;
+    private final JdbcDialect dialect;
 
     public JdbcSource(SourceConfig config) {
         super(config);
         String url = config.getString("url");
         Preconditions.checkNotNull(url, "url is null");
 
-        // MySQL 需要添加 useCursorFetch 参数，使 batchSize 生效
-        if (url.contains(":mysql:") && !url.contains("useCursorFetch=true")) {
-            url = url.contains("?") ? url + "&useCursorFetch=true" : url + "?useCursorFetch=true";
-            log.info("MySQL URL 添加 useCursorFetch 参数");
-        }
+        // 使用 Dialect 包装 URL
+        this.dialect = JdbcDialects.get(url);
+        url = dialect.wrapUrl(url);
 
         String username = config.getString("username");
         String password = config.getString("password");
@@ -78,6 +79,7 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
                 .splitStrategy(splitStrategy)
                 .batchSize(batchSize)
                 .queryTimeout(queryTimeout)
+                .dialect(dialect)
                 .build();
 
         log.info("创建 JdbcSource: {}", this.jdbcSourceConfig);
