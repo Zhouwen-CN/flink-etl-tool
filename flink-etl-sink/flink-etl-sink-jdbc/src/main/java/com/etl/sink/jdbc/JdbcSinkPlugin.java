@@ -70,11 +70,10 @@ public class JdbcSinkPlugin implements SinkPlugin {
         // 解析主键字段
         List<String> keyFields = Collections.emptyList();
         if (mode == WriteMode.UPSERT) {
-            String keyFieldsStr = config.getString("keyFields");
-            if (keyFieldsStr == null || keyFieldsStr.isEmpty()) {
+            keyFields = config.getList("keyFields");
+            if (keyFields == null || keyFields.isEmpty()) {
                 throw new IllegalArgumentException("UPSERT 模式需要配置 keyFields（主键/唯一键字段）");
             }
-            keyFields = Arrays.asList(keyFieldsStr.split(","));
         }
 
         // table 模式检查 upsert 支持

@@ -110,4 +110,25 @@ public abstract class BaseConfig implements Serializable {
         }
         return Boolean.parseBoolean(String.valueOf(value));
     }
+
+    /**
+     * 获取列表类型的配置值
+     *
+     * @param key 配置键
+     * @return 配置值列表
+     */
+    @SuppressWarnings("unchecked")
+    public java.util.List<String> getList(String key) {
+        if (config == null) {
+            return null;
+        }
+        Object value = config.get(key);
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof java.util.List) {
+            return (java.util.List<String>) value;
+        }
+        throw new IllegalArgumentException("配置项 '" + key + "' 不是列表类型");
+    }
 }
