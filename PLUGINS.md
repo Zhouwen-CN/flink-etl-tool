@@ -33,7 +33,7 @@
 | `password` | 是 | - | 数据库密码 |
 | `table` | 条件必填 | - | 表名。与 `sql` 二选一，优先 |
 | `sql` | 条件必填 | - | 自定义查询 SQL。与 `table` 二选一 |
-| `splitColumn` | 是 | - | 分片列名，通常为主键列 |
+| `splitColumn` | 否 | - | 分片列名，支持数值类型（TINYINT/SMALLINT/INT/BIGINT/FLOAT/DOUBLE/DECIMAL）。不配置则使用单分片全表扫描 |
 | `batchSize` | 否 | 100 | 批量读取大小 |
 | `queryTimeout` | 否 | 无限制 | 查询超时时间（秒） |
 | `schema` | 否 | 自动推断 | Schema 定义，不配置则从数据库元数据自动推断 |
@@ -77,6 +77,29 @@
   }
 }
 ```
+
+**无分片列配置（单线程全表扫描）：**
+
+```json
+{
+  "source": {
+    "type": "jdbc",
+    "outputTable": "users",
+    "config": {
+      "url": "jdbc:mysql://localhost:3306/mydb",
+      "username": "root",
+      "password": "password",
+      "table": "users",
+      "batchSize": 1000
+    }
+  }
+}
+```
+
+> **注意：**
+> - 未配置 `splitColumn` 时将使用单分片全表扫描模式，无法并行读取数据
+> - 对于大数据量表，建议配置 `splitColumn` 以启用并行分片读取
+> - `splitColumn` 仅支持数值类型（TINYINT, SMALLINT, INT, BIGINT, REAL, FLOAT, DOUBLE, DECIMAL, NUMERIC），配置非数值类型列会报错
 
 #### 分片说明
 
