@@ -7,6 +7,7 @@ import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
 import com.etl.core.utils.SqlUtils;
 import com.etl.source.jdbc.config.JdbcSourceConfig;
+import com.etl.source.jdbc.utils.JdbcSplitHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.connector.source.*;
@@ -43,7 +44,26 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
         String sql = config.getString("sql");
 
         String splitColumn = config.getString("splitColumn");
-        Preconditions.checkNotNull(splitColumn, "splitColumn is null");
+        SplitStrategy splitStrategy;
+
+        if (splitColumn == null) {
+            // 未配置 splitColumn，使用全表扫描模式
+            log.warn("未配置 splitColumn，将使用单分片全表扫描模式，无法并行读取。建议配置 splitColumn 以启用并行分片读取。");
+            splitStrategy = SplitStrategy.FULL_TABLE_SCAN;
+        } else {
+            // 配置了 splitColumn，校验类型并使用数值分片策略
+            splitStrategy = SplitStrategy.NUMERIC;
+
+            // 校验分片列类型
+            JdbcSplitHelper.validateSplitColumnType(
+                    url,
+                    username,
+                    password,
+                    table,
+                    sql,
+                    splitColumn,
+                    splitStrategy);
+        }
 
         Integer batchSize = config.getInteger("batchSize", super.getDefaultBatchSize());
         Preconditions.checkArgument(batchSize > 0, "batchSize must be greater than 0");
@@ -57,6 +77,7 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
                 .table(table)
                 .sql(sql)
                 .splitColumn(splitColumn)
+                .splitStrategy(splitStrategy)
                 .batchSize(batchSize)
                 .queryTimeout(queryTimeout)
                 .build();
