@@ -2,6 +2,9 @@ package com.etl.core.dialect;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.ServiceLoader;
 
 /**
@@ -11,7 +14,22 @@ import java.util.ServiceLoader;
 @Slf4j
 public final class JdbcDialects {
 
+    private static final List<JdbcDialect> DIALECTS = loadDialects();
+
     private JdbcDialects() {}
+
+    private static List<JdbcDialect> loadDialects() {
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        if (classLoader == null) {
+            classLoader = JdbcDialects.class.getClassLoader();
+        }
+
+        List<JdbcDialect> list = new ArrayList<>();
+        for (JdbcDialect dialect : ServiceLoader.load(JdbcDialect.class, classLoader)) {
+            list.add(dialect);
+        }
+        return Collections.unmodifiableList(list);
+    }
 
     /**
      * 根据 JDBC URL 获取对应的 Dialect
@@ -24,9 +42,7 @@ public final class JdbcDialects {
             throw new IllegalArgumentException("JDBC URL 不能为空");
         }
 
-        // 使用 SPI 加载所有 Dialect 实现
-        ServiceLoader<JdbcDialect> loader = ServiceLoader.load(JdbcDialect.class);
-        for (JdbcDialect dialect : loader) {
+        for (JdbcDialect dialect : DIALECTS) {
             if (dialect.acceptsUrl(url)) {
                 log.debug("URL {} 匹配 Dialect: {}", url, dialect.getName());
                 return dialect;
@@ -34,23 +50,5 @@ public final class JdbcDialects {
         }
 
         throw new IllegalArgumentException("不支持的数据库类型，URL: " + url);
-    }
-
-    /**
-     * 检查 URL 是否被支持
-     * @param url JDBC 连接 URL
-     * @return 是否支持
-     */
-    public static boolean isSupported(String url) {
-        if (url == null || url.isEmpty()) {
-            return false;
-        }
-        ServiceLoader<JdbcDialect> loader = ServiceLoader.load(JdbcDialect.class);
-        for (JdbcDialect dialect : loader) {
-            if (dialect.acceptsUrl(url)) {
-                return true;
-            }
-        }
-        return false;
     }
 }

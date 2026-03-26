@@ -4,7 +4,9 @@ import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -27,14 +29,19 @@ public class MySQLDialect implements JdbcDialect {
 
     @Override
     public String wrapUrl(String url) {
-        // MySQL 需要添加 useCursorFetch 参数，使 batchSize 生效
-        if (url != null && !url.contains("useCursorFetch=true")) {
-            url = url.contains("?") ? url + "&useCursorFetch=true" : url + "?useCursorFetch=true";
+        if (url == null) {
+            return null;
+        }
+
+        boolean hasQueryParams = url.contains("?");
+
+        if (!url.contains("useCursorFetch=true")) {
+            url = hasQueryParams ? url + "&useCursorFetch=true" : url + "?useCursorFetch=true";
+            hasQueryParams = true;
             log.info("MySQL URL 添加 useCursorFetch 参数");
         }
-        // 添加 rewriteBatchedStatements 参数，优化批量写入
-        if (url != null && !url.contains("rewriteBatchedStatements=true")) {
-            url = url.contains("?") ? url + "&rewriteBatchedStatements=true" : url + "?rewriteBatchedStatements=true";
+        if (!url.contains("rewriteBatchedStatements=true")) {
+            url = hasQueryParams ? url + "&rewriteBatchedStatements=true" : url + "?rewriteBatchedStatements=true";
             log.info("MySQL URL 添加 rewriteBatchedStatements 参数");
         }
         return url;
@@ -46,31 +53,15 @@ public class MySQLDialect implements JdbcDialect {
     }
 
     @Override
-    public String getInsertSql(String table, String[] columns) {
-        String colList = Arrays.stream(columns)
-                .map(this::quoteIdentifier)
-                .collect(Collectors.joining(", "));
-        String placeholders = Arrays.stream(columns)
-                .map(c -> "?")
-                .collect(Collectors.joining(", "));
-
-        return String.format("INSERT INTO %s (%s) VALUES (%s)",
-                quoteIdentifier(table), colList, placeholders);
-    }
-
-    @Override
     public String getUpsertSql(String table, String[] columns, List<String> keyFields) {
         String colList = Arrays.stream(columns)
                 .map(this::quoteIdentifier)
                 .collect(Collectors.joining(", "));
-        String placeholders = Arrays.stream(columns)
-                .map(c -> "?")
-                .collect(Collectors.joining(", "));
+        String placeholders = String.join(", ", java.util.Collections.nCopies(columns.length, "?"));
 
-        // MySQL 使用 ON DUPLICATE KEY UPDATE
-        // 更新所有非主键字段
+        Set<String> keyFieldSet = new HashSet<>(keyFields);
         String updateClause = Arrays.stream(columns)
-                .filter(col -> !keyFields.contains(col))
+                .filter(col -> !keyFieldSet.contains(col))
                 .map(col -> quoteIdentifier(col) + "=VALUES(" + quoteIdentifier(col) + ")")
                 .collect(Collectors.joining(", "));
 

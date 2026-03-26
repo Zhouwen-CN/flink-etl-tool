@@ -3,6 +3,10 @@ package com.etl.source.jdbc.enums;
 import lombok.Getter;
 
 import java.sql.Types;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 分片策略枚举
@@ -39,6 +43,8 @@ public enum SplitStrategy {
      */
     FULL_TABLE_SCAN("全表扫描", new int[]{});
 
+    private static final Map<Integer, String> JDBC_TYPE_NAMES = createJdbcTypeNames();
+
     @Getter
     private final String description;
     private final int[] supportedJdbcTypes;
@@ -46,6 +52,20 @@ public enum SplitStrategy {
     SplitStrategy(String description, int[] supportedJdbcTypes) {
         this.description = description;
         this.supportedJdbcTypes = supportedJdbcTypes;
+    }
+
+    private static Map<Integer, String> createJdbcTypeNames() {
+        Map<Integer, String> map = new HashMap<>();
+        map.put(Types.TINYINT, "TINYINT");
+        map.put(Types.SMALLINT, "SMALLINT");
+        map.put(Types.INTEGER, "INTEGER");
+        map.put(Types.BIGINT, "BIGINT");
+        map.put(Types.FLOAT, "FLOAT");
+        map.put(Types.REAL, "REAL");
+        map.put(Types.DOUBLE, "DOUBLE");
+        map.put(Types.NUMERIC, "NUMERIC");
+        map.put(Types.DECIMAL, "DECIMAL");
+        return map;
     }
 
     /**
@@ -84,10 +104,12 @@ public enum SplitStrategy {
      * @return 类型名称列表
      */
     public String getSupportedTypeNames() {
-        if (this == FULL_TABLE_SCAN) {
+        if (this == FULL_TABLE_SCAN || supportedJdbcTypes.length == 0) {
             return "无";
         }
-        return "TINYINT, SMALLINT, INTEGER, BIGINT, REAL, FLOAT, DOUBLE, DECIMAL, NUMERIC";
+        return Arrays.stream(supportedJdbcTypes)
+                .mapToObj(type -> JDBC_TYPE_NAMES.getOrDefault(type, String.valueOf(type)))
+                .collect(Collectors.joining(", "));
     }
 
 }

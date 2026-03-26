@@ -1,7 +1,10 @@
 package com.etl.core.dialect;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * JDBC 数据库方言接口
@@ -23,11 +26,13 @@ public interface JdbcDialect extends Serializable {
     boolean acceptsUrl(String url);
 
     /**
-     * 包装 JDBC URL，添加必要的参数
+     * 包装 JDBC URL，添加必要的参数，比如mysql
      * @param url 原始 URL
      * @return 包装后的 URL
      */
-    String wrapUrl(String url);
+    default String wrapUrl(String url) {
+        return url;
+    }
 
     /**
      * 转义 SQL 标识符
@@ -42,7 +47,15 @@ public interface JdbcDialect extends Serializable {
      * @param columns 列名数组
      * @return INSERT SQL
      */
-    String getInsertSql(String table, String[] columns);
+    default String getInsertSql(String table, String[] columns) {
+        String colList = Arrays.stream(columns)
+                .map(this::quoteIdentifier)
+                .collect(Collectors.joining(", "));
+        String placeholders = String.join(", ", Collections.nCopies(columns.length, "?"));
+
+        return String.format("INSERT INTO %s (%s) VALUES (%s)",
+                quoteIdentifier(table), colList, placeholders);
+    }
 
     /**
      * 生成 UPSERT SQL（存在则更新，不存在则插入）

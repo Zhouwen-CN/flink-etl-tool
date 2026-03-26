@@ -27,7 +27,6 @@ import java.util.function.Supplier;
 public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpoint> {
 
     private final JdbcSourceConfig jdbcSourceConfig;
-    private final JdbcDialect dialect;
 
     public JdbcSource(SourceConfig config) {
         super(config);
@@ -35,7 +34,7 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
         Preconditions.checkNotNull(url, "url is null");
 
         // 使用 Dialect 包装 URL
-        this.dialect = JdbcDialects.get(url);
+        JdbcDialect dialect = JdbcDialects.get(url);
         url = dialect.wrapUrl(url);
 
         String username = config.getString("username");
@@ -53,7 +52,7 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
             splitStrategy = SplitStrategy.FULL_TABLE_SCAN;
         } else {
             // 配置了 splitColumn，自动匹配分片策略
-            int jdbcType = SqlUtils.getColumnType(table, sql, splitColumn, url, username, password);
+            int jdbcType = SqlUtils.getColumnType(dialect, url, table, sql, splitColumn, username, password);
             splitStrategy = SplitStrategy.fromJdbcType(jdbcType);
             // 如果没有匹配的策略，抛出明确的错误
             if (splitStrategy == null) {

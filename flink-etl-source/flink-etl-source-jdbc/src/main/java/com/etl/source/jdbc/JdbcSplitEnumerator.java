@@ -1,8 +1,8 @@
 package com.etl.source.jdbc;
 
 import com.etl.core.source.BaseSplitEnumerator;
-import com.etl.source.jdbc.enums.SplitStrategy;
 import com.etl.source.jdbc.config.JdbcSourceConfig;
+import com.etl.source.jdbc.enums.SplitStrategy;
 import com.etl.source.jdbc.utils.JdbcSplitHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
@@ -48,12 +48,13 @@ public class JdbcSplitEnumerator extends BaseSplitEnumerator<RangeSplit, RangeEn
             // 全表扫描模式，生成单个分片
             log.warn("使用单分片全表扫描模式");
             splits = JdbcSplitHelper.createFullTableScanSplits(
-                    jdbcSourceConfig.getUrl(),
+                    jdbcSourceConfig.getDialect(),
                     jdbcSourceConfig.getTable(),
                     jdbcSourceConfig.getSql());
         } else {
             // 数值范围分片模式
             splits = JdbcSplitHelper.calculateNumericSplits(
+                    jdbcSourceConfig.getDialect(),
                     jdbcSourceConfig.getUrl(),
                     jdbcSourceConfig.getUsername(),
                     jdbcSourceConfig.getPassword(),

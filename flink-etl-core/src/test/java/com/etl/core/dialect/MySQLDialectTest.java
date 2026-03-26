@@ -37,6 +37,11 @@ class MySQLDialectTest {
     }
 
     @Test
+    void testWrapUrlWithNull() {
+        assertNull(dialect.wrapUrl(null));
+    }
+
+    @Test
     void testQuoteIdentifier() {
         assertEquals("`name`", dialect.quoteIdentifier("name"));
         assertEquals("`table_name`", dialect.quoteIdentifier("table_name"));
