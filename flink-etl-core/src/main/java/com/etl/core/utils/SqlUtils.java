@@ -1,5 +1,7 @@
 package com.etl.core.utils;
 
+import com.etl.core.dialect.JdbcDialect;
+import com.etl.core.dialect.JdbcDialects;
 import com.etl.core.schema.TypeConverter;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
@@ -17,23 +19,17 @@ public final class SqlUtils {
     private SqlUtils() {}
 
     /**
-     * 转义 SQL 标识符，防止 SQL 注入
-     * 支持常见数据库：MySQL(`), PostgreSQL/SQLite("), SQL Server([)
+     * 转义 SQL 标识符（兼容旧代码）
      *
      * @param name 标识符名称
      * @param jdbcUrl JDBC 连接 URL
      * @return 转义后的标识符
+     * @deprecated 请使用 {@link JdbcDialect#quoteIdentifier(String)}
      */
+    @Deprecated
     public static String quoteIdentifier(String name, String jdbcUrl) {
-        if (jdbcUrl.contains(":mysql")) {
-            return "`" + name + "`";
-        } else if (jdbcUrl.contains(":postgresql") || jdbcUrl.contains(":sqlite")) {
-            return "\"" + name + "\"";
-        } else if (jdbcUrl.contains(":sqlserver") || jdbcUrl.contains(":microsoft")) {
-            return "[" + name + "]";
-        }
-        // 默认使用双引号（SQL 标准）
-        return "\"" + name + "\"";
+        JdbcDialect dialect = JdbcDialects.get(jdbcUrl);
+        return dialect.quoteIdentifier(name);
     }
 
 
@@ -76,26 +72,6 @@ public final class SqlUtils {
         }
     }
 
-
-    /**
-     * 根据表名和字段名，生成插入语句
-     *
-     * @param url     数据库连接 url
-     * @param table   表名
-     * @param columns 字段名
-     * @return insert sql
-     */
-    public static String getInsertSql(String url, String table, String[] columns) {
-        String colList = Arrays.stream(columns)
-                .map(c -> SqlUtils.quoteIdentifier(c, url))
-                .collect(Collectors.joining(", "));
-        String placeholders = Arrays.stream(columns)
-                .map(c -> "?")
-                .collect(Collectors.joining(", "));
-
-        return String.format("INSERT INTO %s (%s) VALUES (%s)",
-                SqlUtils.quoteIdentifier(table, url), colList, placeholders);
-    }
 
     /**
      * 获取指定列的 JDBC 类型
