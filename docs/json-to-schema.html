@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON to Schema Converter</title>
+    <style>
+        /* 容器和布局样式 */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        h2 {
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .main-content {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .input-section, .output-section {
+            flex: 2;
+        }
+
+        .button-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* 输入框和按钮样式 */
+        textarea {
+            width: 100%;
+            height: 500px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            background-color: white;
+        }
+
+        button {
+            width: 80%;
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #convertBtn {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        #convertBtn:hover {
+            background-color: #45a049;
+        }
+
+        #copyBtn {
+            background-color: #2196F3;
+            color: white;
+        }
+
+        #copyBtn:hover {
+            background-color: #0b7dda;
+        }
+
+        #clearBtn {
+            background-color: #f44336;
+            color: white;
+        }
+
+        #clearBtn:hover {
+            background-color: #da190b;
+        }
+
+        /* 错误提示和成功提示样式 */
+        .error-message {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #ffebee;
+            border: 1px solid #f44336;
+            border-radius: 4px;
+            color: #f44336;
+            text-align: center;
+            display: none;
+        }
+
+        .success-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .success-message.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>JSON to Schema 转换工具</h1>
+        <div class="main-content">
+            <div class="input-section">
+                <h2>JSON 输入</h2>
+                <textarea id="jsonInput" placeholder="粘贴 JSON 数据..."></textarea>
+            </div>
+            <div class="button-section">
+                <button id="convertBtn">转换</button>
+                <button id="copyBtn">复制</button>
+                <button id="clearBtn">清空</button>
+            </div>
+            <div class="output-section">
+                <h2>Schema 输出</h2>
+                <textarea id="schemaOutput" placeholder="生成的 schema..."></textarea>
+            </div>
+        </div>
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+    </div>
+
+    <script>
+        // JSON 解析模块
+        function parseJsonInput(jsonString) {
+            if (!jsonString || jsonString.trim() === '') {
+                return { success: false, error: '请输入 JSON 数据' };
+            }
+
+            try {
+                const parsed = JSON.parse(jsonString);
+                return { success: true, data: parsed };
+            } catch (error) {
+                return { success: false, error: 'JSON 格式错误: ' + error.message };
+            }
+        }
+
+        // 显示错误消息
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        // 清除错误消息
+        function clearError() {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.style.display = 'none';
+        }
+
+        // 显示成功提示
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.classList.add('show');
+
+            // 2秒后自动隐藏
+            setTimeout(() => {
+                successDiv.classList.remove('show');
+            }, 2000);
+        }
+
+        // Schema 推断模块
+
+        // 日期格式识别：YYYY-MM-DD HH:mm:ss
+        function isDateTimeString(value) {
+            const datetimeRegex = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+            return datetimeRegex.test(value);
+        }
+
+        // 数字类型推断
+        function inferNumberType(value) {
+            if (!Number.isInteger(value)) {
+                return 'DOUBLE';
+            }
+            if (value >= -2147483648 && value <= 2147483647) {
+                return 'INT';
+            }
+            return 'LONG';
+        }
+
+        // 递归推断 schema
+        function inferSchema(data) {
+            function infer(value) {
+                if (value === null) {
+                    return 'STRING'; // null 值默认为 STRING
+                }
+
+                if (typeof value === 'string') {
+                    return isDateTimeString(value) ? 'TIMESTAMP' : 'STRING';
+                }
+
+                if (typeof value === 'number') {
+                    return inferNumberType(value);
+                }
+
+                if (typeof value === 'boolean') {
+                    return 'BOOLEAN';
+                }
+
+                if (Array.isArray(value)) {
+                    if (value.length === 0) {
+                        return ['STRING']; // 空数组默认为 STRING 数组
+                    }
+
+                    // 查找第一个非 null 元素用于类型推断
+                    const firstNonNull = value.find(el => el !== null);
+                    if (!firstNonNull) {
+                        return ['STRING']; // 所有元素都是 null
+                    }
+
+                    // 根据第一个非 null 元素推断类型
+                    if (typeof firstNonNull === 'object' && !Array.isArray(firstNonNull)) {
+                        // 对象数组
+                        return [infer(firstNonNull)];
+                    } else {
+                        // 简单类型数组
+                        return [infer(firstNonNull)];
+                    }
+                }
+
+                if (typeof value === 'object') {
+                    const result = {};
+                    for (const key in value) {
+                        result[key] = infer(value[key]);
+                    }
+                    return result;
+                }
+
+                return 'STRING'; // 默认类型
+            }
+
+            return infer(data);
+        }
+
+        // 格式化 schema 为 JSON 字符串
+        function formatSchema(schema) {
+            return JSON.stringify(schema, null, 2);
+        }
+
+        // UI 交互模块
+
+        // 转换按钮点击事件
+        function handleConvert() {
+            clearError();
+
+            const jsonInput = document.getElementById('jsonInput').value;
+            const parseResult = parseJsonInput(jsonInput);
+
+            if (!parseResult.success) {
+                showError(parseResult.error);
+                return;
+            }
+
+            const schema = inferSchema(parseResult.data);
+            const schemaText = formatSchema(schema);
+            document.getElementById('schemaOutput').value = schemaText;
+        }
+
+        // 复制按钮点击事件
+        function handleCopy() {
+            const schemaText = document.getElementById('schemaOutput').value;
+
+            if (!schemaText) {
+                showError('请先转换 JSON 数据');
+                return;
+            }
+
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(schemaText).then(() => {
+                    showSuccess('已复制到剪贴板');
+                }).catch(err => {
+                    showError('复制失败: ' + err.message);
+                });
+            } else {
+                const textarea = document.getElementById('schemaOutput');
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    showSuccess('已复制到剪贴板');
+                } catch (err) {
+                    showError('复制失败: ' + err.message);
+                }
+            }
+        }
+
+        // 清空按钮点击事件
+        function handleClear() {
+            document.getElementById('jsonInput').value = '';
+            document.getElementById('schemaOutput').value = '';
+            clearError();
+        }
+
+        // 初始化：绑定按钮事件
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('convertBtn').addEventListener('click', handleConvert);
+            document.getElementById('copyBtn').addEventListener('click', handleCopy);
+            document.getElementById('clearBtn').addEventListener('click', handleClear);
+        });
+    </script>
+</body>
+</html>
