@@ -19,24 +19,24 @@
 - `flink-etl-core/src/main/java/com/etl/core/sink/AbstractSinkWriter.java` - Writer 基类，批量管理，InitContext 访问，异常处理
 
 **Console Sink 迁移**：
-- `flink-etl-sink-console/src/main/java/com/etl/sink/console/ConsoleSink.java` - Console Sink 实现
-- `flink-etl-sink-console/src/main/java/com/etl/sink/console/ConsoleSinkWriter.java` - Console Writer 实现
+- `flink-etl-sink/flink-etl-sink-console/src/main/java/com/etl/sink/console/ConsoleSink.java` - Console Sink 实现
+- `flink-etl-sink/flink-etl-sink-console/src/main/java/com/etl/sink/console/ConsoleSinkWriter.java` - Console Writer 实现
 
 **JDBC Sink 迁移**：
-- `flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSink.java` - JDBC Sink 实现
-- `flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSinkWriter.java` - JDBC Writer 实现
+- `flink-etl-sink/flink-etl-sink/flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSink.java` - JDBC Sink 实现
+- `flink-etl-sink/flink-etl-sink/flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSinkWriter.java` - JDBC Writer 实现
 
 **测试文件**：
 - `flink-etl-core/src/test/java/com/etl/core/sink/AbstractSinkWriterTest.java` - 抽象 Writer 测试基类
-- `flink-etl-sink-console/src/test/java/com/etl/sink/console/ConsoleSinkWriterTest.java` - Console Writer 测试
-- `flink-etl-sink-jdbc/src/test/java/com/etl/sink/jdbc/JdbcSinkWriterTest.java` - JDBC Writer 测试
+- `flink-etl-sink/flink-etl-sink-console/src/test/java/com/etl/sink/console/ConsoleSinkWriterTest.java` - Console Writer 测试
+- `flink-etl-sink/flink-etl-sink/flink-etl-sink-jdbc/src/test/java/com/etl/sink/jdbc/JdbcSinkWriterTest.java` - JDBC Writer 测试
 
 ### 修改文件
 
 - `flink-etl-core/src/main/java/com/etl/core/spi/SinkPlugin.java` - 接口签名变更（返回 `Sink<Row>` 而非 `SinkFunction<Row>`）
 - `flink-etl-core/src/main/java/com/etl/core/job/JobBuilder.java` - 使用新 Sink API（`sinkTo()` 替代 `addSink()`）
-- `flink-etl-sink-console/src/main/java/com/etl/sink/console/ConsoleSinkPlugin.java` - 返回新的 ConsoleSink
-- `flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSinkPlugin.java` - 返回新的 JdbcSink
+- `flink-etl-sink/flink-etl-sink-console/src/main/java/com/etl/sink/console/ConsoleSinkPlugin.java` - 返回新的 ConsoleSink
+- `flink-etl-sink/flink-etl-sink/flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSinkPlugin.java` - 返回新的 JdbcSink
 
 ---
 
@@ -106,18 +106,10 @@ public abstract class AbstractSink implements Sink<Row> {
      */
     @Override
     public abstract SinkWriter<Row> createWriter(InitContext context) throws IOException;
-
-    /**
-     * 获取默认的批次大小
-     * 子类可覆盖此方法提供不同的默认值
-     *
-     * @return 默认批次大小（100）
-     */
-    public int getDefaultBatchSize() {
-        return 100;
-    }
 }
 ```
+
+**注意：** `getDefaultBatchSize()` 方法由 `SinkPlugin` 接口提供，`AbstractSink` 不需要重复定义。具体 Sink 实现可以从 SinkPlugin 获取默认值。
 
 - [ ] **Step 3: 验证编译**
 
@@ -446,7 +438,7 @@ public Sink<Row> createSink(SinkConfig config) {
 
 - [ ] **Step 5: 暂时修复 JdbcSinkPlugin（返回 null）**
 
-修改 `flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSinkPlugin.java`：
+修改 `flink-etl-sink/flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSinkPlugin.java`：
 
 ```java
 @Override
@@ -469,7 +461,7 @@ Expected: BUILD SUCCESS
 ```bash
 git add flink-etl-core/src/main/java/com/etl/core/spi/SinkPlugin.java \
         flink-etl-sink-console/src/main/java/com/etl/sink/console/ConsoleSinkPlugin.java \
-        flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSinkPlugin.java
+        flink-etl-sink/flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSinkPlugin.java
 
 git commit -m "refactor(core): SinkPlugin 接口迁移到新 Sink API
 
@@ -624,8 +616,11 @@ public abstract class AbstractSinkWriterTest {
             writer.write(createTestRow("value" + i), mock(SinkWriter.Context.class));
         }
 
-        // 验证 pendingCount 被重置
-        // （通过反射或子类方法验证，这里简化）
+        // 通过反射验证 pendingCount 被重置为 0
+        java.lang.reflect.Field pendingCountField = AbstractSinkWriter.class.getDeclaredField("pendingCount");
+        pendingCountField.setAccessible(true);
+        int pendingCount = (int) pendingCountField.get(writer);
+        assertEquals(0, pendingCount);
     }
 
     @Test
@@ -640,7 +635,11 @@ public abstract class AbstractSinkWriterTest {
         // 手动 flush
         writer.flush(false);
 
-        // 验证数据已提交
+        // 验证 pendingCount 被重置
+        java.lang.reflect.Field pendingCountField = AbstractSinkWriter.class.getDeclaredField("pendingCount");
+        pendingCountField.setAccessible(true);
+        int pendingCount = (int) pendingCountField.get(writer);
+        assertEquals(0, pendingCount);
     }
 
     @Test
@@ -652,12 +651,27 @@ public abstract class AbstractSinkWriterTest {
 
         // 关闭时应自动 flush
         writer.close();
+
+        // 验证资源已清理
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testInvalidBatchSize() {
         // batchSize <= 0 应抛出异常
         createWriter(0);
+    }
+
+    @Test
+    public void testFlushFailureHandling() throws Exception {
+        AbstractSinkWriter writer = createWriter(10);
+
+        // 写入数据
+        for (int i = 0; i < 10; i++) {
+            writer.write(createTestRow("value" + i), mock(SinkWriter.Context.class));
+        }
+
+        // 子类可以覆盖此测试，模拟 flush 失败场景
+        // 验证 handleFlushFailure() 被调用
     }
 }
 ```
@@ -691,7 +705,7 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 ### Task 6: 实现 ConsoleSink
 
 **Files:**
-- Create: `flink-etl-sink-console/src/main/java/com/etl/sink/console/ConsoleSink.java`
+- Create: `flink-etl-sink/flink-etl-sink-console/src/main/java/com/etl/sink/console/ConsoleSink.java`
 
 - [ ] **Step 1: 创建 ConsoleSink.java**
 
@@ -737,7 +751,7 @@ Expected: BUILD SUCCESS
 - [ ] **Step 3: 提交**
 
 ```bash
-git add flink-etl-sink-console/src/main/java/com/etl/sink/console/ConsoleSink.java
+git add flink-etl-sink/flink-etl-sink-console/src/main/java/com/etl/sink/console/ConsoleSink.java
 git commit -m "feat(console): 新增 ConsoleSink 实现
 
 - 继承 AbstractSink
@@ -752,7 +766,7 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 ### Task 7: 实现 ConsoleSinkWriter
 
 **Files:**
-- Create: `flink-etl-sink-console/src/main/java/com/etl/sink/console/ConsoleSinkWriter.java`
+- Create: `flink-etl-sink/flink-etl-sink-console/src/main/java/com/etl/sink/console/ConsoleSinkWriter.java`
 
 - [ ] **Step 1: 创建 ConsoleSinkWriter.java**
 
@@ -821,7 +835,7 @@ Expected: BUILD SUCCESS
 - [ ] **Step 3: 提交**
 
 ```bash
-git add flink-etl-sink-console/src/main/java/com/etl/sink/console/ConsoleSinkWriter.java
+git add flink-etl-sink/flink-etl-sink-console/src/main/java/com/etl/sink/console/ConsoleSinkWriter.java
 git commit -m "feat(console): 新增 ConsoleSinkWriter 实现
 
 - 继承 AbstractSinkWriter
@@ -890,7 +904,7 @@ Expected: BUILD SUCCESS
 - [ ] **Step 4: 提交**
 
 ```bash
-git add flink-etl-sink-console/src/main/java/com/etl/sink/console/ConsoleSinkPlugin.java
+git add flink-etl-sink/flink-etl-sink-console/src/main/java/com/etl/sink/console/ConsoleSinkPlugin.java
 git commit -m "refactor(console): ConsoleSinkPlugin 迁移到新 Sink API
 
 - 返回 ConsoleSink 而非 null
@@ -945,7 +959,7 @@ Expected: Tests run, Failures: 0, Errors: 0
 - [ ] **Step 4: 提交**
 
 ```bash
-git add flink-etl-sink-console/src/test/java/com/etl/sink/console/ConsoleSinkWriterTest.java
+git add flink-etl-sink/flink-etl-sink-console/src/test/java/com/etl/sink/console/ConsoleSinkWriterTest.java
 git commit -m "test(console): 新增 ConsoleSinkWriter 测试
 
 - 继承 AbstractSinkWriterTest
@@ -961,11 +975,9 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 ### Task 10: 实现 JdbcSink（参数校验）
 
 **Files:**
-- Create: `flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSink.java`
+- Create: `flink-etl-sink/flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSink.java`
 
-- [ ] **Step 1: 创建 JdbcSink.java**
-
-参考设计文档第 516-546 行的完整实现。
+- [ ] **Step 1: 创建 JdbcSink.java - 基础结构和必要参数校验**
 
 ```java
 package com.etl.sink.jdbc;
@@ -973,18 +985,23 @@ package com.etl.sink.jdbc;
 import com.etl.core.config.SinkConfig;
 import com.etl.core.dialect.JdbcDialect;
 import com.etl.core.dialect.JdbcDialects;
+import com.etl.core.dialect.WriteMode;
 import com.etl.core.sink.AbstractSink;
 import com.etl.sink.jdbc.config.JdbcSinkConfig;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.sink2.SinkWriter;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Preconditions;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * JDBC Sink 实现
  * 支持将数据写入关系型数据库
  */
+@Slf4j
 public class JdbcSink extends AbstractSink {
 
     private final JdbcSinkConfig jdbcSinkConfig;
@@ -992,24 +1009,52 @@ public class JdbcSink extends AbstractSink {
     public JdbcSink(SinkConfig config) {
         super(config);
 
-        // 参数校验
+        // 1. 必要参数校验
         String url = Preconditions.checkNotNull(config.getString("url"), "url is null");
+        String username = config.getString("username");
+        String password = config.getString("password");
 
+        // 2. Dialect 初始化
         JdbcDialect dialect = JdbcDialects.get(url);
 
-        Integer batchSize = config.getInteger("batchSize", getDefaultBatchSize());
+        // 3. table/sql 模式选择和校验
+        String table = config.getString("table");
+        String sql = config.getString("sql");
+        Preconditions.checkArgument(table != null || sql != null,
+            "table 和 sql 必须配置其中一个");
+
+        // 4. mode 和 keyFields 参数处理
+        String modeStr = config.getString("mode", "INSERT");
+        WriteMode mode = WriteMode.valueOf(modeStr.toUpperCase());
+
+        List<String> keyFields = null;
+        if (mode == WriteMode.UPSERT) {
+            List<String> keyFieldsConfig = config.getList("keyFields");
+            Preconditions.checkNotNull(keyFieldsConfig, "UPSERT 模式必须配置 keyFields");
+            keyFields = keyFieldsConfig;
+            log.info("JDBC Sink upsert 模式: table={}, keyFields={}", table, keyFields);
+        } else {
+            log.info("JDBC Sink insert 模式: table={}", table);
+        }
+
+        // 5. batchSize 参数处理
+        Integer batchSize = config.getInteger("batchSize", 100);
         Preconditions.checkArgument(batchSize != null && batchSize > 0, "batchSize must be greater than 0");
 
-        // 构建配置对象
+        // 6. 构建 JdbcSinkConfig 对象
         this.jdbcSinkConfig = JdbcSinkConfig.builder()
             .url(dialect.wrapUrl(url))
-            .username(config.getString("username"))
-            .password(config.getString("password"))
-            .table(config.getString("table"))
-            .sql(config.getString("sql"))
+            .username(username)
+            .password(password)
+            .table(table)
+            .sql(sql)
             .dialect(dialect)
+            .mode(mode)
+            .keyFields(keyFields)
             .batchSize(batchSize)
             .build();
+
+        log.info("创建 JdbcSink: {}", this.jdbcSinkConfig);
     }
 
     @Override
@@ -1022,7 +1067,7 @@ public class JdbcSink extends AbstractSink {
 - [ ] **Step 2: 验证编译**
 
 ```bash
-cd flink-etl-sink-jdbc
+cd flink-etl-sink/flink-etl-sink-jdbc
 mvn compile
 ```
 
@@ -1031,11 +1076,12 @@ Expected: BUILD SUCCESS
 - [ ] **Step 3: 提交**
 
 ```bash
-git add flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSink.java
+git add flink-etl-sink/flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSink.java
 git commit -m "feat(jdbc): 新增 JdbcSink 实现
 
 - 继承 AbstractSink
-- 在构造函数中进行参数校验
+- 完整的参数校验（url、username、password、table/sql）
+- 支持 INSERT 和 UPSERT 模式
 - 构建 JdbcSinkConfig 配置对象
 
 Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
@@ -1046,29 +1092,188 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 ### Task 11: 实现 JdbcSinkWriter（核心逻辑）
 
 **Files:**
-- Create: `flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSinkWriter.java`
+- Create: `flink-etl-sink/flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSinkWriter.java`
 
-- [ ] **Step 1: 创建 JdbcSinkWriter.java**
+- [ ] **Step 1: 创建 JdbcSinkWriter.java - 字段定义和构造函数**
 
-参考设计文档第 548-660 行的完整实现。代码较长，分步实现。
+```java
+package com.etl.sink.jdbc;
 
-- [ ] **Step 2: 验证编译**
+import com.etl.core.sink.AbstractSinkWriter;
+import com.etl.sink.jdbc.config.JdbcSinkConfig;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.flink.api.connector.sink2.Sink;
+import org.apache.flink.metrics.groups.SinkWriterMetricGroup;
+import org.apache.flink.types.Row;
+
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+/**
+ * JDBC Sink Writer 实现
+ * 管理数据库连接和批量写入
+ */
+@Slf4j
+public class JdbcSinkWriter extends AbstractSinkWriter {
+
+    private final JdbcSinkConfig config;
+    private transient Connection connection;
+    private transient PreparedStatement statement;
+    private transient String[] columns;
+    private SinkWriterMetricGroup metricGroup;
+
+    public JdbcSinkWriter(Sink.InitContext context, JdbcSinkConfig config) {
+        super(context, config.getBatchSize());
+        this.config = config;
+    }
+}
+```
+
+- [ ] **Step 2: 实现 open() 方法**
+
+```java
+@Override
+protected void open() throws IOException {
+    try {
+        connection = DriverManager.getConnection(
+            config.getUrl(),
+            config.getUsername(),
+            config.getPassword()
+        );
+        connection.setAutoCommit(false);
+
+        // 注册指标
+        metricGroup = getMetricGroup();
+
+        log.info("JDBC Sink 已连接: url={}, subtaskId={}", config.getUrl(), getSubtaskId());
+    } catch (SQLException e) {
+        throw new IOException("Failed to initialize JDBC connection", e);
+    }
+}
+```
+
+- [ ] **Step 3: 实现 writeRow() 方法**
+
+```java
+@Override
+protected void writeRow(Row row) throws IOException {
+    try {
+        // 懒初始化 statement（第一次调用时根据 Row 字段生成 SQL）
+        if (statement == null) {
+            initStatement(row);
+        }
+
+        // 填充参数
+        for (int i = 0; i < columns.length; i++) {
+            statement.setObject(i + 1, row.getField(columns[i]));
+        }
+
+        // 添加到 JDBC 批量缓冲
+        statement.addBatch();
+
+        // 更新指标
+        metricGroup.getNumRecordsOutCounter().inc();
+    } catch (SQLException e) {
+        throw new IOException("Failed to write row", e);
+    }
+}
+
+private void initStatement(Row row) throws SQLException {
+    Set<String> fieldNames = row.getFieldNames(true);
+    this.columns = fieldNames.toArray(new String[0]);
+
+    String sql;
+    if (config.getSql() != null) {
+        // sql 模式：解析具名占位符
+        NamedParameterSqlParser.ParsedSql parsed = NamedParameterSqlParser.parse(config.getSql());
+        sql = parsed.getPreparedSql();
+        log.info("JDBC Sink sql 模式: {}", sql);
+    } else {
+        // table 模式：根据 mode 生成 SQL
+        if (config.getMode() == WriteMode.UPSERT) {
+            sql = config.getDialect().getUpsertSql(config.getTable(), columns, config.getKeyFields());
+            log.info("JDBC Sink upsert 模式: table={}, keyFields={}", config.getTable(), config.getKeyFields());
+        } else {
+            sql = config.getDialect().getInsertSql(config.getTable(), columns);
+            log.info("JDBC Sink insert 模式: table={}, columns={}", config.getTable(), Arrays.toString(columns));
+        }
+    }
+
+    this.statement = connection.prepareStatement(sql);
+}
+```
+
+- [ ] **Step 4: 实现 flushBatch() 和 handleFlushFailure() 方法**
+
+```java
+@Override
+protected void flushBatch() throws IOException {
+    try {
+        int[] results = statement.executeBatch();
+        connection.commit();
+
+        log.debug("已写入 {} 条记录, subtaskId={}", results.length, getSubtaskId());
+    } catch (SQLException e) {
+        throw new IOException("Failed to flush batch", e);
+    }
+}
+
+@Override
+protected void handleFlushFailure(Exception e) {
+    try {
+        if (connection != null) {
+            connection.rollback();
+            log.warn("Flush 失败，已回滚事务");
+        }
+    } catch (SQLException rollbackEx) {
+        log.error("回滚失败", rollbackEx);
+    }
+}
+```
+
+- [ ] **Step 5: 实现 cleanup() 方法**
+
+```java
+@Override
+protected void cleanup() throws IOException {
+    try {
+        if (statement != null) {
+            statement.close();
+        }
+        if (connection != null) {
+            connection.close();
+        }
+        log.info("JDBC Sink 资源清理完成, subtaskId={}", getSubtaskId());
+    } catch (SQLException e) {
+        throw new IOException("Failed to cleanup JDBC resources", e);
+    }
+}
+```
+
+- [ ] **Step 6: 验证编译**
 
 ```bash
-cd flink-etl-sink-jdbc
+cd flink-etl-sink/flink-etl-sink-jdbc
 mvn compile
 ```
 
 Expected: BUILD SUCCESS
 
-- [ ] **Step 3: 提交**
+- [ ] **Step 7: 提交**
 
 ```bash
-git add flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSinkWriter.java
+git add flink-etl-sink/flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSinkWriter.java
 git commit -m "feat(jdbc): 新增 JdbcSinkWriter 实现
 
 - 继承 AbstractSinkWriter
 - 实现数据库连接和批量写入
+- 支持 INSERT 和 UPSERT 模式
 - 支持事务管理和回滚
 - 实现资源清理和异常处理
 
@@ -1080,7 +1285,7 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 ### Task 12: 更新 JdbcSinkPlugin
 
 **Files:**
-- Modify: `flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSinkPlugin.java`
+- Modify: `flink-etl-sink/flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSinkPlugin.java`
 
 - [ ] **Step 1: 修改 JdbcSinkPlugin.java**
 
@@ -1103,7 +1308,7 @@ Expected: BUILD SUCCESS
 - [ ] **Step 3: 提交**
 
 ```bash
-git add flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSinkPlugin.java
+git add flink-etl-sink/flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSinkPlugin.java
 git commit -m "refactor(jdbc): JdbcSinkPlugin 迁移到新 Sink API
 
 - 返回 JdbcSink 而非 null
@@ -1117,7 +1322,7 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 ### Task 13: 创建 JdbcSinkWriter 测试
 
 **Files:**
-- Create: `flink-etl-sink-jdbc/src/test/java/com/etl/sink/jdbc/JdbcSinkWriterTest.java`
+- Create: `flink-etl-sink/flink-etl-sink-jdbc/src/test/java/com/etl/sink/jdbc/JdbcSinkWriterTest.java`
 
 - [ ] **Step 1: 创建测试类**
 
@@ -1153,7 +1358,7 @@ Expected: Tests run (可能跳过，因为需要数据库环境)
 - [ ] **Step 3: 提交**
 
 ```bash
-git add flink-etl-sink-jdbc/src/test/java/com/etl/sink/jdbc/JdbcSinkWriterTest.java
+git add flink-etl-sink/flink-etl-sink-jdbc/src/test/java/com/etl/sink/jdbc/JdbcSinkWriterTest.java
 git commit -m "test(jdbc): 新增 JdbcSinkWriter 测试框架
 
 - 继承 AbstractSinkWriterTest
