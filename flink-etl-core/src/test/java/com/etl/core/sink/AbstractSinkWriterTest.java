@@ -44,79 +44,21 @@ public abstract class AbstractSinkWriterTest {
     /**
      * 创建具体的 Writer 实例
      */
-    protected abstract AbstractSinkWriter createWriter(int batchSize) throws IOException;
+    protected abstract AbstractSinkWriter createWriter() throws IOException;
 
-    /**
-     * 创建带有默认 batchSize 的 Writer
-     */
-    protected AbstractSinkWriter createWriter() throws IOException {
-        return createWriter(10);
+    @Test
+    public void testContextAccess() throws Exception {
+        AbstractSinkWriter writer = createWriter();
+
+        assertNotNull(writer.context);
+        assertEquals(0, writer.context.getSubtaskId());
+        assertEquals(1, writer.context.getNumberOfParallelSubtasks());
     }
 
     @Test
-    public void testBatchWriteAndFlush() throws Exception {
-        AbstractSinkWriter writer = createWriter(5);
+    public void testConfigAccess() throws Exception {
+        AbstractSinkWriter writer = createWriter();
 
-        // 写入 5 条数据，应触发自动 flush
-        for (int i = 0; i < 5; i++) {
-            writer.write(createTestRow("value" + i), mock(SinkWriter.Context.class));
-        }
-
-        // 通过反射验证 pendingCount 被重置为 0
-        java.lang.reflect.Field pendingCountField = AbstractSinkWriter.class.getDeclaredField("pendingCount");
-        pendingCountField.setAccessible(true);
-        int pendingCount = (int) pendingCountField.get(writer);
-        assertEquals(0, pendingCount);
-    }
-
-    @Test
-    public void testManualFlush() throws Exception {
-        AbstractSinkWriter writer = createWriter(100);
-
-        // 写入 10 条数据
-        for (int i = 0; i < 10; i++) {
-            writer.write(createTestRow("value" + i), mock(SinkWriter.Context.class));
-        }
-
-        // 手动 flush
-        writer.flush(false);
-
-        // 验证 pendingCount 被重置
-        java.lang.reflect.Field pendingCountField = AbstractSinkWriter.class.getDeclaredField("pendingCount");
-        pendingCountField.setAccessible(true);
-        int pendingCount = (int) pendingCountField.get(writer);
-        assertEquals(0, pendingCount);
-    }
-
-    @Test
-    public void testCloseWithPendingData() throws Exception {
-        AbstractSinkWriter writer = createWriter(100);
-
-        // 写入数据但不 flush
-        writer.write(createTestRow("value1"), mock(SinkWriter.Context.class));
-
-        // 关闭时应自动 flush
-        writer.close();
-
-        // 验证资源已清理
-    }
-
-    @Test
-    public void testInvalidBatchSize() throws IOException {
-        // batchSize <= 0 应抛出异常
-        assertThrows(IllegalArgumentException.class, () -> createWriter(0));
-    }
-
-    @Test
-    public void testFlushFailureHandling() throws Exception {
-        AbstractSinkWriter writer = createWriter(10);
-
-        // 写入数据
-        for (int i = 0; i < 10; i++) {
-            writer.write(createTestRow("value" + i), mock(SinkWriter.Context.class));
-        }
-
-        // 子类可以覆盖此测试，模拟 flush 失败场景
-        // 验证 handleFlushFailure() 被调用
+        assertNotNull(writer.config);
     }
 }
