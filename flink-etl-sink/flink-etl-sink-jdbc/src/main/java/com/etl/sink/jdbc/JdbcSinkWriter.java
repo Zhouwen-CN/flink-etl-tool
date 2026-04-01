@@ -22,7 +22,7 @@ import java.util.Set;
 @Slf4j
 public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
 
-    private transient Connection connection;
+    private final transient Connection connection;
     private transient PreparedStatement statement;
     private transient String[] columns;
 

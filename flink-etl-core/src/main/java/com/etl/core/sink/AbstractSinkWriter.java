@@ -58,8 +58,7 @@ public abstract class AbstractSinkWriter<ConfigT> implements SinkWriter<Row> {
     public abstract void write(Row row, Context context) throws IOException, InterruptedException;
 
     /**
-     * 提交数据
-     * 子类实现此方法定义提交逻辑
+     * 检查点提交时或者结束输出时，刷写数据，保证最少一次语义
      *
      * @param endOfInput 是否为输入结束时的 flush
      * @throws IOException 如果提交失败
@@ -67,4 +66,13 @@ public abstract class AbstractSinkWriter<ConfigT> implements SinkWriter<Row> {
      */
     @Override
     public abstract void flush(boolean endOfInput) throws IOException, InterruptedException;
+
+
+    /**
+     * 关闭资源
+     *
+     * @throws Exception e
+     */
+    @Override
+    public abstract void close() throws Exception;
 }
