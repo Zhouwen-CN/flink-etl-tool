@@ -23,20 +23,20 @@
 - `flink-etl-sink/flink-etl-sink-console/src/main/java/com/etl/sink/console/ConsoleSinkWriter.java` - Console Writer 实现
 
 **JDBC Sink 迁移**：
-- `flink-etl-sink/flink-etl-sink/flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSink.java` - JDBC Sink 实现
-- `flink-etl-sink/flink-etl-sink/flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSinkWriter.java` - JDBC Writer 实现
+- `flink-etl-sink/flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSink.java` - JDBC Sink 实现
+- `flink-etl-sink/flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSinkWriter.java` - JDBC Writer 实现
 
 **测试文件**：
 - `flink-etl-core/src/test/java/com/etl/core/sink/AbstractSinkWriterTest.java` - 抽象 Writer 测试基类
 - `flink-etl-sink/flink-etl-sink-console/src/test/java/com/etl/sink/console/ConsoleSinkWriterTest.java` - Console Writer 测试
-- `flink-etl-sink/flink-etl-sink/flink-etl-sink-jdbc/src/test/java/com/etl/sink/jdbc/JdbcSinkWriterTest.java` - JDBC Writer 测试
+- `flink-etl-sink/flink-etl-sink-jdbc/src/test/java/com/etl/sink/jdbc/JdbcSinkWriterTest.java` - JDBC Writer 测试
 
 ### 修改文件
 
 - `flink-etl-core/src/main/java/com/etl/core/spi/SinkPlugin.java` - 接口签名变更（返回 `Sink<Row>` 而非 `SinkFunction<Row>`）
 - `flink-etl-core/src/main/java/com/etl/core/job/JobBuilder.java` - 使用新 Sink API（`sinkTo()` 替代 `addSink()`）
 - `flink-etl-sink/flink-etl-sink-console/src/main/java/com/etl/sink/console/ConsoleSinkPlugin.java` - 返回新的 ConsoleSink
-- `flink-etl-sink/flink-etl-sink/flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSinkPlugin.java` - 返回新的 JdbcSink
+- `flink-etl-sink/flink-etl-sink-jdbc/src/main/java/com/etl/sink/jdbc/JdbcSinkPlugin.java` - 返回新的 JdbcSink
 
 ---
 
@@ -1099,6 +1099,7 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 ```java
 package com.etl.sink.jdbc;
 
+import com.etl.core.dialect.WriteMode;
 import com.etl.core.sink.AbstractSinkWriter;
 import com.etl.sink.jdbc.config.JdbcSinkConfig;
 import lombok.extern.slf4j.Slf4j;
