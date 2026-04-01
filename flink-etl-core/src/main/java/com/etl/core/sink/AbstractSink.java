@@ -50,12 +50,4 @@ public abstract class AbstractSink implements Sink<Row> {
     public abstract SinkWriter<Row> createWriter(InitContext context) throws IOException;
 
 
-    /**
-     * 所有 sink 默认的 batchSize
-     *
-     * @return 批次大小
-     */
-    protected int getDefaultBatchSize() {
-        return 100;
     }
-}

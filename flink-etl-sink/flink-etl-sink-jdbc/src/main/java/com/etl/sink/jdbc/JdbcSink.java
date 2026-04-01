@@ -50,7 +50,7 @@ public class JdbcSink extends AbstractSink {
             log.info("JDBC Sink insert 模式: table={}", table);
         }
 
-        Integer batchSize = config.getInteger("batchSize", super.getDefaultBatchSize());
+        Integer batchSize = config.getInteger("batchSize", 100);
         Preconditions.checkArgument(batchSize != null && batchSize > 0, "batchSize must be greater than 0");
 
         this.jdbcSinkConfig = JdbcSinkConfig.builder()
