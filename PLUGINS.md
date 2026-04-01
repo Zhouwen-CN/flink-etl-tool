@@ -13,6 +13,7 @@
 - [Sink 插件](#sink-插件)
   - [Console Sink](#console-sink)
   - [JDBC Sink](#jdbc-sink)
+  - [Kafka Sink](#kafka-sink)
 - [Transform 插件](#transform-插件)
   - [SQL Transform](#sql-transform)
 
@@ -636,6 +637,120 @@ JDBC Sink 自动识别数据库类型并使用对应的标识符转义：
 | PostgreSQL | `"name"` | `jdbc:postgresql://host:5432/db` |
 | SQLite | `"name"` | `jdbc:sqlite:/path/to/db` |
 | SQL Server | `[name]` | `jdbc:sqlserver://host:1433;databaseName=db` |
+
+---
+
+### Kafka Sink
+
+将数据写入 Kafka Topic，消息格式为 JSON。
+
+#### 配置参数
+
+| 参数 | 必填 | 默认值 | 说明 |
+|------|:----:|--------|------|
+| `bootstrapServers` | 是 | - | Kafka 集群地址，如 `localhost:9092` |
+| `topic` | 是 | - | 目标 Topic 名称 |
+| `keyField` | 否 | - | Key 字段名，从 Row 中提取该字段值作为消息 Key |
+| `properties` | 否 | `{}` | 额外的 Kafka Producer 配置 |
+
+#### 配置示例
+
+**基础配置：**
+
+```json
+{
+  "sink": {
+    "type": "kafka",
+    "inputTable": "output_data",
+    "config": {
+      "bootstrapServers": "localhost:9092",
+      "topic": "output-topic"
+    }
+  }
+}
+```
+
+**配置消息 Key：**
+
+```json
+{
+  "sink": {
+    "type": "kafka",
+    "inputTable": "user_events",
+    "config": {
+      "bootstrapServers": "localhost:9092",
+      "topic": "user-events",
+      "keyField": "userId",
+      "properties": {
+        "compression.type": "gzip",
+        "batch.size": "16384"
+      }
+    }
+  }
+}
+```
+
+#### 数据格式说明
+
+- **消息体格式**：JSON 对象，字段名来自 Row 的字段名
+- **消息 Key**：可选，根据 `keyField` 配置从 Row 中提取指定字段值
+- **消息分区**：如果配置了 `keyField`，消息会根据 Key 哈希分配到分区；否则轮询分配
+
+#### 与 Kafka Source 配合使用
+
+Kafka Sink 与 Kafka Source 可以形成完整的数据流转链路：
+
+```json
+{
+  "job": {
+    "name": "kafka-transform",
+    "mode": "streaming",
+    "parallelism": 4
+  },
+  "sources": [
+    {
+      "type": "kafka",
+      "outputTable": "source_events",
+      "config": {
+        "bootstrapServers": "localhost:9092",
+        "groupId": "transform-consumer",
+        "topics": ["input-topic"],
+        "schema": {
+          "userId": "LONG",
+          "eventType": "STRING",
+          "timestamp": "LONG"
+        }
+      }
+    }
+  ],
+  "transforms": [
+    {
+      "type": "sql",
+      "outputTable": "processed_events",
+      "config": {
+        "sql": "SELECT userId, eventType, timestamp FROM source_events WHERE userId > 0"
+      }
+    }
+  ],
+  "sinks": [
+    {
+      "type": "kafka",
+      "inputTable": "processed_events",
+      "config": {
+        "bootstrapServers": "localhost:9092",
+        "topic": "output-topic",
+        "keyField": "userId"
+      }
+    }
+  ]
+}
+```
+
+#### 运行模式
+
+- 流式写入，数据实时发送到 Kafka（`mode: "streaming"`）
+- 支持 checkpoint 时确认消息写入成功
+- at-least-once 语义，故障恢复时可能产生重复消息
 
 ---
 
