@@ -18,6 +18,12 @@ mvn clean package
 # 运行 ETL 任务
 java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar --file docs/examples/mysql-to-console.json
 
+# 运行所有测试
+mvn test
+
+# 运行单个测试类
+mvn test -Dtest=ConfigParserTest
+
 # 安装到本地仓库（开发新插件时）
 mvn clean install -DskipTests
 ```
@@ -72,6 +78,14 @@ flink-etl-tool/
 
 **数据类型：** 所有 Source 直接使用 Flink `Row` 类型输出，通过 `ResultTypeQueryable<Row>` 提供 RowTypeInfo。
 
+### Sink 抽象层架构
+
+简化 Flink Sink API 的实现，采用 at-least-once 语义：
+
+**核心抽象类（core 模块）：**
+- `AbstractSink` - Sink 基类
+- `AbstractSinkWriter<ConfigT>` - SinkWriter 基类
+
 ### 扩展新数据源
 
 1. 创建新模块，依赖 `flink-etl-core`
@@ -83,6 +97,16 @@ flink-etl-tool/
 5. 在 `flink-etl-client/pom.xml` 添加新模块依赖
 
 **设计要点：** 参数校验集中在 Source 构造函数；配置对象使用 `final` 字段 + `@Builder`；Enumerator/Reader 只关注业务逻辑。
+
+### 扩展新 Sink
+
+1. 创建新模块，依赖 `flink-etl-core`
+2. 实现 `SinkPlugin` 接口，添加 `@AutoService(SinkPlugin.class)` 注解
+3. 继承 `AbstractSink`，在构造函数中进行参数校验和配置对象构建
+4. 继承 `AbstractSinkWriter<ConfigT>` 实现 `write()`、`flush()`、`close()` 方法
+5. 在 `flink-etl-client/pom.xml` 添加新模块依赖
+
+**设计要点：** 参数校验集中在 Sink 构造函数；批量 Sink 自行管理 batchSize；异常时抛出 IOException，Flink 会从 checkpoint 重试。
 
 ## 文档维护
 
