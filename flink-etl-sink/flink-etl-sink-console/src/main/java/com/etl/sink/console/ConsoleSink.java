@@ -9,19 +9,16 @@ import java.io.IOException;
 
 /**
  * Console Sink 实现
- * 将数据输出到控制台
+ * 将数据输出到控制台，默认显示 subtask 信息
  */
 public class ConsoleSink extends AbstractSink {
 
-    private final boolean showSubtask;
-
-    public ConsoleSink(SinkConfig config, boolean showSubtask) {
+    public ConsoleSink(SinkConfig config) {
         super(config);
-        this.showSubtask = showSubtask;
     }
 
     @Override
     public SinkWriter<Row> createWriter(InitContext context) throws IOException {
-        return new ConsoleSinkWriter(context, showSubtask);
+        return new ConsoleSinkWriter(context);
     }
 }

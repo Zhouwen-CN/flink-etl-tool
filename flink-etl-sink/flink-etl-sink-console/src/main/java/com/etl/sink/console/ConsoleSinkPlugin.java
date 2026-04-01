@@ -22,9 +22,7 @@ public class ConsoleSinkPlugin implements SinkPlugin {
 
     @Override
     public Sink<Row> createSink(SinkConfig config) {
-        boolean showSubtask = config.getBoolean("showSubtask", true);
-        log.info("创建 Console Sink, showSubtask={}", showSubtask);
-
-        return new ConsoleSink(config, showSubtask);
+        log.info("创建 Console Sink");
+        return new ConsoleSink(config);
     }
 }

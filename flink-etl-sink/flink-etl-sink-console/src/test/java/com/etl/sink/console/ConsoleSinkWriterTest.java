@@ -16,12 +16,12 @@ public class ConsoleSinkWriterTest extends AbstractSinkWriterTest {
 
     @Override
     protected AbstractSinkWriter<Boolean> createWriter() throws IOException {
-        return new ConsoleSinkWriter(mockContext, true);
+        return new ConsoleSinkWriter(mockContext);
     }
 
     @org.junit.jupiter.api.Test
     public void testWriteOutput() throws Exception {
-        ConsoleSinkWriter writer = new ConsoleSinkWriter(mockContext, true);
+        ConsoleSinkWriter writer = new ConsoleSinkWriter(mockContext);
 
         Row row = createTestRow("value1", "value2");
         writer.write(row, mock(SinkWriter.Context.class));
@@ -31,7 +31,7 @@ public class ConsoleSinkWriterTest extends AbstractSinkWriterTest {
 
     @org.junit.jupiter.api.Test
     public void testFlushDoesNothing() throws Exception {
-        ConsoleSinkWriter writer = new ConsoleSinkWriter(mockContext, false);
+        ConsoleSinkWriter writer = new ConsoleSinkWriter(mockContext);
 
         writer.flush(false);
         // 无异常即为成功
@@ -39,7 +39,7 @@ public class ConsoleSinkWriterTest extends AbstractSinkWriterTest {
 
     @org.junit.jupiter.api.Test
     public void testCloseDoesNothing() throws Exception {
-        ConsoleSinkWriter writer = new ConsoleSinkWriter(mockContext, false);
+        ConsoleSinkWriter writer = new ConsoleSinkWriter(mockContext);
 
         writer.close();
         // 无异常即为成功

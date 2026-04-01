@@ -512,13 +512,11 @@ Writer 可以通过 `context` 字段访问：
 
 ### Console Sink
 
-将数据输出到控制台，主要用于调试和测试。
+将数据输出到控制台，主要用于调试和测试。默认显示 subtask 信息。
 
 #### 配置参数
 
-| 参数 | 必填 | 默认值 | 说明 |
-|------|:----:|--------|------|
-| `showSubtask` | 否 | `true` | 是否显示分片子任务编号 |
+无配置参数。
 
 #### 配置示例
 
@@ -527,9 +525,7 @@ Writer 可以通过 `context` 字段访问：
   "sink": {
     "type": "console",
     "inputTable": "output_data",
-    "config": {
-      "showSubtask": true
-    }
+    "config": {}
   }
 }
 ```
