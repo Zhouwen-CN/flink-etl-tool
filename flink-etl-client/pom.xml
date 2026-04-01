@@ -56,6 +56,11 @@
             <artifactId>flink-etl-sink-jdbc</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.etl</groupId>
+            <artifactId>flink-etl-sink-kafka</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- Transform 插件 -->
         <dependency>
