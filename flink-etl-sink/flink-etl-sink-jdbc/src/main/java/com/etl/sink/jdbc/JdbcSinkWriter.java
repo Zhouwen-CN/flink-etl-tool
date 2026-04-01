@@ -5,7 +5,6 @@ import com.etl.core.sink.AbstractSinkWriter;
 import com.etl.sink.jdbc.config.JdbcSinkConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.sink2.Sink;
-import org.apache.flink.metrics.groups.SinkWriterMetricGroup;
 import org.apache.flink.types.Row;
 
 import java.io.IOException;
@@ -23,15 +22,13 @@ import java.util.Set;
 @Slf4j
 public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
 
-    private final JdbcSinkConfig config;
     private transient Connection connection;
     private transient PreparedStatement statement;
     private transient String[] columns;
-    private SinkWriterMetricGroup metricGroup;
+    // private SinkWriterMetricGroup metricGroup;
 
     public JdbcSinkWriter(Sink.InitContext context, JdbcSinkConfig config) throws IOException {
         super(context, config, config.getBatchSize());
-        this.config = config;
     }
 
     @Override
@@ -44,8 +41,7 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
             );
             connection.setAutoCommit(false);
 
-            // 注册指标
-            metricGroup = getMetricGroup();
+            // metricGroup = getMetricGroup();
 
             log.info("JDBC Sink 已连接: url={}, subtaskId={}", config.getUrl(), getSubtaskId());
         } catch (SQLException e) {
@@ -56,17 +52,14 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
     @Override
     protected void writeRow(Row row) throws IOException {
         try {
-            // 懒初始化 statement（第一次调用时根据 Row 字段生成 SQL）
             if (statement == null) {
                 initStatement(row);
             }
 
-            // 填充参数
             for (int i = 0; i < columns.length; i++) {
                 statement.setObject(i + 1, row.getField(columns[i]));
             }
 
-            // 添加到 JDBC 批量缓冲
             statement.addBatch();
         } catch (SQLException e) {
             throw new IOException("Failed to write row", e);
@@ -79,12 +72,10 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
 
         String sql;
         if (config.getSql() != null) {
-            // sql 模式：解析具名占位符
             NamedParameterSqlParser.ParsedSql parsed = NamedParameterSqlParser.parse(config.getSql());
             sql = parsed.getPreparedSql();
             log.info("JDBC Sink sql 模式: {}", sql);
         } else {
-            // table 模式：根据 mode 生成 SQL
             if (config.getMode() == WriteMode.UPSERT) {
                 sql = config.getDialect().getUpsertSql(config.getTable(), columns, config.getKeyFields());
                 log.info("JDBC Sink upsert 模式: table={}, keyFields={}", config.getTable(), config.getKeyFields());

@@ -26,21 +26,17 @@ public class JdbcSink extends AbstractSink {
     public JdbcSink(SinkConfig config) {
         super(config);
 
-        // 1. 必要参数校验
         String url = Preconditions.checkNotNull(config.getString("url"), "url is null");
         String username = config.getString("username");
         String password = config.getString("password");
 
-        // 2. Dialect 初始化
         JdbcDialect dialect = JdbcDialects.get(url);
 
-        // 3. table/sql 模式选择和校验
         String table = config.getString("table");
         String sql = config.getString("sql");
         Preconditions.checkArgument(table != null || sql != null,
             "table 和 sql 必须配置其中一个");
 
-        // 4. mode 和 keyFields 参数处理
         String modeStr = config.getString("mode", "INSERT");
         WriteMode mode = WriteMode.valueOf(modeStr.toUpperCase());
 
@@ -54,11 +50,9 @@ public class JdbcSink extends AbstractSink {
             log.info("JDBC Sink insert 模式: table={}", table);
         }
 
-        // 5. batchSize 参数处理
-        Integer batchSize = config.getInteger("batchSize", 100);
+        Integer batchSize = config.getInteger("batchSize", super.getDefaultBatchSize());
         Preconditions.checkArgument(batchSize != null && batchSize > 0, "batchSize must be greater than 0");
 
-        // 6. 构建 JdbcSinkConfig 对象
         this.jdbcSinkConfig = JdbcSinkConfig.builder()
             .url(dialect.wrapUrl(url))
             .username(username)

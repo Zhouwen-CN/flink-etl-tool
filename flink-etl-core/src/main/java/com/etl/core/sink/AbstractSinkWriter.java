@@ -14,7 +14,7 @@ import java.io.IOException;
  * <p>该类特点：
  * <ul>
  *   <li>自动批量管理：维护待写入数据计数，达到 batchSize 时自动触发 flush</li>
- *   <li>立即初始化：构造函数中调用 open()，子类可覆盖进行初始化操作</li>
+ *   <li>延迟初始化：第一次写入时调用 open()，避免子类字段未初始化的 NPE 问题</li>
  *   <li>InitContext 访问：提供 helper 方法获取运行时信息（subtaskId、并行度、metrics）</li>
  *   <li>异常处理：flush 失败时调用 handleFlushFailure()，子类可覆盖进行自定义处理</li>
  * </ul>
@@ -48,15 +48,19 @@ public abstract class AbstractSinkWriter<ConfigT> implements SinkWriter<Row> {
     /** 待写入数据计数 */
     protected int pendingCount = 0;
 
+    /** 是否已初始化 */
+    private boolean initialized = false;
+
     /**
      * 构造函数
      *
-     * <p>立即初始化模式：构造函数中调用 open()，确保 Writer 在创建后立即可用。
+     * <p>延迟初始化模式：不立即调用 open()，而是在第一次写入时初始化。
+     * 这允许子类在构造函数中设置字段，避免 NPE。
      *
      * @param context Writer 初始化上下文
      * @param config Sink 配置对象
      * @param batchSize 批量大小（must be > 0）
-     * @throws IOException 如果 open() 初始化失败
+     * @throws IOException 如果初始化失败
      */
     public AbstractSinkWriter(Sink.InitContext context, ConfigT config, int batchSize) throws IOException {
         if (batchSize <= 0) {
@@ -67,8 +71,20 @@ public abstract class AbstractSinkWriter<ConfigT> implements SinkWriter<Row> {
         this.config = config;
         this.batchSize = batchSize;
 
-        // 立即初始化
-        open();
+        // 不立即初始化，延迟到第一次写入时
+    }
+
+    /**
+     * 确保已初始化
+     * 在第一次写入时调用 open()，避免子类字段未初始化的问题
+     *
+     * @throws IOException 如果初始化失败
+     */
+    private void ensureInitialized() throws IOException {
+        if (!initialized) {
+            open();
+            initialized = true;
+        }
     }
 
     /**
@@ -122,6 +138,8 @@ public abstract class AbstractSinkWriter<ConfigT> implements SinkWriter<Row> {
      */
     @Override
     public final void write(Row row, Context context) throws IOException, InterruptedException {
+        ensureInitialized();
+
         writeRow(row);
         pendingCount++;
 
@@ -187,13 +205,15 @@ public abstract class AbstractSinkWriter<ConfigT> implements SinkWriter<Row> {
 
     /**
      * 关闭 Writer
-     * 先执行 flush 提交剩余数据，然后调用 cleanup 清理资源
+     * 先确保初始化，然后执行 flush 提交剩余数据，最后调用 cleanup 清理资源
      *
      * @throws IOException 如果 flush 或 cleanup 失败
      */
     @Override
     public final void close() throws IOException {
         try {
+            // 确保初始化，以防 cleanup() 依赖初始化的资源
+            ensureInitialized();
             flush(true);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

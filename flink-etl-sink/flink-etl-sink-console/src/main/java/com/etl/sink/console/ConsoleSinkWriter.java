@@ -29,7 +29,6 @@ public class ConsoleSinkWriter extends AbstractSinkWriter<Boolean> {
 
     @Override
     protected void writeRow(Row row) throws IOException {
-        // 直接输出，不缓冲
         if (showSubtask) {
             System.out.printf("[subtask-%d/%d] %s%n", subtaskId + 1, totalSubtasks, row);
         } else {
@@ -39,12 +38,10 @@ public class ConsoleSinkWriter extends AbstractSinkWriter<Boolean> {
 
     @Override
     protected void flushBatch() throws IOException {
-        // Console 直接输出，无需批量提交
     }
 
     @Override
     protected void cleanup() throws IOException {
-        // 无需清理资源
         log.debug("Console Sink Writer 关闭");
     }
 }

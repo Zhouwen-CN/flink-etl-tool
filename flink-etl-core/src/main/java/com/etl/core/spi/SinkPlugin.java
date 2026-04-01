@@ -18,12 +18,4 @@ public interface SinkPlugin extends Plugin {
      */
     Sink<Row> createSink(SinkConfig config);
 
-    /**
-     * 所有 sink 默认的 batchSize
-     *
-     * @return 批次大小
-     */
-    default int getDefaultBatchSize() {
-        return 100;
-    }
 }
