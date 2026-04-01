@@ -458,6 +458,47 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 
 ---
 
+## Sink 插件开发指南
+
+### 使用新 Sink API
+
+所有新 Sink 插件推荐使用 `AbstractSink` 和 `AbstractSinkWriter` 基类。
+
+#### 开发步骤
+
+1. 创建 Sink 类，继承 `AbstractSink`
+2. 在构造函数中进行参数校验和配置对象构建
+3. 创建 Writer 类，继承 `AbstractSinkWriter`
+4. 实现 `writeRow()` 和 `flushBatch()` 方法
+5. 实现 `cleanup()` 方法清理资源
+6. 注册 SPI（使用 `@AutoService(SinkPlugin.class)`）
+
+#### 示例代码
+
+参考 `ConsoleSink` 和 `JdbcSink` 实现。
+
+### 批量管理
+
+AbstractSinkWriter 自动管理批量缓冲：
+- 达到 `batchSize` 时自动 flush
+- checkpoint 或输入结束时强制 flush
+- 子类只需实现 `writeRow()` 和 `flushBatch()`
+
+### InitContext 使用
+
+Writer 可以访问：
+- `getSubtaskId()` - 获取子任务 ID
+- `getNumberOfParallelSubtasks()` - 获取总并行度
+- `getMetricGroup()` - 获取度量组（用于上报指标）
+
+### 异常处理
+
+- `writeRow()` 失败 → 抛出 IOException，Flink 从 checkpoint 重试
+- `flushBatch()` 失败 → 调用 `handleFlushFailure()` 清理状态 + 抛出 IOException
+- `close()` 时 flush 失败 → 抛出异常，任务失败
+
+---
+
 ## Sink 插件
 
 ### Console Sink
