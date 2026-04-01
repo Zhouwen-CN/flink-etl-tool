@@ -11,9 +11,9 @@ import com.etl.core.spi.TransformPlugin;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.connector.source.Source;
+import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
-import org.apache.flink.streaming.api.functions.sink.SinkFunction;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableException;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
@@ -87,8 +87,14 @@ public class JobBuilder {
             // Sink 消费 DataStream
             String sinkType = sinkConfig.getType();
             SinkPlugin sinkPlugin = PluginLoader.loadSinkPlugin(sinkType);
-            SinkFunction<Row> sink = sinkPlugin.createSink(sinkConfig);
-            resultStream.addSink(sink).name(sinkType + " sink");
+            Sink<Row> sink = sinkPlugin.createSink(sinkConfig);
+
+            if (sink == null) {
+                throw new IllegalArgumentException(
+                    String.format("Sink 插件 '%s' 未实现新 API，请检查插件是否已迁移", sinkType));
+            }
+
+            resultStream.sinkTo(sink).name(sinkType + " sink");
             log.info("Sink 创建成功: {}", sinkType);
         }
 
