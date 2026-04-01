@@ -1,7 +1,7 @@
 package com.etl.core.spi;
 
 import com.etl.core.config.SinkConfig;
-import org.apache.flink.streaming.api.functions.sink.SinkFunction;
+import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.types.Row;
 
 /**
@@ -11,12 +11,12 @@ import org.apache.flink.types.Row;
 public interface SinkPlugin extends Plugin {
 
     /**
-     * 创建 Sink 函数
+     * 创建 Sink 实例
      *
      * @param config Sink 配置
-     * @return Flink SinkFunction，强制消费 Row 类型
+     * @return Flink Sink 接口，强制消费 Row 类型
      */
-    SinkFunction<Row> createSink(SinkConfig config);
+    Sink<Row> createSink(SinkConfig config);
 
     /**
      * 所有 sink 默认的 batchSize
