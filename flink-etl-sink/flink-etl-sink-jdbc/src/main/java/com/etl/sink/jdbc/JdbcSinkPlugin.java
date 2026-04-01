@@ -22,7 +22,6 @@ public class JdbcSinkPlugin implements SinkPlugin {
 
     @Override
     public Sink<Row> createSink(SinkConfig config) {
-        // TODO: 迁移到新 API 后实现
-        return null;
+        return new JdbcSink(config);
     }
 }
