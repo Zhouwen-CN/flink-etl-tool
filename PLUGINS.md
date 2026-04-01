@@ -464,37 +464,46 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 
 所有新 Sink 插件推荐使用 `AbstractSink` 和 `AbstractSinkWriter` 基类。
 
+#### AbstractSinkWriter 特点
+
+- **最小化抽象**：只提供 context 和 config 字段访问
+- **子类完全自主**：自行实现 write()、flush()、close() 方法
+- **InitContext 访问**：通过 `context` 字段直接获取运行时信息（subtaskId、并行度、metrics）
+
 #### 开发步骤
 
 1. 创建 Sink 类，继承 `AbstractSink`
 2. 在构造函数中进行参数校验和配置对象构建
 3. 创建 Writer 类，继承 `AbstractSinkWriter`
-4. 实现 `writeRow()` 和 `flushBatch()` 方法
-5. 实现 `cleanup()` 方法清理资源
-6. 注册 SPI（使用 `@AutoService(SinkPlugin.class)`）
+4. 实现 `write()` 方法：写入数据逻辑（自行决定是否批量）
+5. 实现 `flush()` 方法：提交数据逻辑（如批量提交）
+6. 实现 `close()` 方法：清理资源逻辑（如关闭连接）
+7. 注册 SPI（使用 `@AutoService(SinkPlugin.class)`）
 
-#### 示例代码
+#### 批量管理
 
-参考 `ConsoleSink` 和 `JdbcSink` 实现。
+需要批量写入的 Sink（如 JDBC）自行管理：
+- 维护 `batchSize` 和 `pendingCount` 字段
+- 在 `write()` 中判断是否触发 flush
+- 在 `flush()` 中执行批量提交
+- 在 `close()` 中提交剩余数据
 
-### 批量管理
-
-AbstractSinkWriter 自动管理批量缓冲：
-- 达到 `batchSize` 时自动 flush
-- checkpoint 或输入结束时强制 flush
-- 子类只需实现 `writeRow()` 和 `flushBatch()`
+不需要批量的 Sink（如 Console）：
+- `write()` 直接输出
+- `flush()` 空实现
+- `close()` 空实现或简单清理
 
 ### InitContext 使用
 
-Writer 可以访问：
-- `getSubtaskId()` - 获取子任务 ID
-- `getNumberOfParallelSubtasks()` - 获取总并行度
-- `getMetricGroup()` - 获取度量组（用于上报指标）
+Writer 可以通过 `context` 字段访问：
+- `context.getSubtaskId()` - 获取子任务 ID
+- `context.getNumberOfParallelSubtasks()` - 获取总并行度
+- `context.metricGroup()` - 获取度量组（用于上报指标）
 
 ### 异常处理
 
-- `writeRow()` 失败 → 抛出 IOException，Flink 从 checkpoint 重试
-- `flushBatch()` 失败 → 调用 `handleFlushFailure()` 清理状态 + 抛出 IOException
+- `write()` 失败 → 抛出 IOException，Flink 从 checkpoint 重试
+- `flush()` 失败 → 自行处理异常（如 rollback），然后抛出 IOException
 - `close()` 时 flush 失败 → 抛出异常，任务失败
 
 ---
