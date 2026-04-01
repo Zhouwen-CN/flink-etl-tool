@@ -124,6 +124,16 @@ public final class JsonUtils {
     }
 
     /**
+     * 获取 ObjectMapper 实例
+     * 用于 TypeConverter 等需要 ObjectMapper 的场景
+     *
+     * @return ObjectMapper 实例
+     */
+    public static ObjectMapper getMapper() {
+        return MAPPER;
+    }
+
+    /**
      * 通过 jsonpath 解析 json字符串
      *
      * @param json     JSON 字符串

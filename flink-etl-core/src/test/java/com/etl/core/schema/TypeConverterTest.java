@@ -16,7 +16,7 @@ class TypeConverterTest {
     @Test
     void testConvertRowToJsonNode_SimpleRow() {
         // 创建简单 Row（有字段名）
-        Row row = Row.withPositions(3);
+        Row row = Row.withNames();
         row.setField("name", "张三");
         row.setField("age", 25);
         row.setField("score", 95.5);
@@ -35,11 +35,11 @@ class TypeConverterTest {
     @Test
     void testConvertRowToJsonNode_ComplexRow() {
         // 创建嵌套 Row
-        Row addressRow = Row.withPositions(2);
+        Row addressRow = Row.withNames();
         addressRow.setField("city", "北京");
         addressRow.setField("zip", "100001");
 
-        Row userRow = Row.withPositions(3);
+        Row userRow = Row.withNames();
         userRow.setField("id", 1L);
         userRow.setField("name", "李四");
         userRow.setField("address", addressRow);
@@ -60,7 +60,7 @@ class TypeConverterTest {
     @Test
     void testConvertRowToJsonNode_WithArray() {
         // 创建包含数组的 Row
-        Row row = Row.withPositions(2);
+        Row row = Row.withNames();
         row.setField("id", 1);
         row.setField("tags", new String[]{"tag1", "tag2", "tag3"});
 
@@ -82,7 +82,7 @@ class TypeConverterTest {
     void testConvertRowToJsonNode_LocalDateTime() {
         // 创建包含 LocalDateTime 的 Row
         LocalDateTime dateTime = LocalDateTime.of(2024, 1, 15, 10, 30, 0);
-        Row row = Row.withPositions(2);
+        Row row = Row.withNames();
         row.setField("id", 1);
         row.setField("createTime", dateTime);
 
@@ -92,16 +92,17 @@ class TypeConverterTest {
         // 验证结果
         assertNotNull(jsonNode);
         assertEquals(1, jsonNode.get("id").asInt());
-        // LocalDateTime 应该被转为字符串
+        // LocalDateTime 应该被转为字符串，格式为 yyyy-MM-dd HH:mm:ss
         JsonNode timeNode = jsonNode.get("createTime");
         assertNotNull(timeNode);
         assertTrue(timeNode.isTextual());
+        assertEquals("2024-01-15 10:30:00", timeNode.asText());
     }
 
     @Test
     void testConvertRowToJsonNode_WithNull() {
         // 创建包含 null 的 Row
-        Row row = Row.withPositions(3);
+        Row row = Row.withNames();
         row.setField("id", 1);
         row.setField("name", null);
         row.setField("score", 95.5);

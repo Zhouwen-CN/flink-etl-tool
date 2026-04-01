@@ -1,12 +1,15 @@
 package com.etl.core.schema;
 
 import com.etl.core.exception.TypeConversionException;
+import com.etl.core.utils.JsonUtils;
 import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.typeutils.ObjectArrayTypeInfo;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.flink.types.Row;
 
 import java.math.BigDecimal;
@@ -17,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -338,6 +342,76 @@ public class TypeConverter {
             componentInfo = ((ObjectArrayTypeInfo<?, ?>) arrayType).getComponentInfo();
         }
         return componentInfo;
+    }
+
+    // endregion
+
+    // region Row 转 JsonNode（用于 Kafka Sink 序列化）
+
+    /**
+     * 将 Flink Row 转换为 Jackson JsonNode
+     * 与 convertJsonToRow() 形成对称，用于 Kafka Sink 序列化
+     *
+     * @param row Flink Row 对象
+     * @return JsonNode 对象
+     */
+    public static JsonNode convertRowToJsonNode(Row row) {
+        if (row == null) {
+            return null;
+        }
+
+        // 使用 JsonUtils.MAPPER 创建 ObjectNode
+        ObjectMapper mapper = JsonUtils.getMapper();
+        ObjectNode objectNode = mapper.createObjectNode();
+
+        // 获取字段名
+        Set<String> fieldNames = row.getFieldNames(true);
+
+        if (fieldNames != null && !fieldNames.isEmpty()) {
+            // 有字段名：遍历字段名
+            for (String fieldName : fieldNames) {
+                Object value = row.getField(fieldName);
+                JsonNode fieldNode = convertValueToJsonNode(value, mapper);
+                objectNode.set(fieldName, fieldNode);
+            }
+        } else {
+            // 无字段名：使用位置索引
+            int arity = row.getArity();
+            for (int i = 0; i < arity; i++) {
+                Object value = row.getField(i);
+                JsonNode fieldNode = convertValueToJsonNode(value, mapper);
+                objectNode.set("field" + i, fieldNode);
+            }
+        }
+
+        return objectNode;
+    }
+
+    /**
+     * 将单个值转换为 JsonNode
+     *
+     * @param value 字段值
+     * @param mapper ObjectMapper 实例
+     * @return JsonNode
+     */
+    private static JsonNode convertValueToJsonNode(Object value, ObjectMapper mapper) {
+        if (value == null) {
+            return mapper.getNodeFactory().nullNode();
+        }
+
+        // LocalDateTime 使用固定格式
+        if (value instanceof LocalDateTime) {
+            String formatted = ((LocalDateTime) value).format(DEFAULT_TIMESTAMP_FORMAT);
+            return mapper.getNodeFactory().textNode(formatted);
+        }
+
+        // 如果是 Row，递归转换
+        if (value instanceof Row) {
+            return convertRowToJsonNode((Row) value);
+        }
+
+        // 其他类型：使用 mapper.valueToTree
+        return mapper.valueToTree(value);
     }
 
     // endregion
