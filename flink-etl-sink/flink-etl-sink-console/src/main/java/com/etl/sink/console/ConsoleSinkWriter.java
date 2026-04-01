@@ -19,16 +19,16 @@ public class ConsoleSinkWriter extends AbstractSinkWriter<Boolean> {
     private final int totalSubtasks;
 
     public ConsoleSinkWriter(Sink.InitContext context, boolean showSubtask) throws IOException {
-        super(context, true, Integer.MAX_VALUE);  // 不触发批量 flush，config 参数传入 Boolean.TRUE
+        super(context, true);  // config 参数传入 Boolean.TRUE
         this.showSubtask = showSubtask;
-        this.subtaskId = getSubtaskId();
-        this.totalSubtasks = getNumberOfParallelSubtasks();
+        this.subtaskId = context.getSubtaskId();
+        this.totalSubtasks = context.getNumberOfParallelSubtasks();
 
         log.info("Console Sink Writer 初始化, subtask[{}/{}]", subtaskId + 1, totalSubtasks);
     }
 
     @Override
-    protected void writeRow(Row row) throws IOException {
+    public void write(Row row, Context context) throws IOException, InterruptedException {
         if (showSubtask) {
             System.out.printf("[subtask-%d/%d] %s%n", subtaskId + 1, totalSubtasks, row);
         } else {
@@ -37,11 +37,12 @@ public class ConsoleSinkWriter extends AbstractSinkWriter<Boolean> {
     }
 
     @Override
-    protected void flushBatch() throws IOException {
+    public void flush(boolean endOfInput) throws IOException, InterruptedException {
+        // Console Sink 不需要批量提交，空实现
     }
 
     @Override
-    protected void cleanup() throws IOException {
+    public void close() throws IOException {
         log.debug("Console Sink Writer 关闭");
     }
 }
