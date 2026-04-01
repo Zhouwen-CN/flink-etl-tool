@@ -8,11 +8,7 @@ import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
 import com.etl.core.utils.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.flink.api.connector.source.Boundedness;
-import org.apache.flink.api.connector.source.SourceReader;
-import org.apache.flink.api.connector.source.SourceReaderContext;
-import org.apache.flink.api.connector.source.SplitEnumerator;
-import org.apache.flink.api.connector.source.SplitEnumeratorContext;
+import org.apache.flink.api.connector.source.*;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Preconditions;
@@ -69,7 +65,7 @@ public class HttpSource extends AbstractSplitSource<HttpSplit, HttpEnumCheckpoin
             if (!(bodyObj instanceof Map)) {
                 throw new IllegalArgumentException("body 必须是对象格式 {key: value}");
             }
-            body = JsonUtils.toJson(bodyObj);
+            body = JsonUtils.writeValueAsString(bodyObj);
         }
 
         // JSONPath（可选）

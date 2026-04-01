@@ -5,13 +5,9 @@ import com.etl.core.utils.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.SerializationFeature;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.flink.types.Row;
 import org.apache.kafka.clients.producer.ProducerRecord;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -23,20 +19,9 @@ public class RowToJsonSerializationSchema implements KafkaRecordSerializationSch
     private static final long serialVersionUID = 1L;
 
     private final KafkaSinkConfig config;
-    private transient ObjectMapper objectMapper;
 
     public RowToJsonSerializationSchema(KafkaSinkConfig config) {
         this.config = config;
-    }
-
-    public void open(KafkaRecordSerializationSchema.KafkaSinkContext context) throws IOException {
-        // 创建专用的 ObjectMapper（配置 JSR310 支持）
-        this.objectMapper = new ObjectMapper();
-        this.objectMapper.registerModule(new JavaTimeModule());
-        this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-
-        log.info("Kafka Sink 序列化器已初始化: topic={}, keyField={}",
-                 config.getTopic(), config.getKeyField());
     }
 
     @Override
@@ -81,7 +66,7 @@ public class RowToJsonSerializationSchema implements KafkaRecordSerializationSch
             JsonNode jsonNode = TypeConverter.convertRowToJsonNode(row);
 
             // JsonNode -> JSON 字符串
-            String jsonString = objectMapper.writeValueAsString(jsonNode);
+            String jsonString = JsonUtils.writeValueAsString(jsonNode);
 
             // 转为 bytes
             return jsonString.getBytes(StandardCharsets.UTF_8);

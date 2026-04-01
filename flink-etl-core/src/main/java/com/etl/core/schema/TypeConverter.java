@@ -9,18 +9,16 @@ import org.apache.flink.api.java.typeutils.ObjectArrayTypeInfo;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.node.ArrayNode;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.flink.types.Row;
 
+import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Function;
 
 /**
@@ -408,6 +406,18 @@ public class TypeConverter {
         // 如果是 Row，递归转换
         if (value instanceof Row) {
             return convertRowToJsonNode((Row) value);
+        }
+
+        // 如果是数组，处理数组元素（支持 Row[] 等嵌套对象数组）
+        if (value.getClass().isArray()) {
+            int length = Array.getLength(value);
+            ArrayNode arrayNode = mapper.createArrayNode();
+            for (int i = 0; i < length; i++) {
+                Object element = Array.get(value, i);
+                JsonNode elementNode = convertValueToJsonNode(element, mapper);
+                arrayNode.add(elementNode);
+            }
+            return arrayNode;
         }
 
         // 其他类型：使用 mapper.valueToTree

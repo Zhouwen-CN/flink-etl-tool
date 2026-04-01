@@ -116,4 +116,44 @@ class TypeConverterTest {
         assertTrue(jsonNode.get("name").isNull());
         assertEquals(95.5, jsonNode.get("score").asDouble(), 0.001);
     }
+
+    @Test
+    void testConvertRowToJsonNode_WithArrayOfObjects() {
+        // 创建包含对象数组的 Row（数组嵌套 object）
+        Row order1 = Row.withNames();
+        order1.setField("orderId", "001");
+        order1.setField("amount", 100.5);
+
+        Row order2 = Row.withNames();
+        order2.setField("orderId", "002");
+        order2.setField("amount", 200.8);
+
+        Row userRow = Row.withNames();
+        userRow.setField("userId", "user123");
+        userRow.setField("orders", new Row[]{order1, order2});
+
+        // 转换为 JsonNode
+        JsonNode jsonNode = TypeConverter.convertRowToJsonNode(userRow);
+
+        // 验证结果
+        assertNotNull(jsonNode);
+        assertEquals("user123", jsonNode.get("userId").asText());
+
+        // 验证 orders 数组
+        JsonNode ordersNode = jsonNode.get("orders");
+        assertTrue(ordersNode.isArray());
+        assertEquals(2, ordersNode.size());
+
+        // 验证第一个订单对象
+        JsonNode order1Node = ordersNode.get(0);
+        assertTrue(order1Node.isObject());
+        assertEquals("001", order1Node.get("orderId").asText());
+        assertEquals(100.5, order1Node.get("amount").asDouble(), 0.001);
+
+        // 验证第二个订单对象
+        JsonNode order2Node = ordersNode.get(1);
+        assertTrue(order2Node.isObject());
+        assertEquals("002", order2Node.get("orderId").asText());
+        assertEquals(200.8, order2Node.get("amount").asDouble(), 0.001);
+    }
 }

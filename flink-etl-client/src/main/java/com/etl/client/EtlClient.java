@@ -11,6 +11,9 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class EtlClient {
     public static void main(String[] args) {
+        //System.setProperty("java.security.auth.login.config", "D:/work/haibo/kafka_config/jaas.conf");
+        //System.setProperty("java.security.krb5.conf", "D:/work/haibo/kafka_config/krb5.conf");
+
         log.info("ETL 工具启动");
         try {
             JobConfig config = CliArgumentParser.parse(args);

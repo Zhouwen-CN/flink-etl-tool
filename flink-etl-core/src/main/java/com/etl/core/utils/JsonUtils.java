@@ -5,6 +5,8 @@ import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.core.JsonProcessin
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.DeserializationFeature;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.SerializationFeature;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,6 +22,10 @@ public final class JsonUtils {
     static {
         // 忽略未知属性
         MAPPER.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        // 注册 JSR310 模块支持 Java 8 日期时间类型
+        MAPPER.registerModule(new JavaTimeModule());
+        // 禁用将日期写为时间戳
+        MAPPER.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 
     private JsonUtils() {
@@ -33,7 +39,7 @@ public final class JsonUtils {
      * @return JSON 字符串
      * @throws IllegalArgumentException 序列化失败时抛出
      */
-    public static String toJson(Object obj) {
+    public static String writeValueAsString(Object obj) {
         if (obj == null) {
             return null;
         }
