@@ -8,6 +8,7 @@ import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
 import org.apache.flink.types.Row;
 
+import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -201,56 +202,12 @@ public class JsonToRowConverter {
 
         // 基本类型数组处理
         if (elementConverter != null) {
-            if (Types.STRING.equals(componentType)) {
-                String[] array = new String[size];
-                int i = 0;
-                for (JsonNode element : node) {
-                    array[i++] = (String) elementConverter.apply(element);
-                }
-                return array;
-            } else if (Types.INT.equals(componentType)) {
-                Integer[] array = new Integer[size];
-                int i = 0;
-                for (JsonNode element : node) {
-                    array[i++] = (Integer) elementConverter.apply(element);
-                }
-                return array;
-            } else if (Types.LONG.equals(componentType)) {
-                Long[] array = new Long[size];
-                int i = 0;
-                for (JsonNode element : node) {
-                    array[i++] = (Long) elementConverter.apply(element);
-                }
-                return array;
-            } else if (Types.DOUBLE.equals(componentType)) {
-                Double[] array = new Double[size];
-                int i = 0;
-                for (JsonNode element : node) {
-                    array[i++] = (Double) elementConverter.apply(element);
-                }
-                return array;
-            } else if (Types.BOOLEAN.equals(componentType)) {
-                Boolean[] array = new Boolean[size];
-                int i = 0;
-                for (JsonNode element : node) {
-                    array[i++] = (Boolean) elementConverter.apply(element);
-                }
-                return array;
-            } else if (Types.BIG_DEC.equals(componentType)) {
-                BigDecimal[] array = new BigDecimal[size];
-                int i = 0;
-                for (JsonNode element : node) {
-                    array[i++] = (BigDecimal) elementConverter.apply(element);
-                }
-                return array;
-            } else if (Types.LOCAL_DATE_TIME.equals(componentType)) {
-                LocalDateTime[] array = new LocalDateTime[size];
-                int i = 0;
-                for (JsonNode element : node) {
-                    array[i++] = (LocalDateTime) elementConverter.apply(element);
-                }
-                return array;
+            Object array = Array.newInstance(componentType.getTypeClass(), size);
+            int i = 0;
+            for (JsonNode element : node) {
+                Array.set(array, i++, elementConverter.apply(element));
             }
+            return array;
         }
 
         throw new IllegalArgumentException("不支持的数组元素类型: " + componentType);
