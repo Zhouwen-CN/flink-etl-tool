@@ -1,5 +1,6 @@
 package com.etl.source.jdbc;
 
+import com.etl.core.schema.TypeConverter;
 import com.etl.core.source.BaseSplitReader;
 import com.etl.source.jdbc.config.JdbcSourceConfig;
 import lombok.extern.slf4j.Slf4j;
@@ -132,10 +133,21 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
 
             // 读取一批记录
             while (hasNextRecord && recordsInBatch < batchSize) {
-                // 内联 createRow 逻辑
+                // 创建 Row 并进行类型转换
                 Row row = new Row(columnCount);
                 for (int i = 1; i <= columnCount; i++) {
-                    row.setField(i - 1, currentResultSet.getObject(i));
+                    int index = i - 1;
+                    String columnName = metaData.getColumnLabel(i);
+                    Object rawValue = currentResultSet.getObject(i);
+
+                    // 根据 JDBC 类型转换为 Flink 类型
+                    int sqlType = metaData.getColumnType(i);
+                    org.apache.flink.api.common.typeinfo.TypeInformation<?> flinkType =
+                            TypeConverter.fromSqlType(sqlType);
+
+                    // 使用 TypeConverter 进行类型转换（处理 java.sql.Timestamp 等 JDBC 类型）
+                    Object convertedValue = TypeConverter.convertFromValue(rawValue, columnName, flinkType);
+                    row.setField(index, convertedValue);
                 }
 
                 builder.add(currentSplit.splitId(), row);

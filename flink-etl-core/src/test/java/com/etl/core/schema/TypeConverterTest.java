@@ -1,9 +1,11 @@
 package com.etl.core.schema;
 
+import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
 import org.apache.flink.types.Row;
 import org.junit.jupiter.api.Test;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -155,5 +157,51 @@ class TypeConverterTest {
         assertTrue(order2Node.isObject());
         assertEquals("002", order2Node.get("orderId").asText());
         assertEquals(200.8, order2Node.get("amount").asDouble(), 0.001);
+    }
+
+    @Test
+    void testConvertFromValue_TimestampToLocalDateTime() {
+        // 创建 java.sql.Timestamp
+        Timestamp timestamp = new Timestamp(System.currentTimeMillis());
+
+        // 转换为 LocalDateTime（目标类型为 Types.LOCAL_DATE_TIME）
+        Object result = TypeConverter.convertFromValue(timestamp, "createTime", Types.LOCAL_DATE_TIME);
+
+        // 验证结果
+        assertNotNull(result);
+        assertTrue(result instanceof LocalDateTime);
+        LocalDateTime localDateTime = (LocalDateTime) result;
+
+        // 验证值相同
+        assertEquals(timestamp.toLocalDateTime(), localDateTime);
+    }
+
+    @Test
+    void testConvertFromValue_LocalDateTimeNoConversion() {
+        // 创建 LocalDateTime
+        LocalDateTime localDateTime = LocalDateTime.of(2024, 1, 15, 10, 30, 0);
+
+        // 转换应该直接返回（已经是目标类型）
+        Object result = TypeConverter.convertFromValue(localDateTime, "createTime", Types.LOCAL_DATE_TIME);
+
+        // 验证结果
+        assertNotNull(result);
+        assertTrue(result instanceof LocalDateTime);
+        assertEquals(localDateTime, result);
+    }
+
+    @Test
+    void testConvertFromValue_StringToLocalDateTime() {
+        // 字符串格式的时间
+        String timeString = "2024-01-15 10:30:00";
+
+        // 转换为 LocalDateTime
+        Object result = TypeConverter.convertFromValue(timeString, "createTime", Types.LOCAL_DATE_TIME);
+
+        // 验证结果
+        assertNotNull(result);
+        assertTrue(result instanceof LocalDateTime);
+        LocalDateTime localDateTime = (LocalDateTime) result;
+        assertEquals(LocalDateTime.of(2024, 1, 15, 10, 30, 0), localDateTime);
     }
 }
