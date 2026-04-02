@@ -4,6 +4,7 @@ import com.etl.core.schema.TypeConverter;
 import com.etl.core.source.BaseSplitReader;
 import com.etl.source.jdbc.config.JdbcSourceConfig;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
 import org.apache.flink.connector.base.source.reader.RecordsWithSplitIds;
 import org.apache.flink.connector.base.source.reader.splitreader.SplitsChange;
@@ -131,23 +132,24 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
             ResultSetMetaData metaData = currentResultSet.getMetaData();
             int columnCount = metaData.getColumnCount();
 
+            // 预计算列元数据（避免在热路径中重复调用）
+            String[] columnNames = new String[columnCount];
+            int[] sqlTypes = new int[columnCount];
+            TypeInformation<?>[] flinkTypes = new TypeInformation<?>[columnCount];
+
+            for (int i = 0; i < columnCount; i++) {
+                columnNames[i] = metaData.getColumnLabel(i + 1);
+                sqlTypes[i] = metaData.getColumnType(i + 1);
+                flinkTypes[i] = TypeConverter.fromSqlType(sqlTypes[i]);
+            }
+
             // 读取一批记录
             while (hasNextRecord && recordsInBatch < batchSize) {
-                // 创建 Row 并进行类型转换
                 Row row = new Row(columnCount);
-                for (int i = 1; i <= columnCount; i++) {
-                    int index = i - 1;
-                    String columnName = metaData.getColumnLabel(i);
-                    Object rawValue = currentResultSet.getObject(i);
-
-                    // 根据 JDBC 类型转换为 Flink 类型
-                    int sqlType = metaData.getColumnType(i);
-                    org.apache.flink.api.common.typeinfo.TypeInformation<?> flinkType =
-                            TypeConverter.fromSqlType(sqlType);
-
-                    // 使用 TypeConverter 进行类型转换（处理 java.sql.Timestamp 等 JDBC 类型）
-                    Object convertedValue = TypeConverter.convertFromValue(rawValue, columnName, flinkType);
-                    row.setField(index, convertedValue);
+                for (int i = 0; i < columnCount; i++) {
+                    Object rawValue = currentResultSet.getObject(i + 1);
+                    Object convertedValue = TypeConverter.convertFromValue(rawValue, columnNames[i], flinkTypes[i]);
+                    row.setField(i, convertedValue);
                 }
 
                 builder.add(currentSplit.splitId(), row);

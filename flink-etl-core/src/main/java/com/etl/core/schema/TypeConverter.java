@@ -102,9 +102,8 @@ public class TypeConverter {
             return null;
         }
 
-        // 如果已经是目标类型，直接返回
         if (isCompatibleType(value, targetType)) {
-            // 特殊处理：java.sql.Timestamp 需要转换为 LocalDateTime
+            // Timestamp 虽然被视为 LocalDateTime 的兼容类型，但需要实际转换
             if (targetType == Types.LOCAL_DATE_TIME && value instanceof java.sql.Timestamp) {
                 return ((java.sql.Timestamp) value).toLocalDateTime();
             }
