@@ -47,6 +47,17 @@ public class OracleDialect implements JdbcDialect {
 
     @Override
     public String getUpsertSql(String table, String[] columns, List<String> keyFields) {
+        // 参数校验
+        if (table == null || table.isEmpty()) {
+            throw new IllegalArgumentException("table 不能为空");
+        }
+        if (columns == null || columns.length == 0) {
+            throw new IllegalArgumentException("columns 不能为空");
+        }
+        if (keyFields == null || keyFields.isEmpty()) {
+            throw new IllegalArgumentException("keyFields 不能为空");
+        }
+
         // Oracle 使用 MERGE INTO 语法
         String targetTable = quoteIdentifier(table);
 
