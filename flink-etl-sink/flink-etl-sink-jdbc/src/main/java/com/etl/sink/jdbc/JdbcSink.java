@@ -40,7 +40,7 @@ public class JdbcSink extends AbstractSink {
         } else {
             // 未配置 dialect，根据 URL 自动识别
             log.info("根据 URL 自动识别 dialect");
-            dialect = JdbcDialects.get(url);
+            dialect = JdbcDialects.getByUrl(url);
         }
 
         String table = config.getString("table");

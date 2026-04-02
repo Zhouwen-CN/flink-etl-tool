@@ -39,7 +39,7 @@ class JdbcDialectsTest {
     @Test
     void testGetByUrl_mysql() {
         String url = "jdbc:mysql://localhost:3306/test";
-        JdbcDialect dialect = JdbcDialects.get(url);
+        JdbcDialect dialect = JdbcDialects.getByUrl(url);
         assertNotNull(dialect);
         assertEquals("mysql", dialect.getName());
     }
@@ -47,7 +47,7 @@ class JdbcDialectsTest {
     @Test
     void testGetByUrl_postgresql() {
         String url = "jdbc:postgresql://localhost:5432/test";
-        JdbcDialect dialect = JdbcDialects.get(url);
+        JdbcDialect dialect = JdbcDialects.getByUrl(url);
         assertNotNull(dialect);
         assertEquals("postgresql", dialect.getName());
     }
@@ -56,7 +56,7 @@ class JdbcDialectsTest {
     void testGetByUrl_unsupportedUrl() {
         String url = "jdbc:unsupported://localhost/test";
         assertThrows(IllegalArgumentException.class, () -> {
-            JdbcDialects.get(url);
+            JdbcDialects.getByUrl(url);
         }, "不支持的数据库 URL 应该抛出异常");
     }
 }

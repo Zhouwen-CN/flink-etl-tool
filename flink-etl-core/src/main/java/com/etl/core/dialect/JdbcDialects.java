@@ -38,7 +38,7 @@ public final class JdbcDialects {
      * @return 对应的 Dialect
      * @throws IllegalArgumentException 如果不支持的数据库类型
      */
-    public static JdbcDialect get(String url) {
+    public static JdbcDialect getByUrl(String url) {
         if (url == null || url.isEmpty()) {
             throw new IllegalArgumentException("JDBC URL 不能为空");
         }

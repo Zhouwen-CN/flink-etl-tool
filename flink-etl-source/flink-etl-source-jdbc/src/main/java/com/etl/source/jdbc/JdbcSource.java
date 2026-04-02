@@ -43,7 +43,7 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
         } else {
             // 未配置 dialect，根据 URL 自动识别
             log.info("根据 URL 自动识别 dialect");
-            dialect = JdbcDialects.get(url);
+            dialect = JdbcDialects.getByUrl(url);
         }
 
         // 使用 Dialect 包装 URL
