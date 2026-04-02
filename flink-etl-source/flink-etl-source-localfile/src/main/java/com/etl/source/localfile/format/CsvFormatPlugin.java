@@ -1,7 +1,7 @@
 package com.etl.source.localfile.format;
 
 import com.etl.core.schema.EtlSchema;
-import com.etl.core.schema.SqlTypeConverter;
+import com.etl.core.schema.TypeConverter;
 import com.etl.source.localfile.config.LocalFileSourceConfig;
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
@@ -115,7 +115,7 @@ public class CsvFormatPlugin implements FileFormatPlugin {
                         }
 
                         String fieldName = schema.getFieldName(i);
-                        Object converted = SqlTypeConverter.convertFromValue(value, fieldName, schema.getFieldType(i));
+                        Object converted = TypeConverter.convertFromValue(value, fieldName, schema.getFieldType(i));
                         row.setField(i, converted);
                     }
 

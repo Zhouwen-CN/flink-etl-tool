@@ -1,6 +1,7 @@
 package com.etl.source.jdbc;
 
 import com.etl.core.schema.SqlTypeConverter;
+import com.etl.core.schema.TypeConverter;
 import com.etl.core.source.BaseSplitReader;
 import com.etl.source.jdbc.config.JdbcSourceConfig;
 import lombok.extern.slf4j.Slf4j;
@@ -35,9 +36,6 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
     private final String url;
     private final String username;
     private final String password;
-    private final String table;
-    private final String sql;
-    private final String splitColumn;
     private final int batchSize;
     private final Integer queryTimeout;
 
@@ -56,9 +54,6 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
         this.url = config.getUrl();
         this.username = config.getUsername();
         this.password = config.getPassword();
-        this.table = config.getTable();
-        this.sql = config.getSql();
-        this.splitColumn = config.getSplitColumn();
         this.batchSize = config.getBatchSize();
         this.queryTimeout = config.getQueryTimeout();
     }
@@ -148,7 +143,7 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
                 Row row = new Row(columnCount);
                 for (int i = 0; i < columnCount; i++) {
                     Object rawValue = currentResultSet.getObject(i + 1);
-                    Object convertedValue = SqlTypeConverter.convertFromValue(rawValue, columnNames[i], flinkTypes[i]);
+                    Object convertedValue = TypeConverter.convertFromValue(rawValue, columnNames[i], flinkTypes[i]);
                     row.setField(i, convertedValue);
                 }
 

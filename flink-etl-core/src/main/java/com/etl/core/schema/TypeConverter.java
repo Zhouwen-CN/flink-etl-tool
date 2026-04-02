@@ -1,90 +1,124 @@
 package com.etl.core.schema;
 
+import com.etl.core.exception.TypeConversionException;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
-import org.apache.flink.types.Row;
+import org.apache.flink.api.common.typeinfo.Types;
 
-import java.util.List;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
 
 /**
  * 类型转换器
  * 将原始值转换为目标类型（基于 Flink TypeInformation）
  *
- * @deprecated 已拆分为三个专门的转换器类，建议使用：
  * <ul>
  *   <li>{@link SqlTypeConverter} - SQL 类型转换</li>
  *   <li>{@link JsonToRowConverter} - JSON 转 Row</li>
  *   <li>{@link RowToJsonConverter} - Row 转 JSON</li>
+ *   <li>{@link TypeConverter} - 将 value 根据 flink 类型信息转换成对应的类型</li>
  * </ul>
  */
-@Deprecated
 public class TypeConverter {
 
     private TypeConverter() {
         // 私有构造函数，防止实例化
     }
 
+    private static final DateTimeFormatter DEFAULT_TIMESTAMP_FORMAT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+
     /**
-     * 根据 JDBC java.sql.Types 转换为 Flink TypeInformation
-     *
-     * @param sqlType JDBC SQL 类型常量（来自 java.sql.Types）
-     * @return 对应的 Flink TypeInformation
-     * @deprecated 使用 {@link SqlTypeConverter#fromSqlType(int)} 代替
+     * 字符串值转换器映射
      */
-    @Deprecated
-    public static TypeInformation<?> fromSqlType(int sqlType) {
-        return SqlTypeConverter.fromSqlType(sqlType);
+    private static final Map<TypeInformation<?>, Function<String, Object>> STRING_CONVERTERS = new HashMap<>();
+
+    /**
+     * 类型兼容性检查映射
+     */
+    private static final Map<TypeInformation<?>, Function<Object, Boolean>> TYPE_COMPATIBILITY_CHECKERS = new HashMap<>();
+
+    static {
+        // 初始化字符串转换器
+        STRING_CONVERTERS.put(Types.STRING, v -> v);
+        STRING_CONVERTERS.put(Types.INT, Integer::parseInt);
+        STRING_CONVERTERS.put(Types.LONG, Long::parseLong);
+        STRING_CONVERTERS.put(Types.DOUBLE, Double::parseDouble);
+        STRING_CONVERTERS.put(Types.BOOLEAN, TypeConverter::parseBoolean);
+        STRING_CONVERTERS.put(Types.BIG_DEC, BigDecimal::new);
+        STRING_CONVERTERS.put(Types.LOCAL_DATE_TIME, v -> LocalDateTime.parse(v, DEFAULT_TIMESTAMP_FORMAT));
+
+        // 初始化类型兼容性检查器
+        TYPE_COMPATIBILITY_CHECKERS.put(Types.STRING, v -> v instanceof String);
+        TYPE_COMPATIBILITY_CHECKERS.put(Types.INT, v -> v instanceof Integer);
+        TYPE_COMPATIBILITY_CHECKERS.put(Types.LONG, v -> v instanceof Long);
+        TYPE_COMPATIBILITY_CHECKERS.put(Types.DOUBLE, v -> v instanceof Double);
+        TYPE_COMPATIBILITY_CHECKERS.put(Types.BOOLEAN, v -> v instanceof Boolean);
+        TYPE_COMPATIBILITY_CHECKERS.put(Types.BIG_DEC, v -> v instanceof BigDecimal);
+        TYPE_COMPATIBILITY_CHECKERS.put(Types.LOCAL_DATE_TIME, v -> v instanceof LocalDateTime || v instanceof java.sql.Timestamp);
     }
+
 
     /**
      * 将原始值转换为目标类型
+     * 用于 JDBC ResultSet 值转换
      *
-     * @param value 原始值（通常是 String）
+     * @param value 原始值（通常是 String 或 JDBC 类型）
      * @param fieldName 字段名（用于错误信息）
      * @param targetType 目标类型（Flink TypeInformation）
      * @return 转换后的值
-     * @deprecated 使用 {@link SqlTypeConverter#convertFromValue(Object, String, TypeInformation)} 代替
+     * @throws TypeConversionException 转换失败时抛出
      */
-    @Deprecated
     public static Object convertFromValue(Object value, String fieldName, TypeInformation<?> targetType) {
-        return SqlTypeConverter.convertFromValue(value, fieldName, targetType);
+        if (value == null) {
+            return null;
+        }
+
+        if (isCompatibleType(value, targetType)) {
+            // Timestamp 虽然被视为 LocalDateTime 的兼容类型，但需要实际转换
+            if (targetType == Types.LOCAL_DATE_TIME && value instanceof java.sql.Timestamp) {
+                return ((java.sql.Timestamp) value).toLocalDateTime();
+            }
+            return value;
+        }
+
+        String strValue = String.valueOf(value);
+
+        try {
+            Function<String, Object> converter = STRING_CONVERTERS.get(targetType);
+            if (converter != null) {
+                return converter.apply(strValue);
+            }
+            // 未知类型，返回原值
+            return value;
+        } catch (NumberFormatException | DateTimeParseException e) {
+            throw new TypeConversionException(fieldName, strValue, targetType, e);
+        }
     }
 
     /**
-     * 将 JsonNode 转换为 Row 列表
-     *
-     * @param node   JsonNode 节点
-     * @param schema Schema 定义
-     * @return Row 列表
-     * @deprecated 使用 {@link JsonToRowConverter#convertJsonToRows(JsonNode, EtlSchema)} 代替
+     * 检查值是否已经是目标类型
      */
-    @Deprecated
-    public static List<Row> convertJsonToRows(JsonNode node, EtlSchema schema) {
-        return JsonToRowConverter.convertJsonToRows(node, schema);
+    private static boolean isCompatibleType(Object value, TypeInformation<?> targetType) {
+        Function<Object, Boolean> checker = TYPE_COMPATIBILITY_CHECKERS.get(targetType);
+        return checker != null && checker.apply(value);
     }
 
     /**
-     * 将 JsonNode 转换为 Flink Row（基于 RowTypeInfo）
-     *
-     * @param node JsonNode 节点
-     * @param rowTypeInfo Row 类型信息
-     * @return Row 对象
-     * @deprecated 使用 {@link JsonToRowConverter#convertJsonToRow(JsonNode, TypeInformation)} 代替
+     * 解析布尔值（支持多种格式）
      */
-    @Deprecated
-    public static Row convertJsonToRow(JsonNode node, TypeInformation<?> rowTypeInfo) {
-        return JsonToRowConverter.convertJsonToRow(node, rowTypeInfo);
-    }
-
-    /**
-     * 将 Flink Row 转换为 Jackson JsonNode
-     *
-     * @param row Flink Row 对象
-     * @return JsonNode 对象
-     * @deprecated 使用 {@link RowToJsonConverter#convertRowToJsonNode(Row)} 代替
-     */
-    @Deprecated
-    public static JsonNode convertRowToJsonNode(Row row) {
-        return RowToJsonConverter.convertRowToJsonNode(row);
+    private static Boolean parseBoolean(String value) {
+        if ("true".equalsIgnoreCase(value) || "1".equals(value) || "yes".equalsIgnoreCase(value)) {
+            return true;
+        }
+        if ("false".equalsIgnoreCase(value) || "0".equals(value) || "no".equalsIgnoreCase(value)) {
+            return false;
+        }
+        throw new NumberFormatException("无法解析为布尔值: " + value);
     }
 }
