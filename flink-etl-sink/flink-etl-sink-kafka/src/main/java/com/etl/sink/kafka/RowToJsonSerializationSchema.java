@@ -1,6 +1,6 @@
 package com.etl.sink.kafka;
 
-import com.etl.core.schema.TypeConverter;
+import com.etl.core.schema.RowToJsonConverter;
 import com.etl.core.utils.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
@@ -63,7 +63,7 @@ public class RowToJsonSerializationSchema implements KafkaRecordSerializationSch
     private byte[] serializeValue(Row row) {
         try {
             // Row -> JsonNode
-            JsonNode jsonNode = TypeConverter.convertRowToJsonNode(row);
+            JsonNode jsonNode = RowToJsonConverter.convertRowToJsonNode(row);
 
             // JsonNode -> JSON 字符串
             String jsonString = JsonUtils.writeValueAsString(jsonNode);

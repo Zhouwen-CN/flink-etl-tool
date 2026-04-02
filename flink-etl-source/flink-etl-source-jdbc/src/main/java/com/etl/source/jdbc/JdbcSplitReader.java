@@ -1,6 +1,6 @@
 package com.etl.source.jdbc;
 
-import com.etl.core.schema.TypeConverter;
+import com.etl.core.schema.SqlTypeConverter;
 import com.etl.core.source.BaseSplitReader;
 import com.etl.source.jdbc.config.JdbcSourceConfig;
 import lombok.extern.slf4j.Slf4j;
@@ -140,7 +140,7 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
             for (int i = 0; i < columnCount; i++) {
                 columnNames[i] = metaData.getColumnLabel(i + 1);
                 sqlTypes[i] = metaData.getColumnType(i + 1);
-                flinkTypes[i] = TypeConverter.fromSqlType(sqlTypes[i]);
+                flinkTypes[i] = SqlTypeConverter.fromSqlType(sqlTypes[i]);
             }
 
             // 读取一批记录
@@ -148,7 +148,7 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
                 Row row = new Row(columnCount);
                 for (int i = 0; i < columnCount; i++) {
                     Object rawValue = currentResultSet.getObject(i + 1);
-                    Object convertedValue = TypeConverter.convertFromValue(rawValue, columnNames[i], flinkTypes[i]);
+                    Object convertedValue = SqlTypeConverter.convertFromValue(rawValue, columnNames[i], flinkTypes[i]);
                     row.setField(i, convertedValue);
                 }
 

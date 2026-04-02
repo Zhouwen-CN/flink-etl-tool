@@ -1,7 +1,7 @@
 package com.etl.source.kafka;
 
 import com.etl.core.schema.EtlSchema;
-import com.etl.core.schema.TypeConverter;
+import com.etl.core.schema.JsonToRowConverter;
 import com.etl.core.utils.JsonUtils;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
@@ -46,8 +46,8 @@ public class JsonToRowDeserializationSchema implements KafkaRecordDeserializatio
         // 解析 JSON
         JsonNode jsonNode = JsonUtils.readTree(record.value());
 
-        // 使用 TypeConverter.convertJsonToRows 方法，支持 JSONObject 和 JSONArray
-        List<Row> rows = TypeConverter.convertJsonToRows(jsonNode, schema);
+        // 使用 JsonToRowConverter.convertJsonToRows 方法，支持 JSONObject 和 JSONArray
+        List<Row> rows = JsonToRowConverter.convertJsonToRows(jsonNode, schema);
 
         // 为每个 Row 添加 __topic__ 隐藏字段
         String topic = record.topic();

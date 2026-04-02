@@ -1,7 +1,7 @@
 package com.etl.core.utils;
 
 import com.etl.core.dialect.JdbcDialect;
-import com.etl.core.schema.TypeConverter;
+import com.etl.core.schema.SqlTypeConverter;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.types.Row;
@@ -45,7 +45,7 @@ public final class SqlUtils {
             for (int i = 1; i <= columnCount; i++) {
                 int index = i - 1;
                 names[index] = metaData.getColumnLabel(i);
-                types[index] = TypeConverter.fromSqlType(metaData.getColumnType(i));
+                types[index] = SqlTypeConverter.fromSqlType(metaData.getColumnType(i));
             }
 
             return Types.ROW_NAMED(names, types);

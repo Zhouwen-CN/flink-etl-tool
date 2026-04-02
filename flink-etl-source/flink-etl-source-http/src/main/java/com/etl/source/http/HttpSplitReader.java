@@ -1,6 +1,6 @@
 package com.etl.source.http;
 
-import com.etl.core.schema.TypeConverter;
+import com.etl.core.schema.JsonToRowConverter;
 import com.etl.core.source.BaseSplitReader;
 import com.etl.core.utils.JsonUtils;
 import com.jayway.jsonpath.PathNotFoundException;
@@ -62,7 +62,7 @@ public class HttpSplitReader implements BaseSplitReader<Row, HttpSplit> {
             }
 
             // 转换为 Row 列表
-            List<Row> rows = TypeConverter.convertJsonToRows(rootNode, split.getConfig().getSchema());
+            List<Row> rows = JsonToRowConverter.convertJsonToRows(rootNode, split.getConfig().getSchema());
 
             log.info("HTTP 请求完成，获取 {} 条记录", rows.size());
 
