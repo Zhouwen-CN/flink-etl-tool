@@ -1,0 +1,38 @@
+{
+  "job": {
+    "name": "oceanbase-dialect-example",
+    "mode": "batch",
+    "parallelism": 4
+  },
+  "sources": [
+    {
+      "type": "jdbc",
+      "outputTable": "source_data",
+      "config": {
+        "url": "jdbc:oceanbase://localhost:2883/test",
+        "dialect": "oracle",
+        "username": "admin",
+        "password": "password",
+        "table": "SOURCE_TABLE",
+        "splitColumn": "ID",
+        "batchSize": 1000
+      }
+    }
+  ],
+  "sinks": [
+    {
+      "type": "jdbc",
+      "inputTable": "source_data",
+      "config": {
+        "url": "jdbc:oceanbase://localhost:2883/test",
+        "dialect": "oracle",
+        "username": "admin",
+        "password": "password",
+        "table": "TARGET_TABLE",
+        "mode": "upsert",
+        "keyFields": ["ID"],
+        "batchSize": 100
+      }
+    }
+  ]
+}
