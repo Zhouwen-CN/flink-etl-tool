@@ -35,7 +35,7 @@
 | `dialect` | 否 | 自动识别 | 数据库方言，可选值：`mysql`、`postgresql`、`oracle`。不配置则根据 URL 自动识别 |
 | `table` | 条件必填 | - | 表名。与 `sql` 二选一，优先 |
 | `sql` | 条件必填 | - | 自定义查询 SQL。与 `table` 二选一 |
-| `splitColumn` | 否 | - | 分片列名，支持数值类型（TINYINT/SMALLINT/INT/BIGINT/FLOAT/DOUBLE/DECIMAL）。不配置则使用单分片全表扫描 |
+| `splitColumn` | 否 | - | 分片列名，支持数值类型（TINYINT, SMALLINT, INTEGER, BIGINT, FLOAT, REAL, DOUBLE, NUMERIC, DECIMAL）。不配置则使用单分片全表扫描 |
 | `batchSize` | 否 | 100 | 批量读取大小 |
 | `queryTimeout` | 否 | 无限制 | 查询超时时间（秒） |
 | `schema` | 否 | 自动推断 | Schema 定义，不配置则从数据库元数据自动推断 |
@@ -138,7 +138,9 @@
 }
 ```
 
-> **说明：** OceanBase Oracle 模式使用 Oracle 兼容驱动，URL 中包含 `oceanbase` 但需显式配置 `dialect: "oracle"`
+> **说明：** OceanBase 支持两种兼容模式：
+> - MySQL 模式：URL 格式 `jdbc:oceanbase://host:2883/db`，自动识别为 MySQL 方言，无需显式配置 dialect
+> - Oracle 模式：URL 格式 `jdbc:oceanbase://host:2883/db`，需显式配置 `dialect: "oracle"` 以使用 Oracle 方言
 
 > **注意：**
 > - 未配置 `splitColumn` 时将使用单分片全表扫描模式，无法并行读取数据
@@ -732,6 +734,39 @@ JDBC Sink 自动识别数据库类型并使用对应的标识符转义：
 | OceanBase (Oracle 模式) | `"name"` | `jdbc:oceanbase://host:2883/db` |
 | SQLite | `"name"` | `jdbc:sqlite:/path/to/db` |
 | SQL Server | `[name]` | `jdbc:sqlserver://host:1433;databaseName=db` |
+
+#### JDBC 驱动依赖配置
+
+不同数据库需要对应的 JDBC 驱动依赖：
+
+**MySQL 驱动（已包含）：**
+```xml
+<dependency>
+    <groupId>com.mysql</groupId>
+    <artifactId>mysql-connector-j</artifactId>
+    <version>8.0.33</version>
+</dependency>
+```
+
+**OceanBase 驱动（已包含）：**
+```xml
+<dependency>
+    <groupId>com.oceanbase</groupId>
+    <artifactId>oceanbase-client</artifactId>
+    <version>2.4.3</version>
+</dependency>
+```
+
+**Oracle 驱动（需要手动添加）：**
+```xml
+<dependency>
+    <groupId>com.oracle.database.jdbc</groupId>
+    <artifactId>ojdbc8</artifactId>
+    <version>21.11.0.0</version>
+</dependency>
+```
+
+> **注意：** Oracle JDBC 驱动可能需要从 Oracle 官网下载或使用第三方 Maven 仓库
 
 ---
 
