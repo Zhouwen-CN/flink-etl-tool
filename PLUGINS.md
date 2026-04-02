@@ -32,6 +32,7 @@
 | `url` | 是 | - | JDBC 连接 URL，格式：`jdbc:mysql://host:port/database` |
 | `username` | 是 | - | 数据库用户名 |
 | `password` | 是 | - | 数据库密码 |
+| `dialect` | 否 | 自动识别 | 数据库方言，可选值：`mysql`、`postgresql`、`oracle`。不配置则根据 URL 自动识别 |
 | `table` | 条件必填 | - | 表名。与 `sql` 二选一，优先 |
 | `sql` | 条件必填 | - | 自定义查询 SQL。与 `table` 二选一 |
 | `splitColumn` | 否 | - | 分片列名，支持数值类型（TINYINT/SMALLINT/INT/BIGINT/FLOAT/DOUBLE/DECIMAL）。不配置则使用单分片全表扫描 |
@@ -97,10 +98,53 @@
 }
 ```
 
+**Oracle 数据库配置：**
+
+```json
+{
+  "source": {
+    "type": "jdbc",
+    "outputTable": "users",
+    "config": {
+      "url": "jdbc:oracle:thin:@localhost:1521:orcl",
+      "username": "system",
+      "password": "oracle",
+      "table": "USERS",
+      "dialect": "oracle",
+      "splitColumn": "ID",
+      "batchSize": 1000
+    }
+  }
+}
+```
+
+**OceanBase Oracle 模式配置：**
+
+```json
+{
+  "source": {
+    "type": "jdbc",
+    "outputTable": "users",
+    "config": {
+      "url": "jdbc:oceanbase://localhost:2883/test",
+      "username": "admin",
+      "password": "password",
+      "table": "USERS",
+      "dialect": "oracle",
+      "splitColumn": "ID",
+      "batchSize": 1000
+    }
+  }
+}
+```
+
+> **说明：** OceanBase Oracle 模式使用 Oracle 兼容驱动，URL 中包含 `oceanbase` 但需显式配置 `dialect: "oracle"`
+
 > **注意：**
 > - 未配置 `splitColumn` 时将使用单分片全表扫描模式，无法并行读取数据
 > - 对于大数据量表，建议配置 `splitColumn` 以启用并行分片读取
 > - `splitColumn` 仅支持数值类型（TINYINT, SMALLINT, INT, BIGINT, REAL, FLOAT, DOUBLE, DECIMAL, NUMERIC），配置非数值类型列会报错
+> - `dialect` 参数用于显式指定数据库类型，适用于 URL 无法正确识别数据库类型的场景（如 OceanBase）
 
 #### 分片说明
 
@@ -544,6 +588,7 @@ Writer 可以通过 `context` 字段访问：
 | `url` | 是 | - | JDBC 连接 URL |
 | `username` | 是 | - | 数据库用户名 |
 | `password` | 是 | - | 数据库密码 |
+| `dialect` | 否 | 自动识别 | 数据库方言，可选值：`mysql`、`postgresql`、`oracle`。不配置则根据 URL 自动识别 |
 | `table` | 条件必填 | - | 目标表名。与 `sql` 二选一，优先 |
 | `sql` | 条件必填 | - | 自定义 SQL，支持具名占位符 `:paramName` |
 | `mode` | 否 | `insert` | 写入模式：`insert`（插入）或 `upsert`（存在则更新） |
@@ -621,6 +666,54 @@ INSERT INTO `user_table` (`id`, `name`, `email`) VALUES (?, ?, ?)
 ON DUPLICATE KEY UPDATE `name`=VALUES(`name`), `email`=VALUES(`email`)
 ```
 
+**Oracle 数据库 Upsert 配置：**
+
+```json
+{
+  "sink": {
+    "type": "jdbc",
+    "inputTable": "output_data",
+    "config": {
+      "url": "jdbc:oracle:thin:@localhost:1521:orcl",
+      "username": "system",
+      "password": "oracle",
+      "table": "TARGET_TABLE",
+      "dialect": "oracle",
+      "mode": "upsert",
+      "keyFields": ["ID"],
+      "batchSize": 100
+    }
+  }
+}
+```
+
+**OceanBase Oracle 模式配置：**
+
+```json
+{
+  "sink": {
+    "type": "jdbc",
+    "inputTable": "output_data",
+    "config": {
+      "url": "jdbc:oceanbase://localhost:2883/test",
+      "username": "admin",
+      "password": "password",
+      "table": "TARGET_TABLE",
+      "dialect": "oracle",
+      "mode": "upsert",
+      "keyFields": ["ID"],
+      "batchSize": 100
+    }
+  }
+}
+```
+
+> **说明：** Oracle 和 OceanBase Oracle 模式使用 `MERGE INTO` 语法实现 upsert
+
+> **注意：**
+> - `dialect` 参数用于显式指定数据库类型，适用于 URL 无法正确识别数据库类型的场景（如 OceanBase）
+> - 不同数据库的 upsert 语法不同：MySQL 使用 `ON DUPLICATE KEY UPDATE`，PostgreSQL 使用 `ON CONFLICT`，Oracle 使用 `MERGE INTO`
+
 #### 具名占位符说明
 
 - 格式：`:paramName`，如 `:id`、`:name`、`:email`
@@ -635,6 +728,8 @@ JDBC Sink 自动识别数据库类型并使用对应的标识符转义：
 |--------|-----------|----------|
 | MySQL | `` `name` `` | `jdbc:mysql://host:3306/db` |
 | PostgreSQL | `"name"` | `jdbc:postgresql://host:5432/db` |
+| Oracle | `"name"` | `jdbc:oracle:thin:@host:1521:SID` |
+| OceanBase (Oracle 模式) | `"name"` | `jdbc:oceanbase://host:2883/db` |
 | SQLite | `"name"` | `jdbc:sqlite:/path/to/db` |
 | SQL Server | `[name]` | `jdbc:sqlserver://host:1433;databaseName=db` |
 
