@@ -15,13 +15,19 @@
           "type": "douyin",
           "test": 1
         },
-        "dataPath": "$.data",
         "schema": {
-          "index": "int",
-          "title": "string",
-          "hot": "string",
-          "url": "string",
-          "mobilUrl": "string"
+          "code": "INT",
+          "title": "STRING",
+          "subtitle": "STRING",
+          "data": [
+            {
+              "index": "INT",
+              "title": "STRING",
+              "hot": "STRING",
+              "url": "STRING",
+              "mobilUrl": "STRING"
+            }
+          ]
         }
       }
     }

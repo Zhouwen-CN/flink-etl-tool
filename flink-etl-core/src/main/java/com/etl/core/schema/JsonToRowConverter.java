@@ -175,7 +175,7 @@ public class JsonToRowConverter {
      *
      * @param node JsonNode 数组节点
      * @param arrayType 数组类型信息
-     * @return 包装类型数组（Integer[], Long[], String[] 等）
+     * @return 包装类型数组（Integer[], Long[], String[], Row[] 等）
      */
     private static Object convertJsonArray(JsonNode node, TypeInformation<?> arrayType) {
         if (node == null || !node.isArray()) {
@@ -185,62 +185,75 @@ public class JsonToRowConverter {
         int size = node.size();
         TypeInformation<?> componentType = getComponentType(arrayType);
 
-        // 获取元素转换器
-        Function<JsonNode, Object> elementConverter = JSON_ARRAY_ELEMENT_CONVERTERS.get(componentType);
-
-        // 根据类型创建对应数组
-        if (Types.STRING.equals(componentType)) {
-            String[] array = new String[size];
+        // Row[] 类型数组处理
+        if (componentType instanceof RowTypeInfo) {
+            // Row[] 数组
+            Row[] array = new Row[size];
             int i = 0;
             for (JsonNode element : node) {
-                array[i++] = (String) elementConverter.apply(element);
-            }
-            return array;
-        } else if (Types.INT.equals(componentType)) {
-            Integer[] array = new Integer[size];
-            int i = 0;
-            for (JsonNode element : node) {
-                array[i++] = (Integer) elementConverter.apply(element);
-            }
-            return array;
-        } else if (Types.LONG.equals(componentType)) {
-            Long[] array = new Long[size];
-            int i = 0;
-            for (JsonNode element : node) {
-                array[i++] = (Long) elementConverter.apply(element);
-            }
-            return array;
-        } else if (Types.DOUBLE.equals(componentType)) {
-            Double[] array = new Double[size];
-            int i = 0;
-            for (JsonNode element : node) {
-                array[i++] = (Double) elementConverter.apply(element);
-            }
-            return array;
-        } else if (Types.BOOLEAN.equals(componentType)) {
-            Boolean[] array = new Boolean[size];
-            int i = 0;
-            for (JsonNode element : node) {
-                array[i++] = (Boolean) elementConverter.apply(element);
-            }
-            return array;
-        } else if (Types.BIG_DEC.equals(componentType)) {
-            BigDecimal[] array = new BigDecimal[size];
-            int i = 0;
-            for (JsonNode element : node) {
-                array[i++] = (BigDecimal) elementConverter.apply(element);
-            }
-            return array;
-        } else if (Types.LOCAL_DATE_TIME.equals(componentType)) {
-            LocalDateTime[] array = new LocalDateTime[size];
-            int i = 0;
-            for (JsonNode element : node) {
-                array[i++] = (LocalDateTime) elementConverter.apply(element);
+                array[i++] = convertJsonToRow(element, componentType);
             }
             return array;
         }
 
-        throw new IllegalArgumentException("不支持的基本类型数组: " + componentType);
+        // 获取元素转换器（用于基本类型）
+        Function<JsonNode, Object> elementConverter = JSON_ARRAY_ELEMENT_CONVERTERS.get(componentType);
+
+        // 基本类型数组处理
+        if (elementConverter != null) {
+            if (Types.STRING.equals(componentType)) {
+                String[] array = new String[size];
+                int i = 0;
+                for (JsonNode element : node) {
+                    array[i++] = (String) elementConverter.apply(element);
+                }
+                return array;
+            } else if (Types.INT.equals(componentType)) {
+                Integer[] array = new Integer[size];
+                int i = 0;
+                for (JsonNode element : node) {
+                    array[i++] = (Integer) elementConverter.apply(element);
+                }
+                return array;
+            } else if (Types.LONG.equals(componentType)) {
+                Long[] array = new Long[size];
+                int i = 0;
+                for (JsonNode element : node) {
+                    array[i++] = (Long) elementConverter.apply(element);
+                }
+                return array;
+            } else if (Types.DOUBLE.equals(componentType)) {
+                Double[] array = new Double[size];
+                int i = 0;
+                for (JsonNode element : node) {
+                    array[i++] = (Double) elementConverter.apply(element);
+                }
+                return array;
+            } else if (Types.BOOLEAN.equals(componentType)) {
+                Boolean[] array = new Boolean[size];
+                int i = 0;
+                for (JsonNode element : node) {
+                    array[i++] = (Boolean) elementConverter.apply(element);
+                }
+                return array;
+            } else if (Types.BIG_DEC.equals(componentType)) {
+                BigDecimal[] array = new BigDecimal[size];
+                int i = 0;
+                for (JsonNode element : node) {
+                    array[i++] = (BigDecimal) elementConverter.apply(element);
+                }
+                return array;
+            } else if (Types.LOCAL_DATE_TIME.equals(componentType)) {
+                LocalDateTime[] array = new LocalDateTime[size];
+                int i = 0;
+                for (JsonNode element : node) {
+                    array[i++] = (LocalDateTime) elementConverter.apply(element);
+                }
+                return array;
+            }
+        }
+
+        throw new IllegalArgumentException("不支持的数组元素类型: " + componentType);
     }
 
     /**
