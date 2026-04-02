@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.ServiceLoader;
+import java.util.stream.Collectors;
 
 /**
  * JDBC Dialect 简单工厂
@@ -50,5 +51,27 @@ public final class JdbcDialects {
         }
 
         throw new IllegalArgumentException("不支持的数据库类型，URL: " + url);
+    }
+
+    /**
+     * 根据 Dialect 名称获取对应的 Dialect
+     * @param name Dialect 名称，如 "mysql", "postgresql", "oracle"
+     * @return 对应的 Dialect
+     * @throws IllegalArgumentException 如果不支持的 dialect 名称
+     */
+    public static JdbcDialect getByName(String name) {
+        if (name == null || name.isEmpty()) {
+            throw new IllegalArgumentException("Dialect 名称不能为空");
+        }
+
+        for (JdbcDialect dialect : DIALECTS) {
+            if (dialect.getName().equalsIgnoreCase(name)) {
+                log.debug("名称 {} 匹配 Dialect: {}", name, dialect.getName());
+                return dialect;
+            }
+        }
+
+        throw new IllegalArgumentException("不支持的 Dialect 类型，名称: " + name +
+            "。支持的类型: " + DIALECTS.stream().map(JdbcDialect::getName).collect(Collectors.joining(", ")));
     }
 }
