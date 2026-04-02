@@ -4,7 +4,8 @@
     "allow": [
       "Bash(*)",
       "Read(*)",
-      "WebFetch(*)"
+      "WebFetch(*)",
+      "WebSearch(*)"
     ],
     "ask": [
       "Bash(git push *)",

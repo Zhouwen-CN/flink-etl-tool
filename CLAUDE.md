@@ -43,7 +43,8 @@ flink-etl-tool/
 │   └── flink-etl-source-kafka/   # Kafka Source
 ├── flink-etl-sink/               # Sink 插件父模块
 │   ├── flink-etl-sink-console/   # Console Sink
-│   └── flink-etl-sink-jdbc/      # JDBC Sink
+│   ├── flink-etl-sink-jdbc/      # JDBC Sink
+│   └── flink-etl-sink-kafka/     # Kafka Sink
 └── flink-etl-transform/          # Transform 插件（SQL Transform）
 ```
 
@@ -108,6 +109,44 @@ flink-etl-tool/
 
 **设计要点：** 参数校验集中在 Sink 构造函数；批量 Sink 自行管理 batchSize；异常时抛出 IOException，Flink 会从 checkpoint 重试。
 
+## 开发实践
+
+### Schema 配置
+
+- JDBC Source 可自动推断 Schema，其他 Source 必须显式配置
+- Schema 类型支持（简单类型、ARRAY、OBJECT）详见 [PLUGINS.md#schema-配置](PLUGINS.md#schema-配置)
+
+### 类型转换
+
+- JDBC ResultSet → `TypeConverter.convertFromValue()`
+- JSON 数据 → `JsonToRowConverter.convertJsonToRows()`
+- SQL 类型字符串 → `SqlTypeConverter.toFlinkType()`
+- Row 转 JSON → `RowToJsonConverter.convertRowToJsonNode()`
+
+### 异常处理
+
+| 场景 | Source | Sink |
+|------|--------|------|
+| 读取/写入失败 | 抛出异常，Reader 重试 | 抛出 `IOException`，checkpoint 重试 |
+| 配置校验失败 | Source 构造函数抛 `IllegalArgumentException` | Sink 构造函数抛 `IllegalArgumentException` |
+
+Sink 异常处理详见 [PLUGINS.md#sink-插件开发指南](PLUGINS.md#sink-插件开发指南)。
+
+### 测试规范
+
+- 测试文件位置：`src/test/java/`，镜像 `src/main/java/` 结构
+- 测试类命名：`<ClassName>Test.java`
+- 使用 JUnit 5：`@Test`、`@BeforeEach`、`assertThrows()`
+- 测试覆盖：配置解析、类型转换、Dialect SQL 生成、Schema 校验
+- JDBC 测试：使用 Mock 或 H2 测试数据库
+- Flink 测试：参考 `AbstractSinkWriterTest` 使用 MiniCluster
+- Kafka 测试：使用 EmbeddedKafka 或 Mock Consumer/Producer
+
+### 插件打包
+
+- 新插件添加依赖：在 `flink-etl-client/pom.xml` 添加模块依赖
+- 依赖管理：MySQL/OceanBase 驱动已包含，Oracle 需手动添加；Kafka connector 使用 Flink 版本；CSV 使用 Commons CSV；JSONPath 用于 HTTP Source
+
 ## 文档维护
 
 **重要：** 每次修改或新增 Source、Sink、Transform 插件时，必须同步更新 [PLUGINS.md](PLUGINS.md) 文档。
@@ -138,21 +177,6 @@ flink-etl-tool/
 - `name`: Job 名称
 - `mode`: `batch` 或 `streaming`
 - `parallelism`: 并行度（可选），分片数量等于并行度
-
-## 关键抽象类
-
-**Source 抽象层：**
-- `AbstractSplitSource`: Source 基类，封装 FLIP-27 Source API
-
-**Base 组件：**
-- `BaseSplitEnumerator`: 分片枚举器基类
-- `BaseSourceReader`: 源阅读器基类
-- `BaseSplitReader`: 分片读取器接口
-
-**序列化组件：**
-- `SerializerUtils`: JDK 序列化工具类
-- `DefaultSplitSerializer`: 分片序列化器
-- `DefaultCheckpointSerializer`: 检查点序列化器
 
 ## 技术栈
 
