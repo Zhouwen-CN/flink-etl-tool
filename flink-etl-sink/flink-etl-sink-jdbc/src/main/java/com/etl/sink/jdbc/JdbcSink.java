@@ -5,6 +5,7 @@ import com.etl.core.dialect.JdbcDialect;
 import com.etl.core.dialect.JdbcDialectLoader;
 import com.etl.core.dialect.WriteMode;
 import com.etl.core.sink.AbstractSink;
+import com.etl.core.utils.SqlUtils;
 import com.etl.sink.jdbc.config.JdbcSinkConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.sink2.SinkWriter;
@@ -12,6 +13,8 @@ import org.apache.flink.types.Row;
 import org.apache.flink.util.Preconditions;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 
 /**
@@ -44,12 +47,18 @@ public class JdbcSink extends AbstractSink {
 
         List<String> keyFields = null;
         if (mode == WriteMode.UPSERT) {
-            List<String> keyFieldsConfig = config.getList("keyFields");
-            Preconditions.checkNotNull(keyFieldsConfig, "UPSERT 模式必须配置 keyFields");
-            keyFields = keyFieldsConfig;
-            log.info("JDBC Sink upsert 模式: table={}, keyFields={}", table, keyFields);
+            // UPSERT 模式必须配置 table，不能配置 sql
+            Preconditions.checkArgument(table != null,
+                "UPSERT 模式必须配置 table（不能使用 sql），因为需要从数据库获取主键信息");
+
+            // 自动获取主键
+            LinkedHashMap<String, Integer> pkInfo =
+                SqlUtils.getPrimaryKey(url, table, username, password);
+            keyFields = new ArrayList<>(pkInfo.keySet());
+
+            log.info("JDBC Sink UPSERT 模式自动获取主键: table={}, keyFields={}", table, keyFields);
         } else {
-            log.info("JDBC Sink insert 模式: table={}", table);
+            log.info("JDBC Sink INSERT 模式: table={}", table);
         }
 
         Integer batchSize = config.getInteger("batchSize", super.getDefaultBatchSize());
