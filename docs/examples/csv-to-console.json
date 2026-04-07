@@ -23,10 +23,19 @@
       }
     }
   ],
+  "transforms": [
+    {
+      "type": "sql",
+      "outputTable": "csv_source_transformed",
+      "config": {
+        "sql": "SELECT *,hash_code(email) as hash_code FROM csv_source"
+      }
+    }
+  ],
   "sinks": [
     {
       "type": "console",
-      "inputTable": "csv_source"
+      "inputTable": "csv_source_transformed"
     }
   ]
 }

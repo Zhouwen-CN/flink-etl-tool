@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 
 /**
@@ -14,22 +13,27 @@ import java.util.ServiceLoader;
 @Slf4j
 public class PluginLoader {
 
+    private static ClassLoader classLoader;
+
     private PluginLoader() {
         // 私有构造函数，防止实例化
-    }
-
-    private static <T extends Plugin> T loadPlugin(Class<T> clazz, String type) {
-        String simpleName = clazz.getSimpleName();
-        log.info("加载 {}：{}", simpleName, type);
-
-        // 使用当前线程的 ClassLoader 加载插件
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        classLoader = Thread.currentThread().getContextClassLoader();
         if (classLoader == null) {
             classLoader = PluginLoader.class.getClassLoader();
         }
+    }
 
-        ServiceLoader<T> loader = ServiceLoader.load(clazz, classLoader);
-        for (T plugin : loader) {
+    private static <T> ServiceLoader<T> serviceLoader(Class<T> clazz) {
+        return ServiceLoader.load(clazz, classLoader);
+    }
+
+
+    private static <T extends Plugin> T loadPluginByType(Class<T> clazz, String type) {
+        String simpleName = clazz.getSimpleName();
+        log.info("加载 {}：{}", simpleName, type);
+
+        ServiceLoader<T> serviceLoader = serviceLoader(clazz);
+        for (T plugin : serviceLoader) {
             if (plugin.identifier().equals(type)) {
                 log.info("{} 加载成功：{}", simpleName, plugin.getClass().getName());
                 return plugin;
@@ -48,7 +52,7 @@ public class PluginLoader {
      * @return Source 插件实例
      */
     public static SourcePlugin loadSourcePlugin(String type) {
-        return loadPlugin(SourcePlugin.class, type);
+        return loadPluginByType(SourcePlugin.class, type);
     }
 
     /**
@@ -58,7 +62,7 @@ public class PluginLoader {
      * @return Transform 插件实例
      */
     public static TransformPlugin loadTransformPlugin(String type) {
-        return loadPlugin(TransformPlugin.class, type);
+        return loadPluginByType(TransformPlugin.class, type);
     }
 
     /**
@@ -68,7 +72,7 @@ public class PluginLoader {
      * @return Sink 插件实例
      */
     public static SinkPlugin loadSinkPlugin(String type) {
-        return loadPlugin(SinkPlugin.class, type);
+        return loadPluginByType(SinkPlugin.class, type);
     }
 
     /**
@@ -80,32 +84,22 @@ public class PluginLoader {
     public static List<UdfPlugin> loadAllUdfPlugins() {
         log.info("批量加载所有 UDF 插件");
 
-        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        if (classLoader == null) {
-            classLoader = PluginLoader.class.getClassLoader();
-        }
-
-        ServiceLoader<UdfPlugin> loader = ServiceLoader.load(UdfPlugin.class, classLoader);
+        ServiceLoader<UdfPlugin> serviceLoader = serviceLoader(UdfPlugin.class);
         List<UdfPlugin> plugins = new ArrayList<>();
 
-        try {
-            for (UdfPlugin plugin : loader) {
-                String functionName = plugin.identifier();
+        for (UdfPlugin plugin : serviceLoader) {
+            String functionName = plugin.identifier();
 
-                // 校验函数名非空
-                if (functionName == null || functionName.trim().isEmpty()) {
-                    log.warn("UDF 插件 {} 的 identifier() 返回空值，跳过加载",
-                             plugin.getClass().getName());
-                    continue;
-                }
-
-                log.info("UDF 插件加载成功：{} -> {}",
-                         functionName, plugin.getClass().getName());
-                plugins.add(plugin);
+            // 校验函数名非空
+            if (functionName == null || functionName.trim().isEmpty()) {
+                log.warn("UDF 插件 {} 的 identifier() 返回空值，跳过加载",
+                        plugin.getClass().getName());
+                continue;
             }
-        } catch (ServiceConfigurationError e) {
-            throw new IllegalStateException(
-                "SPI 配置文件加载失败，请检查 META-INF/services/com.etl.core.spi.UdfPlugin", e);
+
+            log.info("UDF 插件加载成功：{} -> {}",
+                    functionName, plugin.getClass().getName());
+            plugins.add(plugin);
         }
 
         log.info("共加载 {} 个 UDF 插件", plugins.size());

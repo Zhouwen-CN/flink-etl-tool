@@ -4,22 +4,22 @@ import com.etl.core.config.JobConfig;
 import com.etl.core.config.SinkConfig;
 import com.etl.core.config.SourceConfig;
 import com.etl.core.config.TransformConfig;
-import com.etl.core.spi.PluginLoader;
-import com.etl.core.spi.SinkPlugin;
-import com.etl.core.spi.SourcePlugin;
-import com.etl.core.spi.TransformPlugin;
+import com.etl.core.spi.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
-import org.apache.flink.api.connector.source.Source;
 import org.apache.flink.api.connector.sink2.Sink;
+import org.apache.flink.api.connector.source.Source;
 import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableException;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
+import org.apache.flink.table.functions.UserDefinedFunction;
 import org.apache.flink.types.Row;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Job 构建器
@@ -39,6 +39,9 @@ public class JobBuilder {
         log.info("开始构建 Flink Job: {}", config.getJob().getName());
         // 创建 Table 环境
         StreamTableEnvironment stEnv = StreamTableEnvironment.create(env);
+
+        // 批量注册所有 UDF
+        registerAllUdf(stEnv);
 
         // 1. 处理所有 Source -> DataStream
         for (SourceConfig sourceConfig : config.getSources()) {
@@ -99,5 +102,56 @@ public class JobBuilder {
         }
 
         log.info("Flink Job 构建完成");
+    }
+
+    /**
+     * 批量注册所有 UDF 到 TableEnvironment
+     *
+     * @param stEnv Table 环境
+     * @throws IllegalStateException 如果 UDF 注册失败或函数名冲突
+     */
+    private static void registerAllUdf(StreamTableEnvironment stEnv) {
+        List<UdfPlugin> udfPlugins = PluginLoader.loadAllUdfPlugins();
+
+        Set<String> registeredFunctions = new HashSet<>();
+
+        for (UdfPlugin udf : udfPlugins) {
+            String functionName = udf.identifier();
+
+            // 校验函数名唯一性
+            if (registeredFunctions.contains(functionName)) {
+                throw new IllegalStateException(
+                    String.format("函数名冲突：'%s' 已被注册，请检查 UDF 插件的 identifier() 方法",
+                                  functionName)
+                );
+            }
+
+            // 创建 UDF 实例
+            UserDefinedFunction functionInstance = udf.createFunction();
+            if (functionInstance == null) {
+                throw new IllegalStateException(
+                    String.format("UDF 插件 '%s' 的 createFunction() 返回 null",
+                                  udf.getClass().getName())
+                );
+            }
+
+            // 注册函数
+            try {
+                stEnv.createTemporaryFunction(functionName, functionInstance);
+                registeredFunctions.add(functionName);
+                log.info("UDF 注册成功：{} -> {}",
+                         functionName, functionInstance.getClass().getSimpleName());
+            } catch (Exception e) {
+                throw new IllegalStateException(
+                    String.format("UDF 注册失败：%s", functionName), e
+                );
+            }
+        }
+
+        if (udfPlugins.isEmpty()) {
+            log.info("未发现任何 UDF 插件");
+        } else {
+            log.info("成功注册 {} 个 UDF 函数", udfPlugins.size());
+        }
     }
 }

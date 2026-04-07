@@ -2,6 +2,8 @@ package com.etl.core.udf.scalar;
 
 import com.etl.core.spi.UdfPlugin;
 import com.google.auto.service.AutoService;
+import org.apache.flink.table.annotation.DataTypeHint;
+import org.apache.flink.table.annotation.InputGroup;
 import org.apache.flink.table.functions.ScalarFunction;
 import org.apache.flink.table.functions.UserDefinedFunction;
 
@@ -33,7 +35,7 @@ public class HashUdf implements UdfPlugin {
          * @param input 输入对象，可以为 null
          * @return 哈希码，null 输入返回 0
          */
-        public int eval(Object input) {
+        public int eval(@DataTypeHint(inputGroup = InputGroup.ANY) Object input) {
             if (input == null) {
                 return 0;
             }
