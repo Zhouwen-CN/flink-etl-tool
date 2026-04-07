@@ -428,7 +428,7 @@ git commit -m "feat(core): 新增 WriteMode 枚举"
 - [ ] **Step 1: 添加 dialect 导入并修改构造函数**
 
 在 `JdbcSource.java` 中：
-1. 添加导入：`import com.etl.core.dialect.JdbcDialect;` 和 `import com.etl.core.dialect.JdbcDialects;`
+1. 添加导入：`import com.etl.core.dialect.JdbcDialect;` 和 `import com.etl.core.dialect.JdbcDialectLoader;`
 2. 添加字段：`private final JdbcDialect dialect;`
 3. 修改构造函数中的 URL 包装逻辑：
 
@@ -534,7 +534,7 @@ package com.etl.sink.jdbc;
 
 import com.etl.core.config.SinkConfig;
 import com.etl.core.dialect.JdbcDialect;
-import com.etl.core.dialect.JdbcDialects;
+import com.etl.core.dialect.JdbcDialectLoader;
 import com.etl.core.dialect.WriteMode;
 import com.etl.core.spi.SinkPlugin;
 import com.etl.sink.jdbc.config.JdbcSinkConfig;

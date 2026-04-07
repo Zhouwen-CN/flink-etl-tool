@@ -984,7 +984,7 @@ package com.etl.sink.jdbc;
 
 import com.etl.core.config.SinkConfig;
 import com.etl.core.dialect.JdbcDialect;
-import com.etl.core.dialect.JdbcDialects;
+import com.etl.core.dialect.JdbcDialectLoader;
 import com.etl.core.dialect.WriteMode;
 import com.etl.core.sink.AbstractSink;
 import com.etl.sink.jdbc.config.JdbcSinkConfig;

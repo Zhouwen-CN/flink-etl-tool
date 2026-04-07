@@ -2,7 +2,7 @@ package com.etl.sink.jdbc;
 
 import com.etl.core.config.SinkConfig;
 import com.etl.core.dialect.JdbcDialect;
-import com.etl.core.dialect.JdbcDialects;
+import com.etl.core.dialect.JdbcDialectLoader;
 import com.etl.core.dialect.WriteMode;
 import com.etl.core.sink.AbstractSink;
 import com.etl.sink.jdbc.config.JdbcSinkConfig;
@@ -30,18 +30,9 @@ public class JdbcSink extends AbstractSink {
         String username = config.getString("username");
         String password = config.getString("password");
 
-        // 新增：支持显式配置 dialect
-        JdbcDialect dialect;
+        // 支持显式配置 dialect
         String dialectName = config.getString("dialect");
-        if (dialectName != null && !dialectName.isEmpty()) {
-            // 显式指定 dialect，直接按名称查找
-            log.info("使用显式配置的 dialect: {}", dialectName);
-            dialect = JdbcDialects.getByName(dialectName);
-        } else {
-            // 未配置 dialect，根据 URL 自动识别
-            log.info("根据 URL 自动识别 dialect");
-            dialect = JdbcDialects.getByUrl(url);
-        }
+        JdbcDialect dialect = JdbcDialectLoader.get(dialectName, url);
 
         String table = config.getString("table");
         String sql = config.getString("sql");

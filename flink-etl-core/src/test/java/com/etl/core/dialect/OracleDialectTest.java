@@ -23,12 +23,6 @@ class OracleDialectTest {
     }
 
     @Test
-    void testAcceptsUrl_oceanbase() {
-        // OceanBase Oracle 模式使用 oracle 驱动
-        assertTrue(dialect.acceptsUrl("jdbc:oceanbase://localhost:2883/test"));
-    }
-
-    @Test
     void testAcceptsUrl_other() {
         assertFalse(dialect.acceptsUrl("jdbc:mysql://localhost:3306/test"));
         assertFalse(dialect.acceptsUrl("jdbc:postgresql://localhost:5432/test"));

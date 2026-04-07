@@ -26,18 +26,7 @@ public class OracleDialect implements JdbcDialect {
 
     @Override
     public boolean acceptsUrl(String url) {
-        if (url == null) {
-            return false;
-        }
-        // 支持 Oracle JDBC URL
-        if (url.contains(":oracle:")) {
-            return true;
-        }
-        // 支持 OceanBase Oracle 模式（使用 oracle 驱动）
-        if (url.contains(":oceanbase:")) {
-            return true;
-        }
-        return false;
+        return url != null && url.contains(":oracle:");
     }
 
     @Override

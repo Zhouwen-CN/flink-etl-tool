@@ -2,7 +2,7 @@ package com.etl.source.jdbc;
 
 import com.etl.core.config.SourceConfig;
 import com.etl.core.dialect.JdbcDialect;
-import com.etl.core.dialect.JdbcDialects;
+import com.etl.core.dialect.JdbcDialectLoader;
 import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseSplitReader;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
@@ -30,21 +30,11 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
 
     public JdbcSource(SourceConfig config) {
         super(config);
-        String url = config.getString("url");
-        Preconditions.checkNotNull(url, "url is null");
+        String url = Preconditions.checkNotNull(config.getString("url"), "url is null");
 
         // 支持显式配置 dialect
-        JdbcDialect dialect;
         String dialectName = config.getString("dialect");
-        if (dialectName != null && !dialectName.isEmpty()) {
-            // 显式指定 dialect，直接按名称查找
-            log.info("使用显式配置的 dialect: {}", dialectName);
-            dialect = JdbcDialects.getByName(dialectName);
-        } else {
-            // 未配置 dialect，根据 URL 自动识别
-            log.info("根据 URL 自动识别 dialect");
-            dialect = JdbcDialects.getByUrl(url);
-        }
+        JdbcDialect dialect = JdbcDialectLoader.get(dialectName, url);
 
         // 使用 Dialect 包装 URL
         url = dialect.wrapUrl(url);
