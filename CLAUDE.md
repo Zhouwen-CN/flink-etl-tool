@@ -18,6 +18,13 @@ mvn clean package
 # 运行 ETL 任务
 java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar --file docs/examples/mysql-to-console.json
 
+# 运行带变量替换的 ETL 任务
+java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar \
+  --file docs/examples/mysql-to-console.json \
+  --db_url jdbc:mysql://localhost:3306/test \
+  --db_user root \
+  --db_password secret
+
 # 运行所有测试
 mvn test
 
@@ -177,6 +184,30 @@ Sink 异常处理详见 [PLUGINS.md#sink-插件开发指南](PLUGINS.md#sink-插
 - `name`: Job 名称
 - `mode`: `batch` 或 `streaming`
 - `parallelism`: 并行度（可选），分片数量等于并行度
+
+**变量替换：**
+配置支持变量替换，通过命令行参数动态传递值：
+- 格式：`${variable}` 或 `${variable:-default}`（带默认值）
+- 变量值通过命令行参数传递（例如：`--db_url xxx`）
+- 未定义变量（无默认值）会抛异常，明确提示缺失参数
+
+示例配置：
+```json
+{
+  "sources": [{
+    "config": {
+      "url": "${db_url}",
+      "user": "${db_user:-root}",
+      "password": "${db_password}"
+    }
+  }]
+}
+```
+
+运行命令：
+```bash
+--db_url jdbc:mysql://localhost:3306/test --db_password secret
+```
 
 ## 技术栈
 
