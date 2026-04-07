@@ -71,6 +71,7 @@ flink-etl-tool/
 - **SourcePlugin**: 数据源插件，创建 Flink Source
 - **SinkPlugin**: 数据写入插件，创建 Flink SinkFunction<Row>
 - **TransformPlugin**: 数据转换插件，基于 Table API 进行 SQL 转换
+- **UdfPlugin**: UDF 插件，创建自定义函数用于 SQL Transform
 
 插件加载通过 [PluginLoader.java](flink-etl-core/src/main/java/com/etl/core/spi/PluginLoader.java) 实现。
 
@@ -116,6 +117,20 @@ flink-etl-tool/
 
 **设计要点：** 参数校验集中在 Sink 构造函数；批量 Sink 自行管理 batchSize；异常时抛出 IOException，Flink 会从 checkpoint 重试。
 
+### 扩展新 UDF
+
+1. 在 `flink-etl-core/src/main/java/com/etl/core/udf/` 对应目录创建 UDF 类：
+   - 标量函数：`scalar/` 目录（ScalarFunction）
+   - 表值函数：`table/` 目录（TableFunction）
+   - 聚合函数：`agg/` 目录（AggregateFunction）
+   - 表值聚合函数：`tagg/` 目录（TableAggregateFunction）
+2. 实现 `UdfPlugin` 接口，添加 `@AutoService(UdfPlugin.class)` 注解
+3. 实现 `identifier()` 方法返回函数名（在 SQL 中使用的名称）
+4. 实现 `createFunction()` 方法返回 Flink UDF 实例
+5. 编译项目：`mvn clean install -DskipTests`（生成 SPI 配置文件）
+
+**设计要点：** UDF 必须放在 `flink-etl-core` 模块；函数名必须唯一；Job 启动时自动加载并注册所有 UDF。详细设计见 [docs/superpowers/specs/2026-04-07-flink-udf-design.md](docs/superpowers/specs/2026-04-07-flink-udf-design.md)。
+
 ## 开发实践
 
 ### Schema 配置
@@ -129,6 +144,16 @@ flink-etl-tool/
 - JSON 数据 → `JsonToRowConverter.convertJsonToRows()`
 - SQL 类型字符串 → `SqlTypeConverter.toFlinkType()`
 - Row 转 JSON → `RowToJsonConverter.convertRowToJsonNode()`
+
+### 内置 UDF 函数
+
+项目提供内置 UDF 函数，可在 SQL Transform 中直接使用：
+
+- `hash_code(input)` - 返回输入值的哈希码，null 输入返回 0
+
+示例：`SELECT hash_code(id) AS id_hash FROM users`
+
+完整 UDF 列表和使用说明见 [PLUGINS.md#udf-插件](PLUGINS.md#udf-插件)。
 
 ### 异常处理
 
@@ -156,7 +181,9 @@ Sink 异常处理详见 [PLUGINS.md#sink-插件开发指南](PLUGINS.md#sink-插
 
 ## 文档维护
 
-**重要：** 每次修改或新增 Source、Sink、Transform 插件时，必须同步更新 [PLUGINS.md](PLUGINS.md) 文档。
+**重要：** 每次修改或新增 Source、Sink、Transform、UDF 插件时，必须同步更新 [PLUGINS.md](PLUGINS.md) 文档。
+
+**设计文档：** 重要架构决策和功能设计文档位于 `docs/superpowers/specs/` 和 `docs/superpowers/plans/`，可作为开发参考。
 
 ## 配置文件格式
 
