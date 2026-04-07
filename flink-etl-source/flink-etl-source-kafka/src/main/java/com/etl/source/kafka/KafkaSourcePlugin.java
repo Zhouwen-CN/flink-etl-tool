@@ -21,7 +21,7 @@ import java.util.regex.Pattern;
 public class KafkaSourcePlugin implements SourcePlugin {
 
     @Override
-    public String getType() {
+    public String identifier() {
         return "kafka";
     }
 

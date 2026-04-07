@@ -16,7 +16,7 @@ import org.apache.flink.types.Row;
 public class ConsoleSinkPlugin implements SinkPlugin {
 
     @Override
-    public String getType() {
+    public String identifier() {
         return "console";
     }
 

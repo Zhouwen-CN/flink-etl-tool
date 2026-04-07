@@ -7,5 +7,5 @@ public interface Plugin {
      *
      * @return 插件类型标识
      */
-    String getType();
+    String identifier();
 }

@@ -15,7 +15,7 @@ import org.apache.flink.api.connector.source.Source;
 public class HttpSourcePlugin implements SourcePlugin {
 
     @Override
-    public String getType() {
+    public String identifier() {
         return "http";
     }
 

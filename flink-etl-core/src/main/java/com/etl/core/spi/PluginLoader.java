@@ -27,7 +27,7 @@ public class PluginLoader {
 
         ServiceLoader<T> loader = ServiceLoader.load(clazz, classLoader);
         for (T plugin : loader) {
-            if (plugin.getType().equals(type)) {
+            if (plugin.identifier().equals(type)) {
                 log.info("{} 加载成功：{}", simpleName, plugin.getClass().getName());
                 return plugin;
             }

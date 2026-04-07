@@ -16,7 +16,7 @@ import org.apache.flink.types.Row;
 public class JdbcSinkPlugin implements SinkPlugin {
 
     @Override
-    public String getType() {
+    public String identifier() {
         return "jdbc";
     }
 

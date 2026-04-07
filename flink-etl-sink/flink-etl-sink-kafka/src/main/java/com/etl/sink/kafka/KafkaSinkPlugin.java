@@ -20,7 +20,7 @@ import java.util.Properties;
 public class KafkaSinkPlugin implements SinkPlugin {
 
     @Override
-    public String getType() {
+    public String identifier() {
         return "kafka";
     }
 

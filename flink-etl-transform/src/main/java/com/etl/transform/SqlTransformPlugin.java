@@ -16,7 +16,7 @@ import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 public class SqlTransformPlugin implements TransformPlugin {
 
     @Override
-    public String getType() {
+    public String identifier() {
         return "sql";
     }
 
