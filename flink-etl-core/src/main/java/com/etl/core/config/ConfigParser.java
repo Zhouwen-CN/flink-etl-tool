@@ -4,7 +4,6 @@ package com.etl.core.config;
 import com.etl.core.utils.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.File;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -13,27 +12,6 @@ import java.util.Set;
  */
 @Slf4j
 public class ConfigParser {
-
-    /**
-     * 从文件解析 Job 配置
-     *
-     * @param configPath 配置文件路径
-     * @return Job 配置对象
-     */
-    public static JobConfig parse(String configPath) {
-        log.info("解析配置文件: {}", configPath);
-
-        try {
-            JobConfig config = JsonUtils.fromFile(new File(configPath), JobConfig.class);
-            validate(config);
-            log.info("配置文件解析成功");
-            return config;
-        } catch (Exception e) {
-            String errorMsg = String.format("配置文件解析失败: %s", e.getMessage());
-            log.error(errorMsg, e);
-            throw new IllegalArgumentException(errorMsg, e);
-        }
-    }
 
     /**
      * 从 JSON 字符串解析 Job 配置
