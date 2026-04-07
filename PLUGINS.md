@@ -4,6 +4,8 @@
 
 ## 目录
 
+- [配置文件格式](#配置文件格式)
+- [配置变量替换](#配置变量替换)
 - [Source 插件](#source-插件)
   - [JDBC Source](#jdbc-source)
   - [LocalFile Source](#localfile-source)
@@ -16,6 +18,125 @@
   - [Kafka Sink](#kafka-sink)
 - [Transform 插件](#transform-插件)
   - [SQL Transform](#sql-transform)
+
+---
+
+## 配置文件格式
+
+配置采用 DataX 风格的 JSON 结构。
+
+```json
+{
+  "job": {
+    "name": "job-name",
+    "mode": "batch",
+    "parallelism": 4
+  },
+  "sources": [{ "type": "...", "outputTable": "...", "config": {...} }],
+  "transforms": [{ "type": "sql", "outputTable": "...", "config": { "sql": "..." } }],
+  "sinks": [{ "type": "...", "inputTable": "...", "config": {...} }]
+}
+```
+
+**数据流转机制：**
+- `sources` → 每个 Source 的 `outputTable` 注册为 Table
+- `transforms` → 链式处理，SQL 中引用上游的 `outputTable`
+- `sinks` → 从 `inputTable` 读取数据写入目标
+
+**job 配置项：**
+- `name`: Job 名称
+- `mode`: `batch` 或 `streaming`
+- `parallelism`: 并行度（可选），分片数量等于并行度
+
+---
+
+## 配置变量替换
+
+### 功能说明
+
+支持在配置文件中使用变量占位符，运行时通过命令行参数动态传递值。适用于：
+- 不同环境（开发/测试/生产）的配置切换
+- 敏感信息（密码等）不暴露在配置文件中
+- 参数化配置，无需维护多份配置文件
+
+### 变量格式
+
+- **`${variable}`** - 变量必须通过命令行参数定义，否则抛异常
+- **`${variable:-default}`** - 变量未定义时使用默认值
+
+### 使用方式
+
+**命令行传参：**
+```bash
+java -jar app.jar --file config.json \
+  --db_url jdbc:mysql://localhost:3306/test \
+  --db_user root \
+  --db_password secret
+```
+
+**配置文件示例：**
+```json
+{
+  "job": {
+    "name": "mysql-to-console",
+    "mode": "batch"
+  },
+  "sources": [{
+    "type": "jdbc",
+    "outputTable": "users",
+    "config": {
+      "url": "${db_url}",
+      "username": "${db_user:-root}",
+      "password": "${db_password}",
+      "table": "users"
+    }
+  }],
+  "sinks": [{
+    "type": "console",
+    "inputTable": "users"
+  }]
+}
+```
+
+### 变量参数规则
+
+1. **所有非 `--file` 和 `--config` 的参数都会作为变量**
+   - 拼写错误的参数也会被收集，需自行检查
+   - 建议使用明确的参数名
+
+2. **变量未定义时的行为**
+   - 有默认值：使用默认值
+   - 无默认值：抛异常 `"变量 'xxx' 未定义，请通过 --xxx 参数传递"`
+
+3. **变量值为空字符串**
+   - `--db_url ""` 会将变量设置为空字符串
+   - 空字符串与未定义不同（空字符串不会触发异常）
+
+### 错误处理示例
+
+**错误：变量未定义**
+```
+配置变量替换失败：变量 'db_url' 未定义，请通过 --db_url 参数传递
+```
+
+**正确：提供参数**
+```bash
+--db_url jdbc:mysql://localhost:3306/test
+```
+
+### 注意事项
+
+1. **变量替换在所有配置源生效**
+   - `--file` 参数：文件内容先进行变量替换
+   - `--config` 参数：JSON 字符串或 Base64 编码都支持变量替换
+
+2. **JSON 必须是标准格式**
+   - 不支持注释（`//` 或 `/* */`）
+   - 变量替换后的内容必须能解析为有效 JSON
+
+3. **特殊字符处理**
+   - 变量值包含特殊字符（如 URL 参数 `&`）无需转义
+   - ParameterTool 自动处理参数值
 
 ---
 
