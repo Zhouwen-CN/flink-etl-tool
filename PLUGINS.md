@@ -719,15 +719,31 @@ Writer 可以通过 `context` 字段访问：
 | `table` | 条件必填 | - | 目标表名。与 `sql` 二选一，优先 |
 | `sql` | 条件必填 | - | 自定义 SQL，支持具名占位符 `:paramName` |
 | `mode` | 否 | `insert` | 写入模式：`insert`（插入）或 `upsert`（存在则更新） |
-| `keyFields` | upsert 必填 | - | Upsert 模式的主键/唯一键字段，数组格式 |
 | `batchSize` | 否 | `100` | 批量写入大小 |
+
+#### UPSERT 模式约束
+
+**自动获取主键机制：**
+- UPSERT 模式自动从数据库获取表主键信息，无需手动配置
+- 复合主键表会使用所有主键列作为条件字段
+- 表必须有主键，否则抛出异常
+
+**约束条件：**
+- **必须配置 table，不能配置 sql**：主键信息只存在于物理表
+- **表必须有主键**：无主键表无法使用 UPSERT 模式，建议使用 INSERT 模式或添加主键
+
+**错误处理：**
+- 配置 sql 时抛异常：`"UPSERT 模式必须配置 table（不能使用 sql）"`
+- 表无主键时抛异常：`"表 'xxx' 没有主键，无法使用 UPSERT 模式"`
+
+---
 
 #### 两种模式
 
 | 模式 | 说明 |
 |------|------|
-| `table` 模式 | 自动生成 `INSERT INTO table(col1, col2, ...) VALUES(?, ?...)`，列名从 Row 字段名获取 |
-| `sql` 模式 | 自定义 SQL，使用具名占位符 `:paramName`，可实现 upsert 等复杂逻辑 |
+| `table` 模式 | 自动生成 `INSERT INTO table(col1, col2, ...) VALUES(?, ?...)`，列名从 Row 字段名获取。UPSERT 时自动获取主键 |
+| `sql` 模式 | 自定义 SQL，使用具名占位符 `:paramName`，可实现复杂写入逻辑（不支持 UPSERT 自动模式） |
 
 #### 配置示例
 
@@ -767,7 +783,7 @@ Writer 可以通过 `context` 字段访问：
 }
 ```
 
-**table 模式 upsert（MySQL）：**
+**table 模式 - UPSERT（自动获取主键）：**
 
 ```json
 {
@@ -778,20 +794,17 @@ Writer 可以通过 `context` 字段访问：
       "url": "jdbc:mysql://localhost:3306/mydb",
       "username": "root",
       "password": "password",
-      "table": "user_table",
-      "mode": "upsert",
-      "keyFields": ["id"],
+      "table": "target_table",
+      "mode": "UPSERT",
       "batchSize": 100
     }
   }
 }
 ```
 
-生成的 SQL：
-```sql
-INSERT INTO `user_table` (`id`, `name`, `email`) VALUES (?, ?, ?)
-ON DUPLICATE KEY UPDATE `name`=VALUES(`name`), `email`=VALUES(`email`)
-```
+> **说明：** UPSERT 模式会自动从数据库获取 `target_table` 的主键信息，无需配置 keyFields。
+
+---
 
 **Oracle 数据库 Upsert 配置：**
 
@@ -807,7 +820,6 @@ ON DUPLICATE KEY UPDATE `name`=VALUES(`name`), `email`=VALUES(`email`)
       "table": "TARGET_TABLE",
       "dialect": "oracle",
       "mode": "upsert",
-      "keyFields": ["ID"],
       "batchSize": 100
     }
   }
@@ -828,7 +840,6 @@ ON DUPLICATE KEY UPDATE `name`=VALUES(`name`), `email`=VALUES(`email`)
       "table": "TARGET_TABLE",
       "dialect": "oracle",
       "mode": "upsert",
-      "keyFields": ["ID"],
       "batchSize": 100
     }
   }
