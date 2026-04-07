@@ -2,6 +2,9 @@ package com.etl.core.spi;
 
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
 
 /**
@@ -66,5 +69,46 @@ public class PluginLoader {
      */
     public static SinkPlugin loadSinkPlugin(String type) {
         return loadPlugin(SinkPlugin.class, type);
+    }
+
+    /**
+     * 批量加载所有 UDF 插件
+     *
+     * @return 所有 UDF 插件实例列表
+     * @throws IllegalStateException 如果 SPI 配置文件加载失败
+     */
+    public static List<UdfPlugin> loadAllUdfPlugins() {
+        log.info("批量加载所有 UDF 插件");
+
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        if (classLoader == null) {
+            classLoader = PluginLoader.class.getClassLoader();
+        }
+
+        ServiceLoader<UdfPlugin> loader = ServiceLoader.load(UdfPlugin.class, classLoader);
+        List<UdfPlugin> plugins = new ArrayList<>();
+
+        try {
+            for (UdfPlugin plugin : loader) {
+                String functionName = plugin.identifier();
+
+                // 校验函数名非空
+                if (functionName == null || functionName.trim().isEmpty()) {
+                    log.warn("UDF 插件 {} 的 identifier() 返回空值，跳过加载",
+                             plugin.getClass().getName());
+                    continue;
+                }
+
+                log.info("UDF 插件加载成功：{} -> {}",
+                         functionName, plugin.getClass().getName());
+                plugins.add(plugin);
+            }
+        } catch (ServiceConfigurationError e) {
+            throw new IllegalStateException(
+                "SPI 配置文件加载失败，请检查 META-INF/services/com.etl.core.spi.UdfPlugin", e);
+        }
+
+        log.info("共加载 {} 个 UDF 插件", plugins.size());
+        return plugins;
     }
 }
