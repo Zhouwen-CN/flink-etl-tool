@@ -18,6 +18,10 @@
   - [Kafka Sink](#kafka-sink)
 - [Transform 插件](#transform-插件)
   - [SQL Transform](#sql-transform)
+- [UDF 插件](#udf-插件)
+  - [内置 UDF 函数](#内置-udf-函数)
+  - [使用示例](#使用示例)
+  - [扩展新 UDF](#扩展新-udf)
 
 ---
 
@@ -1080,6 +1084,74 @@ Kafka Sink 与 Kafka Source 可以形成完整的数据流转链路：
 - `transform.inputTable`（SQL 中引用的表名）→ 从该 Table 读取数据
 - `transform.outputTable` → Transform 结果注册为中间表
 - `sink.inputTable` → 从该 Table 读取数据写入 Sink
+
+---
+
+## UDF 插件
+
+项目支持自定义 UDF（User Defined Function），可在 SQL Transform 中直接使用。
+
+### 内置 UDF 函数
+
+项目提供以下内置 UDF 函数，可在 SQL Transform 中直接使用：
+
+#### 标量函数（ScalarFunction）
+
+| 函数名 | 说明 | 示例 |
+|--------|------|------|
+| `hash_code` | 返回输入值的哈希码，null 输入返回 0 | `SELECT hash_code(name) FROM users` |
+
+### 使用示例
+
+**在 SQL Transform 中使用 UDF：**
+
+```json
+{
+  "transforms": [
+    {
+      "type": "sql",
+      "outputTable": "result_table",
+      "config": {
+        "sql": "SELECT id, name, hash_code(id) AS id_hash FROM source_table"
+      }
+    }
+  ]
+}
+```
+
+**UDF 与内置函数组合使用：**
+
+```json
+{
+  "transforms": [
+    {
+      "type": "sql",
+      "outputTable": "processed_users",
+      "config": {
+        "sql": "SELECT id, UPPER(name) AS name_upper, hash_code(email) AS email_hash FROM users WHERE id > 0"
+      }
+    }
+  ]
+}
+```
+
+### 扩展新 UDF
+
+如需添加新的 UDF 函数，请参考设计文档：`docs/superpowers/specs/2026-04-07-flink-udf-design.md`
+
+**开发流程：**
+
+1. 在对应的文件夹下创建新 UDF 类：
+   - 标量函数：`flink-etl-core/src/main/java/com/etl/core/udf/scalar/`
+   - 表值函数：`flink-etl-core/src/main/java/com/etl/core/udf/table/`
+   - 聚合函数：`flink-etl-core/src/main/java/com/etl/core/udf/agg/`
+   - 表值聚合函数：`flink-etl-core/src/main/java/com/etl/core/udf/tagg/`
+
+2. 实现 `UdfPlugin` 接口并添加 `@AutoService(UdfPlugin.class)` 注解
+
+3. 编译项目：`mvn clean install -DskipTests`
+
+4. UDF 会自动加载并在 SQL 中可用
 
 ---
 
