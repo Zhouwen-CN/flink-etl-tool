@@ -19,7 +19,7 @@ public class ConfigParser {
      * @param json JSON 字符串
      * @return Job 配置对象
      */
-    public static JobConfig parseFromString(String json) {
+    public static JobConfig parse(String json) {
         log.info("从字符串解析配置");
 
         try {

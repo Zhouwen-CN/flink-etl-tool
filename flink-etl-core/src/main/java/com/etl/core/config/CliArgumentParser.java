@@ -1,18 +1,16 @@
 package com.etl.core.config;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.text.StrSubstitutor;
+import org.apache.commons.lang3.text.StrSubstitutor;
 import org.apache.flink.api.java.utils.ParameterTool;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -50,25 +48,18 @@ public class CliArgumentParser {
         if (params.has("file")) {
             json = loadFromFile(params.get("file"));
         } else if (params.has("config")) {
-            json = loadFromJsonString(params.get("config"));
+            json = loadFromString(params.get("config"));
         } else {
             printUsage();
             throw new IllegalArgumentException("缺少必要参数：请指定 --file 或 --config");
         }
 
-        // 将 Properties 转换为 Map<String, String>
-        Properties properties = params.getProperties();
-        Map<String, String> variables = new HashMap<>();
-        for (String key : properties.stringPropertyNames()) {
-            variables.put(key, properties.getProperty(key));
-        }
-
         // 统一进行变量替换
-        String substitutedJson = substituteVariables(json, variables);
+        String substitutedJson = StrSubstitutor.replace(json, params.getProperties());
         checkUnresolvedVariables(substitutedJson);
 
         // 解析和校验 JSON
-        return ConfigParser.parseFromString(substitutedJson);
+        return ConfigParser.parse(substitutedJson);
     }
 
     /**
@@ -102,7 +93,8 @@ public class CliArgumentParser {
             throw new IllegalArgumentException("--file 参数值不能为空");
         }
 
-        if (!Files.exists(Paths.get(filePath))) {
+        Path path = Paths.get(filePath);
+        if (!Files.exists(path)) {
             throw new IllegalArgumentException("配置文件不存在: " + filePath);
         }
 
@@ -111,7 +103,12 @@ public class CliArgumentParser {
         }
 
         log.info("从文件加载配置: {}", filePath);
-        return readFileContent(filePath);
+
+        try {
+            return new String(Files.readAllBytes(path), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("读取配置文件失败: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -121,7 +118,7 @@ public class CliArgumentParser {
      * @param input JSON 字符串或 Base64 编码
      * @return JSON 字符串
      */
-    private static String loadFromJsonString(String input) {
+    private static String loadFromString(String input) {
         if (input == null || input.trim().isEmpty()) {
             throw new IllegalArgumentException("--config 参数值不能为空");
         }
@@ -167,7 +164,7 @@ public class CliArgumentParser {
 
             // 简单校验解码后的内容是否像 JSON（以 { 或 [ 开头）
             String trimmedDecoded = decodedString.trim();
-            if (trimmedDecoded.startsWith("{") || trimmedDecoded.startsWith("[")) {
+            if (trimmedDecoded.startsWith("{") || trimmedDecoded.endsWith("}")) {
                 log.info("检测到 Base64 编码的配置，已解码");
                 log.debug("解码后的配置内容长度: {}", decodedString.length());
                 return decodedString;
@@ -180,31 +177,14 @@ public class CliArgumentParser {
     }
 
     /**
-     * 使用 StrSubstitutor 替换配置中的变量
-     *
-     * 支持格式：
-     * - ${variable} - 变量不存在时保留占位符
-     * - ${variable:-default} - 变量不存在时使用默认值
-     *
-     * @param json JSON 配置字符串
-     * @param variables 变量映射（从 ParameterTool.getProperties() 获取）
-     * @return 替换后的 JSON 字符串
-     */
-    private static String substituteVariables(String json, Map<String, String> variables) {
-        StrSubstitutor substitutor = new StrSubstitutor(variables);
-        return substitutor.replace(json);
-    }
-
-    /**
-     * 检查 JSON 字符串中是否存在未替换的变量占位符
-     *
+     * 检查 JSON 字符串中是否存在未替换的变量占位符<br/>
      * 严格模式：发现任何 ${...} 格式的占位符都会抛出异常
      *
      * @param json 替换后的 JSON 字符串
      * @throws IllegalArgumentException 如果存在未替换的变量
      */
     private static void checkUnresolvedVariables(String json) {
-        Pattern pattern = Pattern.compile("\\$\\{[^}]+\\}");
+        Pattern pattern = Pattern.compile("\\$\\{[^}]+}");
         Matcher matcher = pattern.matcher(json);
 
         if (matcher.find()) {
@@ -218,21 +198,6 @@ public class CliArgumentParser {
                 String.format("配置变量替换失败：变量 '%s' 未定义，请通过 --%s 参数传递",
                     actualVarName, actualVarName)
             );
-        }
-    }
-
-    /**
-     * 读取文件内容为字符串
-     *
-     * @param filePath 文件路径
-     * @return 文件内容
-     * @throws IllegalArgumentException 读取失败时抛出
-     */
-    private static String readFileContent(String filePath) {
-        try {
-            return new String(Files.readAllBytes(Paths.get(filePath)), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            throw new IllegalArgumentException("读取配置文件失败: " + e.getMessage(), e);
         }
     }
 }

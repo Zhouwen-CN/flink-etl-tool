@@ -21,7 +21,7 @@ class ConfigParserTest {
             "  ]\n" +
             "}";
 
-        JobConfig config = ConfigParser.parseFromString(json);
+        JobConfig config = ConfigParser.parse(json);
 
         assertNotNull(config);
         assertEquals("test", config.getJob().getName());
@@ -47,7 +47,7 @@ class ConfigParserTest {
             "  ]\n" +
             "}";
 
-        JobConfig config = ConfigParser.parseFromString(json);
+        JobConfig config = ConfigParser.parse(json);
 
         assertEquals(2, config.getSources().size());
         assertEquals(2, config.getSinks().size());
@@ -64,7 +64,7 @@ class ConfigParserTest {
 
         IllegalArgumentException ex = assertThrows(
             IllegalArgumentException.class,
-            () -> ConfigParser.parseFromString(json)
+            () -> ConfigParser.parse(json)
         );
         assertTrue(ex.getMessage().contains("缺少 sources"));
     }
@@ -80,7 +80,7 @@ class ConfigParserTest {
 
         IllegalArgumentException ex = assertThrows(
             IllegalArgumentException.class,
-            () -> ConfigParser.parseFromString(json)
+            () -> ConfigParser.parse(json)
         );
         assertTrue(ex.getMessage().contains("缺少 sinks"));
     }
@@ -100,7 +100,7 @@ class ConfigParserTest {
 
         IllegalArgumentException ex = assertThrows(
             IllegalArgumentException.class,
-            () -> ConfigParser.parseFromString(json)
+            () -> ConfigParser.parse(json)
         );
         assertTrue(ex.getMessage().contains("outputTable 重复"));
     }

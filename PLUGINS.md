@@ -6,12 +6,12 @@
 
 - [配置文件格式](#配置文件格式)
 - [配置变量替换](#配置变量替换)
+- [Schema 配置](#schema-配置)
 - [Source 插件](#source-插件)
   - [JDBC Source](#jdbc-source)
   - [LocalFile Source](#localfile-source)
   - [HTTP Source](#http-source)
   - [Kafka Source](#kafka-source)
-- [Schema 配置](#schema-配置)
 - [Sink 插件](#sink-插件)
   - [Console Sink](#console-sink)
   - [JDBC Sink](#jdbc-sink)
@@ -137,6 +137,110 @@ java -jar app.jar --file config.json \
 3. **特殊字符处理**
    - 变量值包含特殊字符（如 URL 参数 `&`）无需转义
    - ParameterTool 自动处理参数值
+
+---
+
+## Schema 配置
+
+Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OBJECT）。
+
+### 简单类型
+
+支持的简单类型：`STRING`, `BOOLEAN`, `INT`, `LONG`, `DOUBLE`, `DECIMAL`, `TIMESTAMP`
+
+```json
+{
+  "schema": {
+    "id": "LONG",
+    "name": "STRING",
+    "age": "INT"
+  }
+}
+```
+
+### 基础类型数组
+
+数组类型，元素为简单类型，使用 JSON 数组格式：
+
+```json
+{
+  "schema": {
+    "tags": ["STRING"],
+    "scores": ["INT"]
+  }
+}
+```
+
+### OBJECT 类型
+
+嵌套对象类型，内部定义子字段：
+
+```json
+{
+  "schema": {
+    "address": {
+      "city": "STRING",
+      "street": "STRING"
+    }
+  }
+}
+```
+
+### OBJECT 嵌套 ARRAY
+
+对象内部包含数组字段：
+
+```json
+{
+  "schema": {
+    "address": {
+      "city": "STRING",
+      "zipcodes": ["INT"]
+    }
+  }
+}
+```
+
+### ARRAY<OBJECT>
+
+对象数组类型，使用数组形式定义：
+
+```json
+{
+  "schema": {
+    "friends": [
+      {"name": "STRING", "age": "INT"}
+    ]
+  }
+}
+```
+
+### 完整嵌套示例
+
+综合使用各种类型的完整示例：
+
+```json
+{
+  "schema": {
+    "id": "LONG",
+    "name": "STRING",
+    "hobby": ["STRING"],
+    "address": {
+      "city": "STRING",
+      "zipcodes": ["INT"]
+    },
+    "friends": [
+      {
+        "name": "STRING",
+        "age": "INT",
+        "tags": ["STRING"]
+      }
+    ]
+  }
+}
+```
+
+**注意：** CSV 格式仅支持简单类型，复杂类型（ARRAY、OBJECT）用于 JDBC Source 或 JSON 文件格式。
 
 ---
 
@@ -519,110 +623,6 @@ java -jar app.jar --file config.json \
 
 - 流式消费，持续运行（`mode: "streaming"`）
 - 支持 checkpoint 时自动提交 offset 到 Kafka
-
----
-
-## Schema 配置
-
-Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OBJECT）。
-
-### 简单类型
-
-支持的简单类型：`STRING`, `BOOLEAN`, `INT`, `LONG`, `DOUBLE`, `DECIMAL`, `TIMESTAMP`
-
-```json
-{
-  "schema": {
-    "id": "LONG",
-    "name": "STRING",
-    "age": "INT"
-  }
-}
-```
-
-### 基础类型数组
-
-数组类型，元素为简单类型，使用 JSON 数组格式：
-
-```json
-{
-  "schema": {
-    "tags": ["STRING"],
-    "scores": ["INT"]
-  }
-}
-```
-
-### OBJECT 类型
-
-嵌套对象类型，内部定义子字段：
-
-```json
-{
-  "schema": {
-    "address": {
-      "city": "STRING",
-      "street": "STRING"
-    }
-  }
-}
-```
-
-### OBJECT 嵌套 ARRAY
-
-对象内部包含数组字段：
-
-```json
-{
-  "schema": {
-    "address": {
-      "city": "STRING",
-      "zipcodes": ["INT"]
-    }
-  }
-}
-```
-
-### ARRAY<OBJECT>
-
-对象数组类型，使用数组形式定义：
-
-```json
-{
-  "schema": {
-    "friends": [
-      {"name": "STRING", "age": "INT"}
-    ]
-  }
-}
-```
-
-### 完整嵌套示例
-
-综合使用各种类型的完整示例：
-
-```json
-{
-  "schema": {
-    "id": "LONG",
-    "name": "STRING",
-    "hobby": ["STRING"],
-    "address": {
-      "city": "STRING",
-      "zipcodes": ["INT"]
-    },
-    "friends": [
-      {
-        "name": "STRING",
-        "age": "INT",
-        "tags": ["STRING"]
-      }
-    ]
-  }
-}
-```
-
-**注意：** CSV 格式仅支持简单类型，复杂类型（ARRAY、OBJECT）用于 JDBC Source 或 JSON 文件格式。
 
 ---
 
