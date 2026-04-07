@@ -54,9 +54,12 @@ public class CliArgumentParser {
             throw new IllegalArgumentException("缺少必要参数：请指定 --file 或 --config");
         }
 
-        // 统一进行变量替换
-        String substitutedJson = StrSubstitutor.replace(json, params.getProperties());
-        checkUnresolvedVariables(substitutedJson);
+        // 统一进行变量替换（仅当配置中包含变量占位符时）
+        String substitutedJson = json;
+        if (json.contains("${")) {
+            substitutedJson = StrSubstitutor.replace(json, params.getProperties());
+            checkUnresolvedVariables(substitutedJson);
+        }
 
         // 解析和校验 JSON
         return ConfigParser.parse(substitutedJson);
@@ -177,7 +180,8 @@ public class CliArgumentParser {
     }
 
     /**
-     * 检查 JSON 字符串中是否存在未替换的变量占位符<br/>
+     * 检查 JSON 字符串中是否存在未替换的变量占位符
+     * <p>
      * 严格模式：发现任何 ${...} 格式的占位符都会抛出异常
      *
      * @param json 替换后的 JSON 字符串
