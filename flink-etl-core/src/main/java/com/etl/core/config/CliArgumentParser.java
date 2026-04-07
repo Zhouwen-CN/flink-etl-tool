@@ -1,13 +1,19 @@
 package com.etl.core.config;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.text.StrSubstitutor;
 import org.apache.flink.api.java.utils.ParameterTool;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -34,19 +40,35 @@ public class CliArgumentParser {
      * 解析命令行参数并返回 Job 配置
      *
      * @param args 命令行参数
-     * @return Job 配置，如果参数无效则返回 null
+     * @return Job 配置
      */
     public static JobConfig parse(String[] args) {
         ParameterTool params = ParameterTool.fromArgs(args);
 
+        // 加载配置源为 JSON 字符串
+        String json;
         if (params.has("file")) {
-            return loadFromFile(params.get("file"));
+            json = loadFromFile(params.get("file"));
         } else if (params.has("config")) {
-            return loadFromJsonString(params.get("config"));
+            json = loadFromJsonString(params.get("config"));
         } else {
             printUsage();
             throw new IllegalArgumentException("缺少必要参数：请指定 --file 或 --config");
         }
+
+        // 将 Properties 转换为 Map<String, String>
+        Properties properties = params.getProperties();
+        Map<String, String> variables = new HashMap<>();
+        for (String key : properties.stringPropertyNames()) {
+            variables.put(key, properties.getProperty(key));
+        }
+
+        // 统一进行变量替换
+        String substitutedJson = substituteVariables(json, variables);
+        checkUnresolvedVariables(substitutedJson);
+
+        // 解析和校验 JSON
+        return ConfigParser.parseFromString(substitutedJson);
     }
 
     /**
@@ -70,57 +92,43 @@ public class CliArgumentParser {
     }
 
     /**
-     * 从文件加载配置
+     * 从文件加载配置为 JSON 字符串
      *
      * @param filePath 配置文件路径
-     * @return Job 配置对象，参数无效时返回 null
+     * @return JSON 字符串
      */
-    private static JobConfig loadFromFile(String filePath) {
+    private static String loadFromFile(String filePath) {
         if (filePath == null || filePath.trim().isEmpty()) {
-            log.error("--file 参数值不能为空");
-            return null;
+            throw new IllegalArgumentException("--file 参数值不能为空");
         }
 
         if (!Files.exists(Paths.get(filePath))) {
-            String errorMsg = String.format("配置文件不存在: %s", filePath);
-            log.error(errorMsg);
-            throw new IllegalArgumentException(errorMsg);
+            throw new IllegalArgumentException("配置文件不存在: " + filePath);
         }
 
         if (!new File(filePath).isFile()) {
-            String errorMsg = String.format("路径不是文件: %s", filePath);
-            log.error(errorMsg);
-            throw new IllegalArgumentException(errorMsg);
+            throw new IllegalArgumentException("路径不是文件: " + filePath);
         }
 
         log.info("从文件加载配置: {}", filePath);
-        return ConfigParser.parse(filePath);
+        return readFileContent(filePath);
     }
 
     /**
-     * 从 JSON 字符串加载配置
-     * <p>
-     * 支持直接传入 JSON 字符串或 Base64 编码的 JSON 字符串。
-     * 如果输入是有效的 Base64 编码，会自动解码后解析。
+     * 从命令行参数加载配置为 JSON 字符串
+     * 支持 JSON 字符串或 Base64 编码
      *
-     * @param input JSON 字符串或 Base64 编码的 JSON 字符串
-     * @return Job 配置对象，参数无效时返回 null
+     * @param input JSON 字符串或 Base64 编码
+     * @return JSON 字符串
      */
-    private static JobConfig loadFromJsonString(String input) {
+    private static String loadFromJsonString(String input) {
         if (input == null || input.trim().isEmpty()) {
-            log.error("--config 参数值不能为空");
-            return null;
+            throw new IllegalArgumentException("--config 参数值不能为空");
         }
 
-        // 尝试解码 Base64（如果不是 Base64 则返回原字符串）
         String json = tryDecodeBase64(input);
-        if (json == null) {
-            log.error("Base64 解码失败");
-            return null;
-        }
-
         log.info("从命令行 JSON 字符串加载配置");
-        return ConfigParser.parseFromString(json);
+        return json;
     }
 
     /**
@@ -168,6 +176,63 @@ public class CliArgumentParser {
         } catch (IllegalArgumentException e) {
             // 不是有效的 Base64 编码，返回原始输入
             return input;
+        }
+    }
+
+    /**
+     * 使用 StrSubstitutor 替换配置中的变量
+     *
+     * 支持格式：
+     * - ${variable} - 变量不存在时保留占位符
+     * - ${variable:-default} - 变量不存在时使用默认值
+     *
+     * @param json JSON 配置字符串
+     * @param variables 变量映射（从 ParameterTool.getProperties() 获取）
+     * @return 替换后的 JSON 字符串
+     */
+    private static String substituteVariables(String json, Map<String, String> variables) {
+        StrSubstitutor substitutor = new StrSubstitutor(variables);
+        return substitutor.replace(json);
+    }
+
+    /**
+     * 检查 JSON 字符串中是否存在未替换的变量占位符
+     *
+     * 严格模式：发现任何 ${...} 格式的占位符都会抛出异常
+     *
+     * @param json 替换后的 JSON 字符串
+     * @throws IllegalArgumentException 如果存在未替换的变量
+     */
+    private static void checkUnresolvedVariables(String json) {
+        Pattern pattern = Pattern.compile("\\$\\{[^}]+\\}");
+        Matcher matcher = pattern.matcher(json);
+
+        if (matcher.find()) {
+            String unresolvedVar = matcher.group();
+            // 提取变量名（去掉 ${ 和 }）
+            String varName = unresolvedVar.substring(2, unresolvedVar.length() - 1);
+            // 提取实际变量名（去掉默认值部分 :-default）
+            String actualVarName = varName.split(":-")[0];
+
+            throw new IllegalArgumentException(
+                String.format("配置变量替换失败：变量 '%s' 未定义，请通过 --%s 参数传递",
+                    actualVarName, actualVarName)
+            );
+        }
+    }
+
+    /**
+     * 读取文件内容为字符串
+     *
+     * @param filePath 文件路径
+     * @return 文件内容
+     * @throws IllegalArgumentException 读取失败时抛出
+     */
+    private static String readFileContent(String filePath) {
+        try {
+            return new String(Files.readAllBytes(Paths.get(filePath)), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new IllegalArgumentException("读取配置文件失败: " + e.getMessage(), e);
         }
     }
 }
