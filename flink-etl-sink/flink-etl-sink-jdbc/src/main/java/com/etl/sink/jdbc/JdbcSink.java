@@ -14,8 +14,8 @@ import org.apache.flink.util.Preconditions;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * JDBC Sink 实现
@@ -45,24 +45,17 @@ public class JdbcSink extends AbstractSink {
         String modeStr = config.getString("mode", "INSERT");
         WriteMode mode = WriteMode.valueOf(modeStr.toUpperCase());
 
-        List<String> keyFields = null;
-        if (mode == WriteMode.UPSERT) {
+        List<String> keyFields = config.getList("keyFields");
+
+        if (keyFields == null && mode == WriteMode.UPSERT) {
             // UPSERT 模式必须配置 table，不能配置 sql
             Preconditions.checkArgument(table != null,
-                "UPSERT 模式必须配置 table（不能使用 sql），因为需要主键信息");
+                    "UPSERT 模式必须配置 table，因为需要主键信息");
 
-            // 优先使用用户配置的 keyFields，未配置时自动获取
-            List<String> configuredKeyFields = config.getList("keyFields");
-            if (configuredKeyFields != null && !configuredKeyFields.isEmpty()) {
-                keyFields = configuredKeyFields;
-                log.info("JDBC Sink UPSERT 模式使用配置的主键: table={}, keyFields={}", table, keyFields);
-            } else {
-                // 自动获取主键
-                LinkedHashMap<String, Integer> pkInfo =
-                    SqlUtils.getPrimaryKey(url, table, username, password);
-                keyFields = new ArrayList<>(pkInfo.keySet());
-                log.info("JDBC Sink UPSERT 模式自动获取主键: table={}, keyFields={}", table, keyFields);
-            }
+            // 自动获取主键
+            Map<String, Integer> pkInfo = SqlUtils.getPrimaryKey(url, table, username, password);
+            keyFields = new ArrayList<>(pkInfo.keySet());
+            log.info("JDBC Sink UPSERT 模式自动获取主键: table={}, keyFields={}", table, keyFields);
         } else {
             log.info("JDBC Sink INSERT 模式: table={}", table);
         }

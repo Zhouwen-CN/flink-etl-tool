@@ -5,11 +5,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
-import java.sql.ResultSet;
 import java.sql.Statement;
-import java.util.LinkedHashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -50,7 +48,7 @@ public class SqlUtilsTest {
         }
 
         // 测试获取主键（H2 将表名转为大写）
-        LinkedHashMap<String, Integer> pkInfo =
+        Map<String, Integer> pkInfo =
             SqlUtils.getPrimaryKey(H2_URL, "SINGLE_PK", USERNAME, PASSWORD);
 
         // 验证结果
@@ -69,7 +67,7 @@ public class SqlUtilsTest {
         }
 
         // 测试获取主键（H2 将表名转为大写）
-        LinkedHashMap<String, Integer> pkInfo =
+        Map<String, Integer> pkInfo =
             SqlUtils.getPrimaryKey(H2_URL, "COMPOSITE_PK", USERNAME, PASSWORD);
 
         // 验证结果
