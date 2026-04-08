@@ -60,7 +60,7 @@ public class JdbcSplitEnumerator extends BaseSplitEnumerator<RangeSplit, RangeEn
                     jdbcSourceConfig.getPassword(),
                     jdbcSourceConfig.getTable(),
                     jdbcSourceConfig.getSql(),
-                    jdbcSourceConfig.getSplitColumn(),
+                    jdbcSourceConfig.getSplitKey(),
                     context.currentParallelism());
         }
 

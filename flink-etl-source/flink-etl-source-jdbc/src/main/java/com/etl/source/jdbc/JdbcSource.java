@@ -45,24 +45,24 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
         String table = config.getString("table");
         String sql = config.getString("sql");
 
-        String splitColumn = config.getString("splitColumn");
+        String splitKey = config.getString("splitKey");
         SplitStrategy splitStrategy;
 
-        if (splitColumn == null) {
-            // 未配置 splitColumn，使用全表扫描模式
-            log.warn("未配置 splitColumn，将使用单分片全表扫描模式，无法并行读取。建议配置 splitColumn 以启用并行分片读取。");
+        if (splitKey == null) {
+            // 未配置 splitKey，使用全表扫描模式
+            log.warn("未配置 splitKey，将使用单分片全表扫描模式，无法并行读取。建议配置 splitKey 以启用并行分片读取。");
             splitStrategy = SplitStrategy.FULL_TABLE_SCAN;
         } else {
-            // 配置了 splitColumn，自动匹配分片策略
-            int jdbcType = dialect.getColumnType(url, table, sql, splitColumn, username, password);
+            // 配置了 splitKey，自动匹配分片策略
+            int jdbcType = dialect.getColumnType(url, table, sql, splitKey, username, password);
             splitStrategy = SplitStrategy.fromJdbcType(jdbcType);
             // 如果没有匹配的策略，抛出明确的错误
             if (splitStrategy == null) {
                 throw new IllegalArgumentException(
                         String.format("分片列 '%s' 的 JDBC 类型(%d)不支持分片。支持的类型: %s",
-                                splitColumn, jdbcType, SplitStrategy.NUMERIC.getSupportedTypeNames()));
+                                splitKey, jdbcType, SplitStrategy.NUMERIC.getSupportedTypeNames()));
             }
-            log.info("分片列 '{}' 使用策略: {}", splitColumn, splitStrategy.getDescription());
+            log.info("分片列 '{}' 使用策略: {}", splitKey, splitStrategy.getDescription());
         }
 
         Integer batchSize = config.getInteger("batchSize", super.getDefaultBatchSize());
@@ -76,7 +76,7 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
                 .password(password)
                 .table(table)
                 .sql(sql)
-                .splitColumn(splitColumn)
+                .splitKey(splitKey)
                 .splitStrategy(splitStrategy)
                 .batchSize(batchSize)
                 .queryTimeout(queryTimeout)
