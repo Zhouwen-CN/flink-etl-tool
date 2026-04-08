@@ -264,7 +264,7 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 | `dialect` | 否 | 自动识别 | 数据库方言，可选值：`mysql`、`postgresql`、`oracle`。不配置则根据 URL 自动识别 |
 | `table` | 条件必填 | - | 表名。与 `sql` 二选一，优先 |
 | `sql` | 条件必填 | - | 自定义查询 SQL。与 `table` 二选一 |
-| `splitColumn` | 否 | - | 分片列名，支持数值类型（TINYINT, SMALLINT, INTEGER, BIGINT, FLOAT, REAL, DOUBLE, NUMERIC, DECIMAL）。不配置则使用单分片全表扫描 |
+| `splitKey` | 否 | 自动推断 | 分片列名，支持数值类型。不配置时自动从主键推断 |
 | `batchSize` | 否 | 100 | 批量读取大小 |
 | `queryTimeout` | 否 | 无限制 | 查询超时时间（秒） |
 | `schema` | 否 | 自动推断 | Schema 定义，不配置则从数据库元数据自动推断 |
@@ -283,7 +283,7 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
       "username": "root",
       "password": "password",
       "table": "users",
-      "splitColumn": "id",
+      "splitKey": "id",
       "batchSize": 1000
     }
   }
@@ -302,7 +302,7 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
       "username": "root",
       "password": "password",
       "sql": "SELECT id, name, email FROM users WHERE status = 1",
-      "splitColumn": "id",
+      "splitKey": "id",
       "queryTimeout": 300
     }
   }
@@ -340,7 +340,7 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
       "password": "oracle",
       "table": "USERS",
       "dialect": "oracle",
-      "splitColumn": "ID",
+      "splitKey": "ID",
       "batchSize": 1000
     }
   }
@@ -360,7 +360,7 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
       "password": "password",
       "table": "USERS",
       "dialect": "oracle",
-      "splitColumn": "ID",
+      "splitKey": "ID",
       "batchSize": 1000
     }
   }
@@ -372,15 +372,18 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 > - Oracle 模式：URL 格式 `jdbc:oceanbase://host:2883/db`，需显式配置 `dialect: "oracle"` 以使用 Oracle 方言
 
 > **注意：**
-> - 未配置 `splitColumn` 时将使用单分片全表扫描模式，无法并行读取数据
-> - 对于大数据量表，建议配置 `splitColumn` 以启用并行分片读取
-> - `splitColumn` 仅支持数值类型（TINYINT, SMALLINT, INT, BIGINT, REAL, FLOAT, DOUBLE, DECIMAL, NUMERIC），配置非数值类型列会报错
+> - 未配置 `splitKey` 时，系统会自动从表主键推断分片列
+> - `splitKey` 支持数值类型：TINYINT, SMALLINT, INT, BIGINT, REAL, FLOAT, DOUBLE, DECIMAL, NUMERIC
 > - `dialect` 参数用于显式指定数据库类型，适用于 URL 无法正确识别数据库类型的场景（如 OceanBase）
 
 #### 分片说明
 
 - 分片数量由 Job 配置的 `parallelism` 决定
-- 分片列应为数值型主键，支持范围查询
+- **自动推断：** 未配置 `splitKey` 时，自动从表主键推断分片列
+  - 单主键：自动选择该主键列
+  - 复合主键：优先选择数值类型范围最大的列（BIGINT > INT > SMALLINT > TINYINT > DECIMAL > FLOAT）
+  - 无主键：任务失败，提示手动配置 `splitKey`
+- **手动配置：** 配置 `splitKey` 时使用用户指定的列
 - 数据会根据主键范围均匀分配到各并行度
 
 ---
@@ -1222,7 +1225,7 @@ Kafka Sink 与 Kafka Source 可以形成完整的数据流转链路：
         "username": "root",
         "password": "password",
         "table": "users",
-        "splitColumn": "id",
+        "splitKey": "id",
         "batchSize": 1000
       }
     }
@@ -1306,7 +1309,7 @@ Kafka Sink 与 Kafka Source 可以形成完整的数据流转链路：
         "username": "root",
         "password": "password",
         "table": "source_table",
-        "splitColumn": "id",
+        "splitKey": "id",
         "batchSize": 1000
       }
     }
