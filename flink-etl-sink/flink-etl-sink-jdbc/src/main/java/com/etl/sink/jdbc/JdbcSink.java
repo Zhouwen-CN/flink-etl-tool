@@ -49,14 +49,20 @@ public class JdbcSink extends AbstractSink {
         if (mode == WriteMode.UPSERT) {
             // UPSERT 模式必须配置 table，不能配置 sql
             Preconditions.checkArgument(table != null,
-                "UPSERT 模式必须配置 table（不能使用 sql），因为需要从数据库获取主键信息");
+                "UPSERT 模式必须配置 table（不能使用 sql），因为需要主键信息");
 
-            // 自动获取主键
-            LinkedHashMap<String, Integer> pkInfo =
-                SqlUtils.getPrimaryKey(url, table, username, password);
-            keyFields = new ArrayList<>(pkInfo.keySet());
-
-            log.info("JDBC Sink UPSERT 模式自动获取主键: table={}, keyFields={}", table, keyFields);
+            // 优先使用用户配置的 keyFields，未配置时自动获取
+            List<String> configuredKeyFields = config.getList("keyFields");
+            if (configuredKeyFields != null && !configuredKeyFields.isEmpty()) {
+                keyFields = configuredKeyFields;
+                log.info("JDBC Sink UPSERT 模式使用配置的主键: table={}, keyFields={}", table, keyFields);
+            } else {
+                // 自动获取主键
+                LinkedHashMap<String, Integer> pkInfo =
+                    SqlUtils.getPrimaryKey(url, table, username, password);
+                keyFields = new ArrayList<>(pkInfo.keySet());
+                log.info("JDBC Sink UPSERT 模式自动获取主键: table={}, keyFields={}", table, keyFields);
+            }
         } else {
             log.info("JDBC Sink INSERT 模式: table={}", table);
         }
@@ -77,6 +83,13 @@ public class JdbcSink extends AbstractSink {
             .build();
 
         log.info("创建 JdbcSink: {}", this.jdbcSinkConfig);
+    }
+
+    /**
+     * 获取 JDBC Sink 配置对象（用于测试）
+     */
+    public JdbcSinkConfig getJdbcSinkConfig() {
+        return jdbcSinkConfig;
     }
 
     @Override
