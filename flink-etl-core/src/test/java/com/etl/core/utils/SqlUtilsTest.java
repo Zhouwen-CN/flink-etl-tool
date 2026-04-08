@@ -1,5 +1,6 @@
 package com.etl.core.utils;
 
+import com.etl.core.exception.NoPrimaryKeyException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -96,9 +97,9 @@ public class SqlUtilsTest {
         }
 
         // 测试获取主键（应抛异常）
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+        NoPrimaryKeyException exception = assertThrows(NoPrimaryKeyException.class, () -> {
             SqlUtils.getPrimaryKey(H2_URL, "NO_PK", USERNAME, PASSWORD);
-        }, "无主键表应抛出 RuntimeException");
+        }, "无主键表应抛出 NoPrimaryKeyException");
 
         assertTrue(exception.getMessage().contains("没有主键"),
             "异常信息应包含 '没有主键'");
@@ -108,12 +109,11 @@ public class SqlUtilsTest {
     public void testGetPrimaryKey_TableNotExist() {
         // 测试获取不存在表的主键（应抛异常）
         // 注意：DatabaseMetaData.getPrimaryKeys() 对不存在的表返回空结果，所以会得到"没有主键"异常
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+        NoPrimaryKeyException exception = assertThrows(NoPrimaryKeyException.class, () -> {
             SqlUtils.getPrimaryKey(H2_URL, "NONEXISTENT_TABLE", USERNAME, PASSWORD);
-        }, "表不存在应抛出 RuntimeException");
+        }, "表不存在应抛出 NoPrimaryKeyException");
 
-        assertTrue(exception.getMessage().contains("没有主键") ||
-                   exception.getMessage().contains("获取主键失败"),
+        assertTrue(exception.getMessage().contains("没有主键"),
             "异常信息应提示表不存在或没有主键");
     }
 }

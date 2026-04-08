@@ -1,12 +1,13 @@
 package com.etl.core.utils;
 
+import com.etl.core.exception.NoPrimaryKeyException;
 import com.etl.core.schema.SqlTypeConverter;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.types.Row;
 
 import java.sql.*;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -62,8 +63,9 @@ public final class SqlUtils {
      * @param table    表名
      * @param username 用户名（可为 null）
      * @param password 密码（可为 null）
-     * @return LinkedHashMap<列名, JDBC类型>，按 KEY_SEQ 顺序排列
-     * @throws RuntimeException 如果表没有主键或获取失败
+     * @return LinkedHashMap<列名, JDBC类型>，使用 LinkedHashMap 保证复合主键按 KEY_SEQ 顺序排列
+     * @throws NoPrimaryKeyException 如果表没有主键
+     * @throws RuntimeException 如果获取主键失败
      */
     public static Map<String, Integer> getPrimaryKey(
             String url, String table, String username, String password) {
@@ -77,27 +79,31 @@ public final class SqlUtils {
             ResultSet rs = metaData.getPrimaryKeys(catalog, schema, table);
 
             // 按 KEY_SEQ 收集主键列名
-            Map<String, Integer> result = new HashMap<>();
-            while (rs.next()) {
-                String columnName = rs.getString("COLUMN_NAME");
+            Map<String, Integer> result = new LinkedHashMap<>();
+            try {
+                while (rs.next()) {
+                    String columnName = rs.getString("COLUMN_NAME");
 
-                // 使用 DatabaseMetaData.getColumns() 获取列类型
-                ResultSet colRs = metaData.getColumns(catalog, schema, table, columnName);
-
-                if (colRs.next()) {
-                    int jdbcType = colRs.getInt("DATA_TYPE");
-                    result.put(columnName, jdbcType);
-                } else {
-                    throw new RuntimeException(
-                            String.format("无法获取表 '%s' 列 '%s' 的类型信息", table, columnName));
+                    // 使用 DatabaseMetaData.getColumns() 获取列类型
+                    ResultSet colRs = metaData.getColumns(catalog, schema, table, columnName);
+                    try {
+                        if (colRs.next()) {
+                            int jdbcType = colRs.getInt("DATA_TYPE");
+                            result.put(columnName, jdbcType);
+                        } else {
+                            throw new RuntimeException(
+                                    String.format("无法获取表 '%s' 列 '%s' 的类型信息", table, columnName));
+                        }
+                    } finally {
+                        colRs.close();
+                    }
                 }
-                colRs.close();
+            } finally {
+                rs.close();
             }
-            rs.close();
 
             if (result.isEmpty()) {
-                throw new RuntimeException(
-                    String.format("表 '%s' 没有主键，无法使用 UPSERT 模式。请使用 INSERT 模式或为表添加主键", table));
+                throw new NoPrimaryKeyException(table);
             }
 
             return result;
