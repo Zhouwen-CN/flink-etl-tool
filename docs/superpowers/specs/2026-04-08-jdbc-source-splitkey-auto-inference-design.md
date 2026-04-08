@@ -50,7 +50,7 @@
 }
 ```
 
-**自动推断 splitKey：**
+**自动推断 splitKey（单主键）：**
 
 ```json
 {
@@ -63,6 +63,63 @@
       "password": "password",
       "table": "users"
       // 未配置 splitKey，自动从主键推断
+      // 表有主键 id BIGINT，自动选择 id
+    }
+  }]
+}
+```
+
+**自动推断 splitKey（复合主键）：**
+
+```json
+{
+  "sources": [{
+    "type": "jdbc",
+    "outputTable": "orders",
+    "config": {
+      "url": "jdbc:mysql://localhost:3306/mydb",
+      "username": "root",
+      "password": "password",
+      "table": "orders"
+      // 未配置 splitKey，自动从复合主键推断
+      // 表有复合主键 (id INT, seq BIGINT)，优先选择 seq (BIGINT)
+    }
+  }]
+}
+```
+
+**sql 模式配置 splitKey：**
+
+```json
+{
+  "sources": [{
+    "type": "jdbc",
+    "outputTable": "active_users",
+    "config": {
+      "url": "jdbc:mysql://localhost:3306/mydb",
+      "username": "root",
+      "password": "password",
+      "sql": "SELECT id, name FROM users WHERE status = 1",
+      "splitKey": "id"
+      // sql 模式必须手动配置 splitKey，否则单分片模式
+    }
+  }]
+}
+```
+
+**sql 模式单分片（无 splitKey）：**
+
+```json
+{
+  "sources": [{
+    "type": "jdbc",
+    "outputTable": "active_users",
+    "config": {
+      "url": "jdbc:mysql://localhost:3306/mydb",
+      "username": "root",
+      "password": "password",
+      "sql": "SELECT id, name FROM users WHERE status = 1"
+      // 未配置 splitKey，单分片全表扫描模式（打印警告）
     }
   }]
 }
@@ -75,6 +132,8 @@
 ### 推断流程
 
 ```
+参数校验：table 和 sql 至少配置一个（前置校验）
+
 1. 用户手动配置了 splitKey？
    ├─ 是 → 验证类型，使用用户配置的 splitKey
    │   ├─ 类型支持 → 使用该列切分
@@ -92,10 +151,8 @@
    │
    └─ 否 → 进入 sql 模式
 
-3. 配置了 sql（且未配置 table）？
-   ├─ 是 → 警告 + 单分片全表扫描模式
-   │
-   └─ 否 → 抛出 IllegalArgumentException（table 和 sql 至少配置一个）
+3. 配置了 sql（参数校验已确保 sql 不为 null）
+   └─ 警告 + 单分片全表扫描模式
 ```
 
 ### 数值类型优先级
@@ -168,6 +225,7 @@ public class NoPrimaryKeyException extends RuntimeException {
 **修改内容：**
 - 抛出 `NoPrimaryKeyException` 而非通用 RuntimeException
 - 错误信息通用化：`"表 '{table}' 没有主键"`
+- **必须使用 LinkedHashMap 保证主键顺序**（复合主键场景必须按 KEY_SEQ 顺序排列）
 
 ```java
 public static Map<String, Integer> getPrimaryKey(
@@ -175,6 +233,27 @@ public static Map<String, Integer> getPrimaryKey(
 
     try (Connection conn = DriverManager.getConnection(url, username, password)) {
         // ... 现有的获取主键逻辑 ...
+
+        // 使用 LinkedHashMap 保证主键顺序
+        Map<String, Integer> result = new LinkedHashMap<>();
+
+        // 按 KEY_SEQ 收集主键列名（确保顺序）
+        while (rs.next()) {
+            String columnName = rs.getString("COLUMN_NAME");
+
+            // 使用 DatabaseMetaData.getColumns() 获取列类型
+            ResultSet colRs = metaData.getColumns(catalog, schema, table, columnName);
+
+            if (colRs.next()) {
+                int jdbcType = colRs.getInt("DATA_TYPE");
+                result.put(columnName, jdbcType);
+            } else {
+                throw new RuntimeException(
+                    String.format("无法获取表 '%s' 列 '%s' 的类型信息", table, columnName));
+            }
+            colRs.close();
+        }
+        rs.close();
 
         if (result.isEmpty()) {
             throw new NoPrimaryKeyException(table);  // 使用自定义异常
@@ -266,6 +345,9 @@ private Pair<String, SplitStrategy> inferSplitKey(
     String userSplitKey, JdbcDialect dialect,
     String username, String password) {
 
+    // 参数校验：table 和 sql 至少配置一个
+    Preconditions.checkArgument(table != null || sql != null, "table 和 sql 至少配置一个");
+
     // 1. 用户手动配置了 splitKey
     if (userSplitKey != null) {
         int jdbcType = dialect.getColumnType(url, table, sql, userSplitKey, username, password);
@@ -298,18 +380,13 @@ private Pair<String, SplitStrategy> inferSplitKey(
 
         } catch (NoPrimaryKeyException e) {
             throw new RuntimeException(
-                String.format("表 '%s' 没有主键，无法自动推断 splitKey。请手动配置 splitKey 参数或为表添加主键", e.getTableName()));
+                String.format("%s。请手动配置 splitKey 参数或为表添加主键", e.getMessage()));
         }
     }
 
     // 3. 配置了 sql（且未配置 table），未配置 splitKey → 单分片模式
-    if (sql != null) {
-        log.warn("配置了自定义 SQL 但未指定 splitKey，将使用单分片全表扫描模式。建议配置 splitKey 以启用并行分片读取。");
-        return Pair.of(null, SplitStrategy.FULL_TABLE_SCAN);
-    }
-
-    // 4. table 和 sql 都未配置 → 报错
-    throw new IllegalArgumentException("table 和 sql 至少配置一个");
+    log.warn("配置了自定义 SQL 但未指定 splitKey，将使用单分片全表扫描模式。建议配置 splitKey 以启用并行分片读取。");
+    return Pair.of(null, SplitStrategy.FULL_TABLE_SCAN);
 }
 
 /**
@@ -483,12 +560,25 @@ class JdbcSourceSplitKeyTest {
 
 ## 关键决策记录
 
-1. **参数名称变更：** `splitColumn` → `splitKey`，不向后兼容
+1. **参数名称变更：** `splitColumn` → `splitKey`
+   - **不向后兼容**：旧参数 `splitColumn` 会被静默忽略，不会报错提示
+   - **处理策略**：不检测旧参数，如果用户配置了 `splitColumn` 而没有 `splitKey`，则按"未配置 splitKey"处理
+   - **影响评估**：用户必须更新配置文件才能使用新版本，简化代码无需处理兼容逻辑
+
 2. **复合主键选择：** 优先选择数值类型范围最大的列（BIGINT > INT > ...）
+   - **保证顺序**：SqlUtils.getPrimaryKey() 使用 LinkedHashMap 保证复合主键按 KEY_SEQ 顺序排列
+   - **确定性结果**：相同的表结构在不同环境下推断结果一致
+
 3. **异常处理：** 自定义 NoPrimaryKeyException，通用化错误信息
+   - **异常信息**：`"表 '{table}' 没有主键"`（通用化）
+   - **场景补充**：JDBC Source 和 JDBC Sink 在各自场景捕获并补充具体提示
+   - **避免双重格式化**：使用 `e.getMessage()` 而非重新构造异常信息
+
 4. **实现方案：** 在 JdbcSource 构造函数中集中处理，符合现有设计模式
+   - **参数校验前置**：在 inferSplitKey() 方法开始处校验 table/sql 至少配置一个
+   - **避免空指针**：调用 dialect.getColumnType() 前已确保参数合法性
+
 5. **推断优先级：**
    - 用户配置 splitKey（最高）
    - 配置 table → 自动推断
    - 配置 sql → 单分片模式
-   - 都未配置 → 报错
