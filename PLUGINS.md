@@ -719,22 +719,34 @@ Writer 可以通过 `context` 字段访问：
 | `table` | 条件必填 | - | 目标表名。与 `sql` 二选一，优先 |
 | `sql` | 条件必填 | - | 自定义 SQL，支持具名占位符 `:paramName` |
 | `mode` | 否 | `insert` | 写入模式：`insert`（插入）或 `upsert`（存在则更新） |
+| `keyFields` | 否 | 自动获取 | **UPSERT 模式专用**：主键/唯一键字段列表。未配置时自动从数据库获取主键信息 |
 | `batchSize` | 否 | `100` | 批量写入大小 |
 
-#### UPSERT 模式约束
+#### UPSERT 模式说明
 
-**自动获取主键机制：**
-- UPSERT 模式自动从数据库获取表主键信息，无需手动配置
-- 复合主键表会使用所有主键列作为条件字段
-- 表必须有主键，否则抛出异常
+**主键配置机制（两种方式）：**
+
+1. **自动获取主键（推荐）**：
+   - 不配置 `keyFields` 参数，系统自动从数据库获取主键信息
+   - 复合主键表会使用所有主键列作为条件字段
+   - 表必须有主键，否则抛出异常
+
+2. **手动指定主键（可选）**：
+   - 配置 `keyFields` 参数，显式指定主键/唯一键字段列表
+   - 适用于表无主键但有唯一索引、或需使用部分字段作为条件的场景
+   - 格式：`["field1", "field2"]`
+
+**配置优先级：**
+- 用户配置 `keyFields` → 使用配置的字段列表
+- 未配置 `keyFields` → 自动从数据库获取主键
 
 **约束条件：**
-- **必须配置 table，不能配置 sql**：主键信息只存在于物理表
-- **表必须有主键**：无主键表无法使用 UPSERT 模式，建议使用 INSERT 模式或添加主键
+- **必须配置 table，不能配置 sql**：主键信息只存在于物理表（自动获取时）
+- **表必须有主键（自动获取时）**：无主键表需手动配置 keyFields
 
 **错误处理：**
-- 配置 sql 时抛异常：`"UPSERT 模式必须配置 table（不能使用 sql），因为需要从数据库获取主键信息"`
-- 表无主键时抛异常：`"表 'xxx' 没有主键，无法使用 UPSERT 模式。请使用 INSERT 模式或为表添加主键"`
+- 配置 sql 时抛异常：`"UPSERT 模式必须配置 table（不能使用 sql），因为需要主键信息"`
+- 未配置 keyFields 且表无主键时抛异常：`"表 'xxx' 没有主键，无法使用 UPSERT 模式。请使用 INSERT 模式、手动配置 keyFields 或为表添加主键"`
 
 ---
 
@@ -803,6 +815,30 @@ Writer 可以通过 `context` 字段访问：
 ```
 
 > **说明：** UPSERT 模式会自动从数据库获取 `target_table` 的主键信息，无需配置 keyFields。
+
+**table 模式 - UPSERT 手动指定主键：**
+
+适用场景：表无主键但有唯一索引，或需使用部分字段作为匹配条件。
+
+```json
+{
+  "sink": {
+    "type": "jdbc",
+    "inputTable": "output_data",
+    "config": {
+      "url": "jdbc:mysql://localhost:3306/mydb",
+      "username": "root",
+      "password": "password",
+      "table": "users",
+      "mode": "upsert",
+      "keyFields": ["email"],
+      "batchSize": 100
+    }
+  }
+}
+```
+
+> **说明：** 该配置使用 `email` 字段作为 UPSERT 的匹配条件，即使表有其他主键也不会使用。
 
 ---
 
