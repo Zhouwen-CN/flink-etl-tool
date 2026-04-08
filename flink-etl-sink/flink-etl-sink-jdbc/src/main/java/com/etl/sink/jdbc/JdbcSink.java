@@ -4,6 +4,7 @@ import com.etl.core.config.SinkConfig;
 import com.etl.core.dialect.JdbcDialect;
 import com.etl.core.dialect.JdbcDialectLoader;
 import com.etl.core.dialect.WriteMode;
+import com.etl.core.exception.NoPrimaryKeyException;
 import com.etl.core.sink.AbstractSink;
 import com.etl.core.utils.SqlUtils;
 import com.etl.sink.jdbc.config.JdbcSinkConfig;
@@ -53,7 +54,13 @@ public class JdbcSink extends AbstractSink {
                     "UPSERT 模式必须配置 table，因为需要主键信息");
 
             // 自动获取主键
-            Map<String, Integer> pkInfo = SqlUtils.getPrimaryKey(url, table, username, password);
+            Map<String, Integer> pkInfo;
+            try {
+                pkInfo = SqlUtils.getPrimaryKey(url, table, username, password);
+            } catch (NoPrimaryKeyException e) {
+                throw new RuntimeException(
+                    String.format("表 '%s' 没有主键，无法使用 UPSERT 模式。请使用 INSERT 模式、手动配置 keyFields 或为表添加主键", e.getTableName()));
+            }
             keyFields = new ArrayList<>(pkInfo.keySet());
             log.info("JDBC Sink UPSERT 模式自动获取主键: table={}, keyFields={}", table, keyFields);
         } else {
