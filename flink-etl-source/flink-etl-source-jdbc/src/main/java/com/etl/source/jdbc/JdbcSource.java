@@ -54,7 +54,7 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
             splitStrategy = SplitStrategy.FULL_TABLE_SCAN;
         } else {
             // 配置了 splitColumn，自动匹配分片策略
-            int jdbcType = SqlUtils.getColumnType(dialect, url, table, sql, splitColumn, username, password);
+            int jdbcType = dialect.getColumnType(url, table, sql, splitColumn, username, password);
             splitStrategy = SplitStrategy.fromJdbcType(jdbcType);
             // 如果没有匹配的策略，抛出明确的错误
             if (splitStrategy == null) {

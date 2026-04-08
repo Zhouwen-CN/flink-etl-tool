@@ -213,7 +213,7 @@
         function inferSchema(data) {
             function infer(value) {
                 if (value === null) {
-                    return 'STRING'; // null 值默认为 STRING
+                    return value; // null 不做处理，直接返回，交给用户手动处理
                 }
 
                 if (typeof value === 'string') {
