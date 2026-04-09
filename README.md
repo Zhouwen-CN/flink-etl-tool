@@ -50,7 +50,7 @@ java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar --file you
         "username": "root",
         "password": "password",
         "table": "users",
-        "splitColumn": "id"
+        "splitKey": "id"
       }
     }
   ],

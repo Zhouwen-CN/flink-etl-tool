@@ -14,7 +14,7 @@
         "username": "admin",
         "password": "password",
         "table": "SOURCE_TABLE",
-        "splitColumn": "ID",
+        "splitKey": "ID",
         "batchSize": 1000
       }
     }
