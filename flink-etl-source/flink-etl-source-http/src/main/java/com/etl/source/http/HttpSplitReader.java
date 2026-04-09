@@ -74,9 +74,13 @@ public class HttpSplitReader implements BaseSplitReader<Row, HttpSplit> {
             // 标记分片完成
             finishedSplits.add(split.splitId());
 
-        } catch (Exception e) {
+        } catch (IOException | IllegalArgumentException e) {
             log.error("HTTP 请求失败: {}", e.getMessage(), e);
             throw new RuntimeException("HTTP 请求失败: " + e.getMessage(), e);
+        } catch (Exception e) {
+            // 捕获其他未预期的异常（如 JsonToRowConverter 中的异常）
+            log.error("数据转换失败: {}", e.getMessage(), e);
+            throw new RuntimeException("数据转换失败: " + e.getMessage(), e);
         }
 
         builder.addFinishedSplits(finishedSplits);
@@ -86,7 +90,7 @@ public class HttpSplitReader implements BaseSplitReader<Row, HttpSplit> {
     /**
      * 执行 HTTP 请求
      */
-    private String executeRequest(HttpSourceConfig config) throws Exception {
+    private String executeRequest(HttpSourceConfig config) throws IOException {
         String urlString = config.getUrl();
 
         // 添加查询参数
@@ -96,7 +100,7 @@ public class HttpSplitReader implements BaseSplitReader<Row, HttpSplit> {
             for (Map.Entry<String, Object> entry : config.getParams().entrySet()) {
                 urlBuilder.append(entry.getKey())
                         .append("=")
-                        .append(URLEncoder.encode(String.valueOf(entry.getValue()), "utf-8"))
+                        .append(URLEncoder.encode(String.valueOf(entry.getValue()), StandardCharsets.UTF_8.name()))
                         .append("&");
             }
             urlString = urlBuilder.substring(0, urlBuilder.length() - 1);
@@ -131,7 +135,7 @@ public class HttpSplitReader implements BaseSplitReader<Row, HttpSplit> {
             // 检查响应码
             int responseCode = connection.getResponseCode();
             if (responseCode != HttpURLConnection.HTTP_OK) {
-                throw new RuntimeException("HTTP 请求失败，响应码: " + responseCode);
+                throw new IOException("HTTP 请求失败，响应码: " + responseCode);
             }
 
             // 读取响应

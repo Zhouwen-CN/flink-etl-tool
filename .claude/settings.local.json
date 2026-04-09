@@ -11,5 +11,8 @@
       "Bash(git push *)",
       "Bash(rm *)"
     ]
+  },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   }
 }

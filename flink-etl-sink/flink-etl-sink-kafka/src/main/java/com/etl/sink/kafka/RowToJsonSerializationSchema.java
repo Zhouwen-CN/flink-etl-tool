@@ -61,17 +61,13 @@ public class RowToJsonSerializationSchema implements KafkaRecordSerializationSch
      * 序列化消息 Value
      */
     private byte[] serializeValue(Row row) {
-        try {
-            // Row -> JsonNode
-            JsonNode jsonNode = RowToJsonConverter.convertRowToJsonNode(row);
+        // Row -> JsonNode
+        JsonNode jsonNode = RowToJsonConverter.convertRowToJsonNode(row);
 
-            // JsonNode -> JSON 字符串
-            String jsonString = JsonUtils.writeValueAsString(jsonNode);
+        // JsonNode -> JSON 字符串（JsonUtils 内部已处理 JsonProcessingException）
+        String jsonString = JsonUtils.writeValueAsString(jsonNode);
 
-            // 转为 bytes
-            return jsonString.getBytes(StandardCharsets.UTF_8);
-        } catch (Exception e) {
-            throw new RuntimeException("JSON 序列化失败: " + e.getMessage(), e);
-        }
+        // 转为 bytes
+        return jsonString.getBytes(StandardCharsets.UTF_8);
     }
 }

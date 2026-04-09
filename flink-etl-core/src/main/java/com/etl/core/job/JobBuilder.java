@@ -13,6 +13,7 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableException;
+import org.apache.flink.table.api.ValidationException;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.table.functions.UserDefinedFunction;
 import org.apache.flink.types.Row;
@@ -81,9 +82,7 @@ public class JobBuilder {
                 Table sinkTable = stEnv.from(sinkInputTable);
                 resultStream = stEnv.toDataStream(sinkTable);
                 log.info("Table 转换为 DataStream");
-            } catch (TableException e) {
-                throw new RuntimeException(e);
-            } catch (Exception e) {
+            } catch (TableException | ValidationException e) {
                 throw new IllegalArgumentException("无法从表 '" + sinkInputTable + "' 读取数据，请检查 inputTable 配置是否正确，或上游 source.outputTable / transform.outputTable 是否已正确配置", e);
             }
 
@@ -141,7 +140,7 @@ public class JobBuilder {
                 registeredFunctions.add(functionName);
                 log.info("UDF 注册成功：{} -> {}",
                          functionName, functionInstance.getClass().getSimpleName());
-            } catch (Exception e) {
+            } catch (TableException e) {
                 throw new IllegalStateException(
                     String.format("UDF 注册失败：%s", functionName), e
                 );
