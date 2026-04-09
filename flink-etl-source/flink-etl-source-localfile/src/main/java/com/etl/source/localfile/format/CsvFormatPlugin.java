@@ -4,6 +4,7 @@ import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.TypeConverter;
 import com.etl.source.localfile.config.LocalFileSourceConfig;
 import com.google.auto.service.AutoService;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
@@ -57,7 +58,7 @@ public class CsvFormatPlugin implements FileFormatPlugin {
     /**
      * 安静地关闭资源
      */
-    private static void closeQuietly(AutoCloseable resource) {
+    private void closeQuietly(AutoCloseable resource) {
         if (resource != null) {
             try {
                 resource.close();
@@ -90,7 +91,7 @@ public class CsvFormatPlugin implements FileFormatPlugin {
         }
 
         @Override
-        public Iterator<Row> iterator() {
+        public @NonNull Iterator<Row> iterator() {
             return new Iterator<Row>() {
                 private final Iterator<CSVRecord> csvIterator = parser.iterator();
                 private boolean headerSkipped = false;

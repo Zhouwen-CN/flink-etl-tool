@@ -6,7 +6,13 @@ import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.types.Row;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -85,8 +91,7 @@ public final class SqlUtils {
                     String columnName = rs.getString("COLUMN_NAME");
 
                     // 使用 DatabaseMetaData.getColumns() 获取列类型
-                    ResultSet colRs = metaData.getColumns(catalog, schema, table, columnName);
-                    try {
+                    try (ResultSet colRs = metaData.getColumns(catalog, schema, table, columnName)) {
                         if (colRs.next()) {
                             int jdbcType = colRs.getInt("DATA_TYPE");
                             result.put(columnName, jdbcType);
@@ -94,8 +99,6 @@ public final class SqlUtils {
                             throw new RuntimeException(
                                     String.format("无法获取表 '%s' 列 '%s' 的类型信息", table, columnName));
                         }
-                    } finally {
-                        colRs.close();
                     }
                 }
             } finally {

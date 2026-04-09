@@ -9,10 +9,15 @@ import org.apache.flink.connector.base.source.reader.RecordsWithSplitIds;
 import org.apache.flink.connector.base.source.reader.splitreader.SplitsChange;
 import org.apache.flink.types.Row;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayDeque;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Queue;
+import java.util.Set;
 
 /**
  * 本地文件分片读取器
@@ -75,7 +80,7 @@ public class LocalFileSplitReader implements BaseSplitReader<Row, LocalFileSplit
         log.info("开始读取文件: {}", split.getFilePath());
 
         try {
-            currentInputStream = new FileInputStream(split.getFilePath());
+            currentInputStream = Files.newInputStream(Paths.get(split.getFilePath()));
 
             // 使用配置中的格式插件和 sourceConfig
             Iterable<Row> rows = formatPlugin.parse(localFileSourceConfig, currentInputStream);

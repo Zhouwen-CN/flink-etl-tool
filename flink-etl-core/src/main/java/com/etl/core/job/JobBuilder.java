@@ -4,7 +4,11 @@ import com.etl.core.config.JobConfig;
 import com.etl.core.config.SinkConfig;
 import com.etl.core.config.SourceConfig;
 import com.etl.core.config.TransformConfig;
-import com.etl.core.spi.*;
+import com.etl.core.spi.PluginLoader;
+import com.etl.core.spi.SinkPlugin;
+import com.etl.core.spi.SourcePlugin;
+import com.etl.core.spi.TransformPlugin;
+import com.etl.core.spi.UdfPlugin;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.connector.sink2.Sink;
@@ -13,7 +17,6 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableException;
-import org.apache.flink.table.api.ValidationException;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.table.functions.UserDefinedFunction;
 import org.apache.flink.types.Row;
@@ -82,7 +85,7 @@ public class JobBuilder {
                 Table sinkTable = stEnv.from(sinkInputTable);
                 resultStream = stEnv.toDataStream(sinkTable);
                 log.info("Table 转换为 DataStream");
-            } catch (TableException | ValidationException e) {
+            } catch (Exception e) {
                 throw new IllegalArgumentException("无法从表 '" + sinkInputTable + "' 读取数据，请检查 inputTable 配置是否正确，或上游 source.outputTable / transform.outputTable 是否已正确配置", e);
             }
 

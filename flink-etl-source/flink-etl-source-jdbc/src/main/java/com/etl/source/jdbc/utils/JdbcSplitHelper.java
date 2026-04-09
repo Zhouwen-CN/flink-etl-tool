@@ -4,7 +4,12 @@ import com.etl.core.dialect.JdbcDialect;
 import com.etl.source.jdbc.RangeSplit;
 import lombok.extern.slf4j.Slf4j;
 
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -215,15 +220,15 @@ public final class JdbcSplitHelper {
     public static String selectOptimalSplitKey(Map<String, Integer> primaryKeys) {
         // 定义类型优先级（数值越大优先级越高）
         Map<Integer, Integer> typePriority = new HashMap<>();
-        typePriority.put(Types.BIGINT, 6);
-        typePriority.put(Types.INTEGER, 5);
-        typePriority.put(Types.SMALLINT, 4);
-        typePriority.put(Types.TINYINT, 3);
-        typePriority.put(Types.DECIMAL, 2);
-        typePriority.put(Types.NUMERIC, 2);
-        typePriority.put(Types.FLOAT, 1);
-        typePriority.put(Types.REAL, 1);
-        typePriority.put(Types.DOUBLE, 1);
+        typePriority.put(java.sql.Types.BIGINT, 6);
+        typePriority.put(java.sql.Types.INTEGER, 5);
+        typePriority.put(java.sql.Types.SMALLINT, 4);
+        typePriority.put(java.sql.Types.TINYINT, 3);
+        typePriority.put(java.sql.Types.DECIMAL, 2);
+        typePriority.put(java.sql.Types.NUMERIC, 2);
+        typePriority.put(java.sql.Types.FLOAT, 1);
+        typePriority.put(java.sql.Types.REAL, 1);
+        typePriority.put(java.sql.Types.DOUBLE, 1);
 
         String selectedKey = null;
         int selectedPriority = 0;
@@ -247,15 +252,15 @@ public final class JdbcSplitHelper {
      */
     public static String getJdbcTypeName(int jdbcType) {
         switch (jdbcType) {
-            case Types.BIGINT: return "BIGINT";
-            case Types.INTEGER: return "INTEGER";
-            case Types.SMALLINT: return "SMALLINT";
-            case Types.TINYINT: return "TINYINT";
-            case Types.DECIMAL: return "DECIMAL";
-            case Types.NUMERIC: return "NUMERIC";
-            case Types.FLOAT: return "FLOAT";
-            case Types.REAL: return "REAL";
-            case Types.DOUBLE: return "DOUBLE";
+            case java.sql.Types.BIGINT: return "BIGINT";
+            case java.sql.Types.INTEGER: return "INTEGER";
+            case java.sql.Types.SMALLINT: return "SMALLINT";
+            case java.sql.Types.TINYINT: return "TINYINT";
+            case java.sql.Types.DECIMAL: return "DECIMAL";
+            case java.sql.Types.NUMERIC: return "NUMERIC";
+            case java.sql.Types.FLOAT: return "FLOAT";
+            case java.sql.Types.REAL: return "REAL";
+            case java.sql.Types.DOUBLE: return "DOUBLE";
             default: return String.valueOf(jdbcType);
         }
     }

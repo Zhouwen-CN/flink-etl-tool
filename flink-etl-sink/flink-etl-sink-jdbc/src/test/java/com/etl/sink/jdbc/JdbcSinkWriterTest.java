@@ -1,18 +1,16 @@
 package com.etl.sink.jdbc;
 
-import com.etl.sink.jdbc.config.JdbcSinkConfig;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.metrics.groups.SinkWriterMetricGroup;
 import org.apache.flink.types.Row;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * JdbcSinkWriter 批量写入测试

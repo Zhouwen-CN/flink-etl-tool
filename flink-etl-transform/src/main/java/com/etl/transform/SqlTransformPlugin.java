@@ -5,7 +5,6 @@ import com.etl.core.spi.TransformPlugin;
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.table.api.Table;
-import org.apache.flink.table.api.TableException;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 
 /**
@@ -34,7 +33,7 @@ public class SqlTransformPlugin implements TransformPlugin {
 
         try {
             return stEnv.sqlQuery(sql);
-        } catch (TableException e) {
+        } catch (Exception e) {
             throw new RuntimeException("SQL 执行失败: " + e.getMessage(), e);
         }
     }

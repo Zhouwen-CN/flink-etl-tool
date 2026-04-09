@@ -15,12 +15,4 @@
     <name>Flink ETL Sink - Kafka</name>
     <description>Kafka Sink 插件</description>
 
-    <dependencies>
-        <!-- 依赖 flink-etl-core -->
-        <dependency>
-            <groupId>com.etl</groupId>
-            <artifactId>flink-etl-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-    </dependencies>
 </project>
