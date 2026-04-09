@@ -11,6 +11,7 @@ import com.etl.core.source.serde.DefaultSplitSerializer;
 import com.etl.core.utils.SqlUtils;
 import com.etl.source.jdbc.config.JdbcSourceConfig;
 import com.etl.source.jdbc.enums.SplitStrategy;
+import com.etl.source.jdbc.utils.JdbcSplitHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -136,12 +137,12 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
      * 推断 splitKey 和 splitStrategy
      *
      * @param userSplitKey 用户配置的 splitKey（可选）
-     * @param table 表名（可选）
-     * @param sql SQL 语句（可选）
-     * @param url JDBC URL
-     * @param username 用户名
-     * @param password 密码
-     * @param dialect JDBC 方言
+     * @param table        表名（可选）
+     * @param sql          SQL 语句（可选）
+     * @param url          JDBC URL
+     * @param username     用户名
+     * @param password     密码
+     * @param dialect      JDBC 方言
      * @return Pair&lt;splitKey, splitStrategy&gt;，splitKey 可能为 null（单分片模式）
      */
     private Pair<String, SplitStrategy> inferSplitKey(
@@ -154,7 +155,7 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
 
         // 1. 用户配置了 splitKey → 验证类型
         if (userSplitKey != null) {
-            int jdbcType = dialect.getColumnType(url, table, sql, userSplitKey, username, password);
+            int jdbcType = JdbcSplitHelper.getColumnType(dialect, url, table, sql, userSplitKey, username, password);
             SplitStrategy strategy = SplitStrategy.fromJdbcType(jdbcType);
             if (strategy == null) {
                 throw new IllegalArgumentException(

@@ -1,7 +1,6 @@
 package com.etl.core.dialect;
 
 import java.io.Serializable;
-import java.sql.*;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -66,42 +65,4 @@ public interface JdbcDialect extends Serializable {
      * @return UPSERT SQL
      */
     String getUpsertSql(String table, String[] columns, List<String> keyFields);
-
-
-    /**
-     * 获取指定列的 JDBC 类型
-     *
-     * @param url        数据库连接 URL
-     * @param table      表名（可能为 null）
-     * @param sql        自定义 SQL（可能为 null）
-     * @param columnName 列名
-     * @param username   用户名
-     * @param password   密码
-     * @return JDBC 类型常量（来自 java.sql.Types）
-     * @throws RuntimeException 如果列不存在或查询失败
-     */
-    default int getColumnType(String url, String table, String sql, String columnName,
-                              String username, String password) {
-        // 构建查询语句
-        String sampleQuery;
-        if (table != null) {
-            sampleQuery = "SELECT " + this.quoteIdentifier(columnName) + " FROM " + table + " WHERE 1=0";
-        } else {
-            sampleQuery = "SELECT " + this.quoteIdentifier(columnName) + " FROM (" + sql + ") AS t WHERE 1=0";
-        }
-
-        try (Connection conn = DriverManager.getConnection(url, username, password);
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(sampleQuery)) {
-
-            ResultSetMetaData metaData = rs.getMetaData();
-            if (metaData.getColumnCount() < 1) {
-                throw new RuntimeException("无法获取列 '" + columnName + "' 的类型信息");
-            }
-            return metaData.getColumnType(1);
-
-        } catch (SQLException e) {
-            throw new RuntimeException("获取列 '" + columnName + "' 的类型失败: " + e.getMessage(), e);
-        }
-    }
 }
