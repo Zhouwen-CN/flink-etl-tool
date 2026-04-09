@@ -5,6 +5,7 @@ import com.etl.core.dialect.JdbcDialect;
 import com.etl.core.dialect.JdbcDialectLoader;
 import com.etl.core.exception.NoPrimaryKeyException;
 import com.etl.core.utils.SqlUtils;
+import com.etl.source.jdbc.utils.JdbcSplitHelper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.MockedStatic;
@@ -42,11 +43,13 @@ class JdbcSourceSplitKeyTest {
         // 用户配置 splitKey 为 BIGINT 类型
         when(config.getString("splitKey")).thenReturn("id");
         when(config.getString("table")).thenReturn("users");
-        when(dialect.getColumnType(anyString(), anyString(), isNull(), eq("id"), anyString(), anyString()))
-            .thenReturn(Types.BIGINT);
 
-        try (MockedStatic<JdbcDialectLoader> loaderMock = mockStatic(JdbcDialectLoader.class)) {
+        try (MockedStatic<JdbcDialectLoader> loaderMock = mockStatic(JdbcDialectLoader.class);
+             MockedStatic<JdbcSplitHelper> splitHelperMock = mockStatic(JdbcSplitHelper.class)) {
+
             loaderMock.when(() -> JdbcDialectLoader.get(isNull(), anyString())).thenReturn(dialect);
+            splitHelperMock.when(() -> JdbcSplitHelper.getColumnType(same(dialect), anyString(), eq("users"), isNull(), eq("id"), anyString(), anyString()))
+                .thenReturn(Types.BIGINT);
 
             JdbcSource source = new JdbcSource(config);
             assertNotNull(source);
@@ -59,11 +62,13 @@ class JdbcSourceSplitKeyTest {
         // 用户配置 splitKey 为 VARCHAR 类型（不支持）
         when(config.getString("splitKey")).thenReturn("name");
         when(config.getString("table")).thenReturn("users");
-        when(dialect.getColumnType(anyString(), anyString(), isNull(), eq("name"), anyString(), anyString()))
-            .thenReturn(Types.VARCHAR);
 
-        try (MockedStatic<JdbcDialectLoader> loaderMock = mockStatic(JdbcDialectLoader.class)) {
+        try (MockedStatic<JdbcDialectLoader> loaderMock = mockStatic(JdbcDialectLoader.class);
+             MockedStatic<JdbcSplitHelper> splitHelperMock = mockStatic(JdbcSplitHelper.class)) {
+
             loaderMock.when(() -> JdbcDialectLoader.get(isNull(), anyString())).thenReturn(dialect);
+            splitHelperMock.when(() -> JdbcSplitHelper.getColumnType(same(dialect), anyString(), eq("users"), isNull(), eq("name"), anyString(), anyString()))
+                .thenReturn(Types.VARCHAR);
 
             IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
@@ -187,11 +192,13 @@ class JdbcSourceSplitKeyTest {
         when(config.getString("splitKey")).thenReturn("id");
         when(config.getString("table")).thenReturn(null);
         when(config.getString("sql")).thenReturn("SELECT id, name FROM users WHERE status = 1");
-        when(dialect.getColumnType(anyString(), isNull(), anyString(), eq("id"), anyString(), anyString()))
-            .thenReturn(Types.BIGINT);
 
-        try (MockedStatic<JdbcDialectLoader> loaderMock = mockStatic(JdbcDialectLoader.class)) {
+        try (MockedStatic<JdbcDialectLoader> loaderMock = mockStatic(JdbcDialectLoader.class);
+             MockedStatic<JdbcSplitHelper> splitHelperMock = mockStatic(JdbcSplitHelper.class)) {
+
             loaderMock.when(() -> JdbcDialectLoader.get(isNull(), anyString())).thenReturn(dialect);
+            splitHelperMock.when(() -> JdbcSplitHelper.getColumnType(same(dialect), anyString(), isNull(), anyString(), eq("id"), anyString(), anyString()))
+                .thenReturn(Types.BIGINT);
 
             JdbcSource source = new JdbcSource(config);
             assertNotNull(source);
