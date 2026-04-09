@@ -42,14 +42,28 @@ public class CsvFormatPlugin implements FileFormatPlugin {
                 .setDelimiter(delimiter)
                 .build();
 
+        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, charset));
         try {
-            BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, charset));
             CSVParser parser = csvFormat.parse(reader);
-
             return new CsvRowIterable(parser, schema, reader, inputStream, skipHeader);
-
         } catch (IOException e) {
+            // 关闭已创建的资源
+            closeQuietly(reader);
+            closeQuietly(inputStream);
             throw new RuntimeException("解析 CSV 文件失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 安静地关闭资源
+     */
+    private static void closeQuietly(AutoCloseable resource) {
+        if (resource != null) {
+            try {
+                resource.close();
+            } catch (Exception e) {
+                // 忽略关闭异常
+            }
         }
     }
 
