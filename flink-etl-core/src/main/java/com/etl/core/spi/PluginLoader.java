@@ -13,14 +13,18 @@ import java.util.ServiceLoader;
 @Slf4j
 public class PluginLoader {
 
+    // 静态初始化块，确保 classLoader 在类加载时被正确初始化
     private static ClassLoader classLoader;
 
-    private PluginLoader() {
-        // 私有构造函数，防止实例化
+    static {
         classLoader = Thread.currentThread().getContextClassLoader();
         if (classLoader == null) {
             classLoader = PluginLoader.class.getClassLoader();
         }
+    }
+
+    private PluginLoader() {
+        // 私有构造函数，防止实例化
     }
 
     private static <T> ServiceLoader<T> serviceLoader(Class<T> clazz) {
