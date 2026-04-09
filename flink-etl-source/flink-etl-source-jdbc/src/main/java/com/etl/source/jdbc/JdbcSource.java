@@ -20,8 +20,6 @@ import org.apache.flink.core.io.SimpleVersionedSerializer;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Preconditions;
 
-import java.sql.Types;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -176,12 +174,12 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
                 }
 
                 // 从主键中选择最优的 splitKey
-                String optimalKey = selectOptimalSplitKey(primaryKeys);
+                String optimalKey = JdbcSplitHelper.selectOptimalSplitKey(primaryKeys);
                 if (optimalKey != null) {
                     int jdbcType = primaryKeys.get(optimalKey);
                     SplitStrategy strategy = SplitStrategy.fromJdbcType(jdbcType);
                     log.info("自动推断分片列 '{}' (类型: {}), 使用策略: {}",
-                            optimalKey, getJdbcTypeName(jdbcType), strategy.getDescription());
+                            optimalKey, JdbcSplitHelper.getJdbcTypeName(jdbcType), strategy.getDescription());
                     return Pair.of(optimalKey, strategy);
                 } else {
                     // 主键列类型都不支持，降级为单分片模式
@@ -199,71 +197,6 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
         // 3. 配置了 sql（无 table）→ 单分片模式
         log.warn("使用 SQL 查询且未配置 splitKey，将使用单分片全表扫描模式，无法并行读取。建议配置 splitKey 以启用并行分片读取。");
         return Pair.of(null, SplitStrategy.FULL_TABLE_SCAN);
-    }
-
-    /**
-     * 从复合主键中选择最优的 splitKey
-     * 优先级：BIGINT > INTEGER > SMALLINT > TINYINT > DECIMAL/NUMERIC > FLOAT/REAL/DOUBLE
-     *
-     * @param primaryKeys 主键列及其 JDBC 类型（LinkedHashMap 保证顺序）
-     * @return 最优的列名，如果所有列类型都不支持则返回 null
-     */
-    private String selectOptimalSplitKey(Map<String, Integer> primaryKeys) {
-        String selectedKey = null;
-        int selectedPriority = -1;
-
-        // 类型优先级定义（值越大优先级越高）
-        Map<Integer, Integer> typePriority = new LinkedHashMap<>();
-        typePriority.put(Types.BIGINT, 6);
-        typePriority.put(Types.INTEGER, 5);
-        typePriority.put(Types.SMALLINT, 4);
-        typePriority.put(Types.TINYINT, 3);
-        typePriority.put(Types.DECIMAL, 2);
-        typePriority.put(Types.NUMERIC, 2);
-        typePriority.put(Types.FLOAT, 1);
-        typePriority.put(Types.REAL, 1);
-        typePriority.put(Types.DOUBLE, 1);
-
-        for (Map.Entry<String, Integer> entry : primaryKeys.entrySet()) {
-            String columnName = entry.getKey();
-            int jdbcType = entry.getValue();
-            Integer priority = typePriority.get(jdbcType);
-
-            if (priority != null && priority > selectedPriority) {
-                selectedKey = columnName;
-                selectedPriority = priority;
-            }
-        }
-
-        return selectedKey;
-    }
-
-    /**
-     * 获取 JDBC 类型的名称（用于日志输出）
-     */
-    private String getJdbcTypeName(int jdbcType) {
-        switch (jdbcType) {
-            case Types.BIGINT:
-                return "BIGINT";
-            case Types.INTEGER:
-                return "INTEGER";
-            case Types.SMALLINT:
-                return "SMALLINT";
-            case Types.TINYINT:
-                return "TINYINT";
-            case Types.DECIMAL:
-                return "DECIMAL";
-            case Types.NUMERIC:
-                return "NUMERIC";
-            case Types.FLOAT:
-                return "FLOAT";
-            case Types.REAL:
-                return "REAL";
-            case Types.DOUBLE:
-                return "DOUBLE";
-            default:
-                return String.valueOf(jdbcType);
-        }
     }
 
 }

@@ -7,7 +7,9 @@ import lombok.extern.slf4j.Slf4j;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * JDBC 分片工具类
@@ -200,6 +202,61 @@ public final class JdbcSplitHelper {
 
         } catch (SQLException e) {
             throw new RuntimeException("获取列 '" + columnName + "' 的类型失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 从主键列中选择最优的可用分片列
+     * 优先级：BIGINT > INTEGER > SMALLINT > TINYINT > DECIMAL/NUMERIC > FLOAT/REAL/DOUBLE
+     *
+     * @param primaryKeys 主键 Map<列名, JDBC类型>
+     * @return 最优的 splitKey 列名，null 表示无可用类型
+     */
+    public static String selectOptimalSplitKey(Map<String, Integer> primaryKeys) {
+        // 定义类型优先级（数值越大优先级越高）
+        Map<Integer, Integer> typePriority = new HashMap<>();
+        typePriority.put(Types.BIGINT, 6);
+        typePriority.put(Types.INTEGER, 5);
+        typePriority.put(Types.SMALLINT, 4);
+        typePriority.put(Types.TINYINT, 3);
+        typePriority.put(Types.DECIMAL, 2);
+        typePriority.put(Types.NUMERIC, 2);
+        typePriority.put(Types.FLOAT, 1);
+        typePriority.put(Types.REAL, 1);
+        typePriority.put(Types.DOUBLE, 1);
+
+        String selectedKey = null;
+        int selectedPriority = 0;
+
+        for (Map.Entry<String, Integer> entry : primaryKeys.entrySet()) {
+            Integer priority = typePriority.get(entry.getValue());
+            if (priority != null && priority > selectedPriority) {
+                selectedKey = entry.getKey();
+                selectedPriority = priority;
+            }
+        }
+
+        return selectedKey;
+    }
+
+    /**
+     * 获取 JDBC 类型名称（用于日志输出）
+     *
+     * @param jdbcType JDBC 类型常量
+     * @return 类型名称
+     */
+    public static String getJdbcTypeName(int jdbcType) {
+        switch (jdbcType) {
+            case Types.BIGINT: return "BIGINT";
+            case Types.INTEGER: return "INTEGER";
+            case Types.SMALLINT: return "SMALLINT";
+            case Types.TINYINT: return "TINYINT";
+            case Types.DECIMAL: return "DECIMAL";
+            case Types.NUMERIC: return "NUMERIC";
+            case Types.FLOAT: return "FLOAT";
+            case Types.REAL: return "REAL";
+            case Types.DOUBLE: return "DOUBLE";
+            default: return String.valueOf(jdbcType);
         }
     }
 }
