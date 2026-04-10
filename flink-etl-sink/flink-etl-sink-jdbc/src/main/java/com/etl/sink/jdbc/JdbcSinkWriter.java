@@ -6,6 +6,7 @@ import com.etl.sink.jdbc.config.JdbcSinkConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.types.Row;
+import org.apache.flink.types.RowKind;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -13,6 +14,9 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -25,6 +29,9 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
     private final transient Connection connection;
     private transient PreparedStatement statement;
     private transient String[] columns;
+
+    /** CDC 模式专用字段 */
+    private transient Map<RowKind, PreparedStatement> cdcStatements;
 
     /** 批量大小 */
     private final int batchSize;
@@ -44,7 +51,14 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
                 config.getPassword()
             );
             connection.setAutoCommit(false);
-            log.info("JDBC Sink 已连接: url={}, subtaskId={}", config.getUrl(), context.getSubtaskId());
+
+            // CDC 模式：初始化 Statement 缓存
+            if (config.getMode() == WriteMode.CDC) {
+                cdcStatements = new HashMap<>();
+            }
+
+            log.info("JDBC Sink 已连接: url={}, mode={}, subtaskId={}",
+                config.getUrl(), config.getMode(), context.getSubtaskId());
         } catch (SQLException e) {
             throw new IOException("Failed to initialize JDBC connection", e);
         }
@@ -53,15 +67,17 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
     @Override
     public void write(Row row, Context context) throws IOException, InterruptedException {
         try {
-            if (statement == null) {
-                initStatement(row);
+            // 首次写入时缓存列名（CDC 和普通模式共用）
+            if (columns == null) {
+                columns = row.getFieldNames(true).toArray(new String[0]);
             }
 
-            for (int i = 0; i < columns.length; i++) {
-                statement.setObject(i + 1, row.getField(columns[i]));
+            if (config.getMode() == WriteMode.CDC) {
+                writeCdcRow(row);
+            } else {
+                writeNormalRow(row);
             }
 
-            statement.addBatch();
             pendingCount++;
 
             // 达到批量大小时自动 flush
@@ -70,6 +86,109 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
             }
         } catch (SQLException e) {
             throw new IOException("Failed to write row", e);
+        }
+    }
+
+    /**
+     * 写入普通行（INSERT/UPSERT 模式）
+     */
+    private void writeNormalRow(Row row) throws SQLException {
+        if (statement == null) {
+            initStatement(row);
+        }
+
+        for (int i = 0; i < columns.length; i++) {
+            statement.setObject(i + 1, row.getField(columns[i]));
+        }
+
+        statement.addBatch();
+    }
+
+    /**
+     * 写入 CDC 行
+     */
+    private void writeCdcRow(Row row) throws SQLException {
+        RowKind kind = row.getKind();
+
+        // 获取或创建 PreparedStatement
+        PreparedStatement stmt = getCdcStatement(kind);
+
+        // 设置参数并 addBatch
+        setCdcParameters(stmt, row, kind);
+        stmt.addBatch();
+    }
+
+    /**
+     * 获取或创建 CDC Statement
+     */
+    private PreparedStatement getCdcStatement(RowKind kind) throws SQLException {
+        if (!cdcStatements.containsKey(kind)) {
+            String sql = buildCdcSql(kind);
+            PreparedStatement stmt = connection.prepareStatement(sql);
+            cdcStatements.put(kind, stmt);
+            log.info("CDC SQL 创建: kind={}, sql={}", kind, sql);
+        }
+
+        return cdcStatements.get(kind);
+    }
+
+    /**
+     * 构建 CDC SQL
+     */
+    private String buildCdcSql(RowKind kind) {
+        String table = config.getTable();
+        List<String> keyFields = config.getKeyFields();
+
+        switch (kind) {
+            case INSERT:
+                return config.getDialect().getInsertSql(table, columns);
+            case UPDATE_AFTER:
+                return config.getDialect().getUpdateSql(table, columns, keyFields);
+            case DELETE:
+                return config.getDialect().getDeleteSql(table, keyFields);
+            default:
+                throw new IllegalArgumentException(
+                    String.format("CDC 模式不支持 RowKind: %s，支持: INSERT, UPDATE_AFTER, DELETE", kind)
+                );
+        }
+    }
+
+    /**
+     * 设置 CDC 参数
+     */
+    private void setCdcParameters(PreparedStatement stmt, Row row, RowKind kind) throws SQLException {
+        List<String> keyFields = config.getKeyFields();
+        int index = 1;
+
+        switch (kind) {
+            case INSERT:
+                // INSERT: 设置所有字段
+                for (String col : columns) {
+                    stmt.setObject(index++, row.getField(col));
+                }
+                break;
+
+            case UPDATE_AFTER:
+                // UPDATE: SET 部分用非主键字段，WHERE 用主键字段
+                for (String col : columns) {
+                    if (!keyFields.contains(col)) {
+                        stmt.setObject(index++, row.getField(col));
+                    }
+                }
+                for (String key : keyFields) {
+                    stmt.setObject(index++, row.getField(key));
+                }
+                break;
+
+            case DELETE:
+                // DELETE: 只设置主键字段（WHERE 条件）
+                for (String key : keyFields) {
+                    stmt.setObject(index++, row.getField(key));
+                }
+                break;
+
+            default:
+                throw new IllegalArgumentException("CDC 模式不支持 RowKind: " + kind);
         }
     }
 
@@ -102,11 +221,21 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
         }
 
         try {
-            int[] results = statement.executeBatch();
-            connection.commit();
-            pendingCount = 0;
+            if (config.getMode() == WriteMode.CDC) {
+                // CDC 模式：遍历所有 Statement 执行 executeBatch
+                for (PreparedStatement stmt : cdcStatements.values()) {
+                    stmt.executeBatch();
+                }
+                connection.commit();
+                pendingCount = 0;
+            } else {
+                // INSERT/UPSERT 模式：flush 正常批次
+                int[] results = statement.executeBatch();
+                connection.commit();
+                pendingCount = 0;
 
-            log.debug("已写入 {} 条记录, subtaskId={}", results.length, this.context.getSubtaskId());
+                log.debug("已写入 {} 条记录, subtaskId={}", results.length, this.context.getSubtaskId());
+            }
         } catch (SQLException e) {
             // 回滚事务
             try {
@@ -132,8 +261,19 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
         } finally {
             // 清理资源
             try {
-                if (statement != null) {
-                    statement.close();
+                if (config.getMode() == WriteMode.CDC) {
+                    // CDC 模式：关闭所有 Statement
+                    if (cdcStatements != null) {
+                        for (PreparedStatement stmt : cdcStatements.values()) {
+                            if (stmt != null) {
+                                stmt.close();
+                            }
+                        }
+                    }
+                } else {
+                    if (statement != null) {
+                        statement.close();
+                    }
                 }
                 if (connection != null) {
                     connection.close();
