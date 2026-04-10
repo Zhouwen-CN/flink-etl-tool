@@ -1,4 +1,4 @@
-package com.etl.source.kafka;
+package com.etl.source.kafka.format;
 
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.JsonToRowConverter;

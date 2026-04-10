@@ -2,6 +2,7 @@ package com.etl.source.kafka;
 
 import com.etl.core.config.SourceConfig;
 import com.etl.core.spi.SourcePlugin;
+import com.etl.source.kafka.format.JsonToRowDeserializationSchema;
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.Source;
