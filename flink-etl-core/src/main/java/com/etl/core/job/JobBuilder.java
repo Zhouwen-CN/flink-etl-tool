@@ -56,7 +56,7 @@ public class JobBuilder {
 
             // DataStream<Row> -> Table
             String sourceOutputTable = sourceConfig.getOutputTable();
-            stEnv.createTemporaryView(sourceOutputTable, sourceStream);
+            stEnv.createTemporaryView(sourceOutputTable, stEnv.fromChangelogStream(sourceStream));
             log.info("注册 Table: {}", sourceOutputTable);
         }
 
@@ -83,7 +83,7 @@ public class JobBuilder {
             DataStream<Row> resultStream;
             try {
                 Table sinkTable = stEnv.from(sinkInputTable);
-                resultStream = stEnv.toDataStream(sinkTable);
+                resultStream = stEnv.toChangelogStream(sinkTable);
                 log.info("Table 转换为 DataStream");
             } catch (Exception e) {
                 throw new IllegalArgumentException("无法从表 '" + sinkInputTable + "' 读取数据，请检查 inputTable 配置是否正确，或上游 source.outputTable / transform.outputTable 是否已正确配置", e);
@@ -96,7 +96,7 @@ public class JobBuilder {
 
             if (sink == null) {
                 throw new IllegalArgumentException(
-                    String.format("Sink 插件 '%s' 未实现新 API，请检查插件是否已迁移", sinkType));
+                        String.format("Sink 插件 '%s' 未实现新 API，请检查插件是否已迁移", sinkType));
             }
 
             resultStream.sinkTo(sink).name(sinkType + " sink");
@@ -123,8 +123,8 @@ public class JobBuilder {
             // 校验函数名唯一性
             if (registeredFunctions.contains(functionName)) {
                 throw new IllegalStateException(
-                    String.format("函数名冲突：'%s' 已被注册，请检查 UDF 插件的 identifier() 方法",
-                                  functionName)
+                        String.format("函数名冲突：'%s' 已被注册，请检查 UDF 插件的 identifier() 方法",
+                                functionName)
                 );
             }
 
@@ -132,8 +132,8 @@ public class JobBuilder {
             UserDefinedFunction functionInstance = udf.createFunction();
             if (functionInstance == null) {
                 throw new IllegalStateException(
-                    String.format("UDF 插件 '%s' 的 createFunction() 返回 null",
-                                  udf.getClass().getName())
+                        String.format("UDF 插件 '%s' 的 createFunction() 返回 null",
+                                udf.getClass().getName())
                 );
             }
 
@@ -142,10 +142,10 @@ public class JobBuilder {
                 stEnv.createTemporaryFunction(functionName, functionInstance);
                 registeredFunctions.add(functionName);
                 log.info("UDF 注册成功：{} -> {}",
-                         functionName, functionInstance.getClass().getSimpleName());
+                        functionName, functionInstance.getClass().getSimpleName());
             } catch (TableException e) {
                 throw new IllegalStateException(
-                    String.format("UDF 注册失败：%s", functionName), e
+                        String.format("UDF 注册失败：%s", functionName), e
                 );
             }
         }

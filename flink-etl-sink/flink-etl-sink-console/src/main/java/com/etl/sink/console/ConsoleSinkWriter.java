@@ -27,7 +27,7 @@ public class ConsoleSinkWriter extends AbstractSinkWriter<Boolean> {
 
     @Override
     public void write(Row row, Context context) throws IOException, InterruptedException {
-        log.info("[subtask-{}/{}] {}", subtaskId + 1, totalSubtasks, row);
+        System.out.printf("[subtask-%d/%d] %s%n", subtaskId + 1, totalSubtasks, row);
     }
 
     @Override

@@ -38,7 +38,7 @@ public class KafkaSourceConfig implements Serializable {
     /** Schema 定义 */
     private final EtlSchema schema;
     /** 消息格式：json、debezium-json 等 */
-    private final String format;
+    private final KafkaFormatPlugin formatPlugin;
 
     /**
      * 从 SourceConfig 解析配置
@@ -95,7 +95,7 @@ public class KafkaSourceConfig implements Serializable {
                 .startupMode(startupMode)
                 .kafkaProperties(kafkaProperties)
                 .schema(schema)
-                .format(format)
+                .formatPlugin(formatPlugin)
                 .build();
     }
 

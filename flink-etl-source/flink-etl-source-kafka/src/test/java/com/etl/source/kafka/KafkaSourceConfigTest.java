@@ -26,7 +26,7 @@ class KafkaSourceConfigTest {
 
         KafkaSourceConfig config = KafkaSourceConfig.fromSourceConfig(sourceConfig);
 
-        assertEquals("json", config.getFormat());
+        assertEquals("json", config.getFormatPlugin().identifier());
     }
 
     @Test
@@ -45,7 +45,7 @@ class KafkaSourceConfigTest {
 
         KafkaSourceConfig config = KafkaSourceConfig.fromSourceConfig(sourceConfig);
 
-        assertEquals("debezium-json", config.getFormat());
+        assertEquals("debezium-json", config.getFormatPlugin().identifier());
     }
 
     @Test

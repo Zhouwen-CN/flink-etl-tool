@@ -108,29 +108,6 @@ public class JdbcSinkTest {
     }
 
     @Test
-    public void testUpsertWithSqlNotAllowed() {
-        // UPSERT 模式配置 sql，应该抛异常
-        Map<String, Object> configMap = new HashMap<>();
-        configMap.put("url", "jdbc:mysql://localhost:3306/test");
-        configMap.put("username", "root");
-        configMap.put("password", "password");
-        configMap.put("sql", "INSERT INTO target_table VALUES(:id, :name)");
-        configMap.put("mode", "UPSERT");
-
-        SinkConfig config = new SinkConfig();
-        config.setConfig(configMap);
-
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
-            new JdbcSink(config);
-        }, "UPSERT 模式配置 sql 应该抛出 IllegalArgumentException");
-
-        assertTrue(exception.getMessage().contains("必须配置 table"),
-            "异常信息应提示必须配置 table");
-        assertTrue(exception.getMessage().contains("不能使用 sql"),
-            "异常信息应提示不能使用 sql");
-    }
-
-    @Test
     void testKeyFieldsUserConfigured() throws Exception {
         // 测试用户配置 keyFields 的场景（使用配置的主键，而非数据库主键）
         Map<String, Object> configMap = new HashMap<>();

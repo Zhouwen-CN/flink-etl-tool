@@ -1,9 +1,8 @@
 package com.etl.source.kafka.format;
 
-import java.util.ServiceLoader;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Arrays;
+import java.util.ServiceLoader;
 
 /**
  * Kafka Format Plugin 加载器
@@ -12,30 +11,20 @@ import java.util.Arrays;
 public class KafkaFormatLoader {
 
     // 缓存已加载的 Plugin，避免重复加载
-    private static volatile Map<String, KafkaFormatPlugin> formatPlugins;
+    private static final Map<String, KafkaFormatPlugin> formatPlugins;
 
     /**
      * 加载所有 Format Plugin 并缓存
      */
-    private static void loadAllPlugins() {
-        if (formatPlugins != null) {
-            return;
+    static {
+        Map<String, KafkaFormatPlugin> plugins = new HashMap<>();
+        ServiceLoader<KafkaFormatPlugin> loader = ServiceLoader.load(KafkaFormatPlugin.class);
+
+        for (KafkaFormatPlugin plugin : loader) {
+            plugins.put(plugin.identifier(), plugin);
         }
 
-        synchronized (KafkaFormatLoader.class) {
-            if (formatPlugins != null) {
-                return;
-            }
-
-            Map<String, KafkaFormatPlugin> plugins = new HashMap<>();
-            ServiceLoader<KafkaFormatPlugin> loader = ServiceLoader.load(KafkaFormatPlugin.class);
-
-            for (KafkaFormatPlugin plugin : loader) {
-                plugins.put(plugin.identifier(), plugin);
-            }
-
-            formatPlugins = plugins;
-        }
+        formatPlugins = plugins;
     }
 
     /**
@@ -45,7 +34,6 @@ public class KafkaFormatLoader {
      * @return KafkaFormatPlugin 实例，如果未找到则返回 null
      */
     public static KafkaFormatPlugin getFormatPlugin(String format) {
-        loadAllPlugins();
         return formatPlugins.get(format);
     }
 
@@ -55,7 +43,6 @@ public class KafkaFormatLoader {
      * @return 支持的格式名称列表
      */
     public static String[] supportedFormats() {
-        loadAllPlugins();
         return formatPlugins.keySet().toArray(new String[0]);
     }
 }

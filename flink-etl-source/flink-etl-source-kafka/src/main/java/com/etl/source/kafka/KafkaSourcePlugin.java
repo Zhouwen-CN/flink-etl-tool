@@ -2,7 +2,6 @@ package com.etl.source.kafka;
 
 import com.etl.core.config.SourceConfig;
 import com.etl.core.spi.SourcePlugin;
-import com.etl.source.kafka.format.KafkaFormatLoader;
 import com.etl.source.kafka.format.KafkaFormatPlugin;
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
@@ -35,17 +34,12 @@ public class KafkaSourcePlugin implements SourcePlugin {
         // 解析配置
         KafkaSourceConfig kafkaConfig = KafkaSourceConfig.fromSourceConfig(config);
 
-        // 加载 Format Plugin
-        KafkaFormatPlugin formatPlugin = KafkaFormatLoader.getFormatPlugin(kafkaConfig.getFormat());
-        if (formatPlugin == null) {
-            throw new IllegalArgumentException("不支持的 format: " + kafkaConfig.getFormat());
-        }
-
         // 创建反序列化器（schema 是业务数据 schema）
+        KafkaFormatPlugin formatPlugin = kafkaConfig.getFormatPlugin();
         KafkaRecordDeserializationSchema<Row> deserializer =
             formatPlugin.createDeserializer(kafkaConfig.getSchema());
 
-        log.info("Kafka Source format: {}", kafkaConfig.getFormat());
+        log.info("Kafka Source format: {}", formatPlugin.identifier());
 
         // 构建 KafkaSource
         KafkaSourceBuilder<Row> builder = KafkaSource.<Row>builder()

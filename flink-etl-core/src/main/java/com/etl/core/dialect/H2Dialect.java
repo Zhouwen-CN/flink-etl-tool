@@ -51,14 +51,4 @@ public class H2Dialect implements JdbcDialect {
         return String.format("MERGE INTO %s (%s) KEY(%s) VALUES (%s)",
                 quoteIdentifier(table), colList, keyColumns, placeholders);
     }
-
-    @Override
-    public String getUpdateSql(String table, String[] columns, List<String> keyFields) {
-        throw new UnsupportedOperationException("H2 CDC 模式暂不支持");
-    }
-
-    @Override
-    public String getDeleteSql(String table, List<String> keyFields) {
-        throw new UnsupportedOperationException("H2 CDC 模式暂不支持");
-    }
 }

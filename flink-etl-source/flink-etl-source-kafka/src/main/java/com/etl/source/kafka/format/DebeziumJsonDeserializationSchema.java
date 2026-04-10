@@ -60,16 +60,10 @@ public class DebeziumJsonDeserializationSchema implements KafkaRecordDeserializa
         if (rows.isEmpty()) {
             return;
         }
+        // cdc before/after 节点不会是array类型
+        Row row = rows.get(0);
 
-        // 复制字段到新 Row
-        Row sourceRow = rows.get(0);
-        Object[] fields = new Object[sourceRow.getArity()];
-        for (int i = 0; i < fields.length; i++) {
-            fields[i] = sourceRow.getField(i);
-        }
-
-        // 创建带有 RowKind 的新 Row
-        Row row = Row.ofKind(rowKind, fields);
+        row.setKind(rowKind);
         out.collect(row);
     }
 

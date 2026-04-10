@@ -17,7 +17,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * JDBC Sink Writer 实现
@@ -27,8 +26,12 @@ import java.util.Set;
 public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
 
     private final transient Connection connection;
-    private transient PreparedStatement statement;
     private transient String[] columns;
+
+    /**
+     * INSERT/UPSERT 模式专用字段
+     */
+    private transient PreparedStatement normalStatement;
 
     /** CDC 模式专用字段 */
     private transient Map<RowKind, PreparedStatement> cdcStatements;
@@ -93,15 +96,34 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
      * 写入普通行（INSERT/UPSERT 模式）
      */
     private void writeNormalRow(Row row) throws SQLException {
-        if (statement == null) {
-            initStatement(row);
+        if (normalStatement == null) {
+            initStatement();
         }
 
         for (int i = 0; i < columns.length; i++) {
-            statement.setObject(i + 1, row.getField(columns[i]));
+            normalStatement.setObject(i + 1, row.getField(columns[i]));
         }
 
-        statement.addBatch();
+        normalStatement.addBatch();
+    }
+
+    private void initStatement() throws SQLException {
+        String sql;
+        if (config.getSql() != null) {
+            NamedParameterSqlParser.ParsedSql parsed = NamedParameterSqlParser.parse(config.getSql());
+            sql = parsed.getPreparedSql();
+            log.info("JDBC Sink sql 模式: {}", sql);
+        } else {
+            if (config.getMode() == WriteMode.UPSERT) {
+                sql = config.getDialect().getUpsertSql(config.getTable(), columns, config.getKeyFields());
+                log.info("JDBC Sink upsert 模式: table={}, keyFields={}", config.getTable(), config.getKeyFields());
+            } else {
+                sql = config.getDialect().getInsertSql(config.getTable(), columns);
+                log.info("JDBC Sink insert 模式: table={}, columns={}", config.getTable(), Arrays.toString(columns));
+            }
+        }
+
+        this.normalStatement = connection.prepareStatement(sql);
     }
 
     /**
@@ -192,28 +214,6 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
         }
     }
 
-    private void initStatement(Row row) throws SQLException {
-        Set<String> fieldNames = row.getFieldNames(true);
-        this.columns = fieldNames.toArray(new String[0]);
-
-        String sql;
-        if (config.getSql() != null) {
-            NamedParameterSqlParser.ParsedSql parsed = NamedParameterSqlParser.parse(config.getSql());
-            sql = parsed.getPreparedSql();
-            log.info("JDBC Sink sql 模式: {}", sql);
-        } else {
-            if (config.getMode() == WriteMode.UPSERT) {
-                sql = config.getDialect().getUpsertSql(config.getTable(), columns, config.getKeyFields());
-                log.info("JDBC Sink upsert 模式: table={}, keyFields={}", config.getTable(), config.getKeyFields());
-            } else {
-                sql = config.getDialect().getInsertSql(config.getTable(), columns);
-                log.info("JDBC Sink insert 模式: table={}, columns={}", config.getTable(), Arrays.toString(columns));
-            }
-        }
-
-        this.statement = connection.prepareStatement(sql);
-    }
-
     @Override
     public void flush(boolean endOfInput) throws IOException, InterruptedException {
         if (pendingCount == 0) {
@@ -230,7 +230,7 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
                 pendingCount = 0;
             } else {
                 // INSERT/UPSERT 模式：flush 正常批次
-                int[] results = statement.executeBatch();
+                int[] results = normalStatement.executeBatch();
                 connection.commit();
                 pendingCount = 0;
 
@@ -271,8 +271,8 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
                         }
                     }
                 } else {
-                    if (statement != null) {
-                        statement.close();
+                    if (normalStatement != null) {
+                        normalStatement.close();
                     }
                 }
                 if (connection != null) {

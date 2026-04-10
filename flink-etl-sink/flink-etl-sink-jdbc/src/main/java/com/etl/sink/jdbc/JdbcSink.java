@@ -40,18 +40,17 @@ public class JdbcSink extends AbstractSink {
 
         String table = config.getString("table");
         String sql = config.getString("sql");
-        Preconditions.checkArgument(table != null || sql != null,
-            "table 和 sql 必须配置其中一个");
+        Preconditions.checkArgument(table != null || sql != null, "table 和 sql 必须配置其中一个");
 
         String modeStr = config.getString("mode", "INSERT");
         WriteMode mode = WriteMode.valueOf(modeStr.toUpperCase());
 
         List<String> keyFields = config.getList("keyFields");
 
-        if (keyFields == null && mode == WriteMode.UPSERT) {
-            // UPSERT 模式必须配置 table，不能配置 sql
-            Preconditions.checkArgument(table != null,
-                    "UPSERT 模式必须配置 table，因为需要主键信息");
+        // keyFields 没有配置，且 mode 不是 insert，尝试从数据库获取主键
+        if (keyFields == null && mode != WriteMode.INSERT) {
+            // UPSERT 模式必须配置 table
+            Preconditions.checkArgument(table != null, "UPSERT 模式必须配置 table，因为需要主键信息");
 
             // 自动获取主键
             Map<String, Integer> pkInfo;
@@ -59,7 +58,7 @@ public class JdbcSink extends AbstractSink {
                 pkInfo = SqlUtils.getPrimaryKey(url, table, username, password);
             } catch (NoPrimaryKeyException e) {
                 throw new RuntimeException(
-                    String.format("表 '%s' 没有主键，无法使用 UPSERT 模式。请使用 INSERT 模式、手动配置 keyFields 或为表添加主键", e.getTableName()));
+                        String.format("表 '%s' 没有主键，无法使用 UPSERT 模式。请使用 INSERT 模式、手动配置 keyFields 或为表添加主键", e.getTableName()));
             }
             keyFields = new ArrayList<>(pkInfo.keySet());
             log.info("JDBC Sink UPSERT 模式自动获取主键: table={}, keyFields={}", table, keyFields);
@@ -71,16 +70,16 @@ public class JdbcSink extends AbstractSink {
         Preconditions.checkArgument(batchSize != null && batchSize > 0, "batchSize must be greater than 0");
 
         this.jdbcSinkConfig = JdbcSinkConfig.builder()
-            .url(dialect.wrapUrl(url))
-            .username(username)
-            .password(password)
-            .table(table)
-            .sql(sql)
-            .dialect(dialect)
-            .mode(mode)
-            .keyFields(keyFields)
-            .batchSize(batchSize)
-            .build();
+                .url(dialect.wrapUrl(url))
+                .username(username)
+                .password(password)
+                .table(table)
+                .sql(sql)
+                .dialect(dialect)
+                .mode(mode)
+                .keyFields(keyFields)
+                .batchSize(batchSize)
+                .build();
 
         log.info("创建 JdbcSink: {}", this.jdbcSinkConfig);
     }

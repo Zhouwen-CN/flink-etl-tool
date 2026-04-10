@@ -35,16 +35,6 @@ public class OracleDialect implements JdbcDialect {
 
     @Override
     public String getUpsertSql(String table, String[] columns, List<String> keyFields) {
-        // 参数校验
-        if (table == null || table.isEmpty()) {
-            throw new IllegalArgumentException("table 不能为空");
-        }
-        if (columns == null || columns.length == 0) {
-            throw new IllegalArgumentException("columns 不能为空");
-        }
-        if (keyFields == null || keyFields.isEmpty()) {
-            throw new IllegalArgumentException("keyFields 不能为空");
-        }
 
         // Oracle 使用 MERGE INTO 语法
         String targetTable = quoteIdentifier(table);
@@ -53,9 +43,6 @@ public class OracleDialect implements JdbcDialect {
         String colList = Arrays.stream(columns)
                 .map(this::quoteIdentifier)
                 .collect(Collectors.joining(", "));
-
-        // 构建 VALUES 占位符
-        String placeholders = String.join(", ", java.util.Collections.nCopies(columns.length, "?"));
 
         // 构建源数据查询（DUAL 表模拟）
         String sourceColumns = Arrays.stream(columns)
@@ -86,15 +73,5 @@ public class OracleDialect implements JdbcDialect {
                 targetTable, sourceColumns, onClause,
                 updateClause, colList, insertValues
         );
-    }
-
-    @Override
-    public String getUpdateSql(String table, String[] columns, List<String> keyFields) {
-        throw new UnsupportedOperationException("Oracle CDC 模式暂不支持");
-    }
-
-    @Override
-    public String getDeleteSql(String table, List<String> keyFields) {
-        throw new UnsupportedOperationException("Oracle CDC 模式暂不支持");
     }
 }
