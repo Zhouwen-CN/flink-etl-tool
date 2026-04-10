@@ -615,14 +615,15 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
 
     private final transient Connection connection;
 
-    // 现有字段
+    // 列名缓存（CDC 和普通模式共用）
+    private transient String[] columns;
+
+    // 普通模式字段
     private transient PreparedStatement normalStatement;
-    private transient String[] normalColumns;
 
     // CDC 模式专用字段
     private transient Map<RowKind, PreparedStatement> cdcStatements;
     private transient Map<RowKind, List<Row>> cdcBatchBuffer;
-    private transient String[] cdcColumns;  // 缓存 Row 的列名，避免重复获取
 
     private final int batchSize;
     private int pendingCount = 0;
@@ -656,6 +657,11 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
     @Override
     public void write(Row row, Context context) throws IOException, InterruptedException {
         try {
+            // 首次写入时缓存列名（CDC 和普通模式共用）
+            if (columns == null) {
+                columns = row.getFieldNames(true).toArray(new String[0]);
+            }
+
             if (config.getMode() == WriteMode.CDC) {
                 writeCdcRow(row);
             } else {
@@ -694,8 +700,8 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
             initNormalStatement(row);
         }
 
-        for (int i = 0; i < normalColumns.length; i++) {
-            normalStatement.setObject(i + 1, row.getField(normalColumns[i]));
+        for (int i = 0; i < columns.length; i++) {
+            normalStatement.setObject(i + 1, row.getField(columns[i]));
         }
 
         normalStatement.addBatch();
@@ -710,7 +716,7 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
             return;
         }
 
-        PreparedStatement stmt = getCdcStatement(kind, rows.get(0));
+        PreparedStatement stmt = getCdcStatement(kind);
 
         for (Row row : rows) {
             setCdcParameters(stmt, row, kind);
@@ -728,9 +734,9 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
     /**
      * 获取或创建指定 RowKind 的 PreparedStatement
      */
-    private PreparedStatement getCdcStatement(RowKind kind, Row sampleRow) throws SQLException {
+    private PreparedStatement getCdcStatement(RowKind kind) throws SQLException {
         if (!cdcStatements.containsKey(kind)) {
-            String sql = buildCdcSql(kind, sampleRow);
+            String sql = buildCdcSql(kind);
             PreparedStatement stmt = connection.prepareStatement(sql);
             cdcStatements.put(kind, stmt);
             log.info("CDC SQL 创建: kind={}, sql={}", kind, sql);
@@ -742,8 +748,7 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
     /**
      * 构建指定 RowKind 的 SQL
      */
-    private String buildCdcSql(RowKind kind, Row sampleRow) {
-        String[] columns = sampleRow.getFieldNames(true).toArray(new String[0]);
+    private String buildCdcSql(RowKind kind) {
         String table = config.getTable();
         List<String> keyFields = config.getKeyFields();
 
@@ -765,25 +770,20 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
      * 设置 CDC SQL 参数
      */
     private void setCdcParameters(PreparedStatement stmt, Row row, RowKind kind) throws SQLException {
-        // 缓存列名，避免重复获取
-        if (cdcColumns == null) {
-            cdcColumns = row.getFieldNames(true).toArray(new String[0]);
-        }
-
         List<String> keyFields = config.getKeyFields();
         int index = 1;
 
         switch (kind) {
             case INSERT:
                 // INSERT: 设置所有字段
-                for (String col : cdcColumns) {
+                for (String col : columns) {
                     stmt.setObject(index++, row.getField(col));
                 }
                 break;
 
             case UPDATE_AFTER:
                 // UPDATE: SET 部分用非主键字段，WHERE 用主键字段
-                for (String col : cdcColumns) {
+                for (String col : columns) {
                     if (!keyFields.contains(col)) {
                         stmt.setObject(index++, row.getField(col));
                     }
