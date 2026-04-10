@@ -12,5 +12,10 @@ public enum WriteMode {
     /**
      * Upsert 模式，存在则更新，不存在则插入
      */
-    UPSERT
+    UPSERT,
+
+    /**
+     * CDC 模式，根据 RowKind 执行 INSERT/UPDATE/DELETE
+     */
+    CDC
 }
