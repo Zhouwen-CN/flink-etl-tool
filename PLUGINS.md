@@ -565,6 +565,7 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 | `topics` | 条件必填 | - | Topic 列表，与 `topicPattern` 二选一 |
 | `topicPattern` | 条件必填 | - | Topic 正则表达式，与 `topics` 二选一 |
 | `startupMode` | 否 | `earliest` | 启动模式：`earliest`（从最早开始）、`latest`（从最新开始）、`committed`（从已提交 offset 开始） |
+| `format` | 否 | `json` | 消息格式：`json`（标准 JSON）、`debezium-json`（Debezium CDC JSON） |
 | `properties` | 否 | `{}` | 额外的 Kafka consumer 配置 |
 | `schema` | 是 | - | 消息体字段定义 |
 
@@ -618,6 +619,40 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
   }
 }
 ```
+
+#### Debezium CDC 格式配置示例
+
+**Kafka Source Debezium 配置:**
+
+```json
+{
+  "source": {
+    "type": "kafka",
+    "outputTable": "users_cdc",
+    "config": {
+      "bootstrapServers": "localhost:9092",
+      "groupId": "cdc-consumer",
+      "topics": ["dbserver1.inventory.users"],
+      "startupMode": "earliest",
+      "format": "debezium-json",
+      "schema": {
+        "id": "LONG",
+        "name": "STRING",
+        "email": "STRING",
+        "updated_at": "TIMESTAMP"
+      }
+    }
+  }
+}
+```
+
+**说明:**
+- `format: "debezium-json"` 启用 Debezium CDC 数据解析
+- `schema` 只需配置业务数据的字段结构（after/before 的字段），无需配置 Debezium 元数据
+- 解析后的 Row 会自动设置 RowKind：
+  - `op='c'/'r'` → INSERT
+  - `op='u'` → UPDATE_AFTER
+  - `op='d'` → DELETE
 
 #### 数据解析说明
 
@@ -721,9 +756,53 @@ Writer 可以通过 `context` 字段访问：
 | `dialect` | 否 | 自动识别 | 数据库方言，可选值：`mysql`、`postgresql`、`oracle`。不配置则根据 URL 自动识别 |
 | `table` | 条件必填 | - | 目标表名。与 `sql` 二选一，优先 |
 | `sql` | 条件必填 | - | 自定义 SQL，支持具名占位符 `:paramName` |
-| `mode` | 否 | `insert` | 写入模式：`insert`（插入）或 `upsert`（存在则更新） |
-| `keyFields` | 否 | 自动获取 | **UPSERT 模式专用**：主键/唯一键字段列表。未配置时自动从数据库获取主键信息 |
+| `mode` | 否 | `insert` | 写入模式：`insert`（插入）、`upsert`（存在则更新）、`cdc`（根据 RowKind 执行操作） |
+| `keyFields` | 条件必填 | 自动获取 | **UPSERT/CDC 模式必填**：主键/唯一键字段列表。UPSERT 模式未配置时自动从数据库获取主键信息 |
 | `batchSize` | 否 | `100` | 批量写入大小 |
+
+#### CDC 模式说明
+
+**CDC 模式配置：**
+
+CDC 模式用于处理带有 RowKind 标记的数据（如 Debezium CDC 数据），根据 RowKind 自动执行 INSERT/UPDATE/DELETE 操作。
+
+**配置要求：**
+- `mode: "cdc"` - 启用 CDC 模式
+- `keyFields` - **必须配置**，指定主键字段列表，用于 UPDATE 和 DELETE 的 WHERE 条件
+
+**配置示例：**
+
+```json
+{
+  "sink": {
+    "type": "jdbc",
+    "inputTable": "users_cdc",
+    "config": {
+      "url": "jdbc:mysql://localhost:3306/target_db",
+      "username": "root",
+      "password": "password",
+      "table": "users",
+      "mode": "cdc",
+      "keyFields": ["id"],
+      "batchSize": 100
+    }
+  }
+}
+```
+
+**CDC 模式行为：**
+- 根据 Row 的 RowKind 执行对应操作：
+  - INSERT → 执行 `INSERT INTO ... VALUES ...`
+  - UPDATE_AFTER → 执行 `UPDATE ... SET ... WHERE ...`
+  - DELETE → 执行 `DELETE FROM ... WHERE ...`
+- `keyFields` 用于 UPDATE 和 DELETE 的 WHERE 条件
+- 适用于 Kafka Source 使用 `format: "debezium-json"` 的场景
+
+**支持的数据库：**
+- MySQL：完整支持 CDC 模式
+- PostgreSQL、Oracle、H2：暂不支持 CDC 模式（后续版本支持）
+
+---
 
 #### UPSERT 模式说明
 
