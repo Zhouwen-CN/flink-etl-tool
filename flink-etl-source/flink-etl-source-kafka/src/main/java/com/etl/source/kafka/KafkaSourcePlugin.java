@@ -2,12 +2,14 @@ package com.etl.source.kafka;
 
 import com.etl.core.config.SourceConfig;
 import com.etl.core.spi.SourcePlugin;
-import com.etl.source.kafka.format.JsonToRowDeserializationSchema;
+import com.etl.source.kafka.format.KafkaFormatLoader;
+import com.etl.source.kafka.format.KafkaFormatPlugin;
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.Source;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.KafkaSourceBuilder;
+import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDeserializationSchema;
 import org.apache.flink.types.Row;
 
 import java.util.Properties;
@@ -33,12 +35,24 @@ public class KafkaSourcePlugin implements SourcePlugin {
         // 解析配置
         KafkaSourceConfig kafkaConfig = KafkaSourceConfig.fromSourceConfig(config);
 
+        // 加载 Format Plugin
+        KafkaFormatPlugin formatPlugin = KafkaFormatLoader.getFormatPlugin(kafkaConfig.getFormat());
+        if (formatPlugin == null) {
+            throw new IllegalArgumentException("不支持的 format: " + kafkaConfig.getFormat());
+        }
+
+        // 创建反序列化器（schema 是业务数据 schema）
+        KafkaRecordDeserializationSchema<Row> deserializer =
+            formatPlugin.createDeserializer(kafkaConfig.getSchema());
+
+        log.info("Kafka Source format: {}", kafkaConfig.getFormat());
+
         // 构建 KafkaSource
         KafkaSourceBuilder<Row> builder = KafkaSource.<Row>builder()
                 .setBootstrapServers(kafkaConfig.getBootstrapServers())
                 .setGroupId(kafkaConfig.getGroupId())
                 .setStartingOffsets(kafkaConfig.getOffsetsInitializer())
-                .setDeserializer(new JsonToRowDeserializationSchema(kafkaConfig.getSchema()));
+                .setDeserializer(deserializer);
 
         // 设置 Topic 订阅方式
         if (kafkaConfig.isTopicsMode()) {
