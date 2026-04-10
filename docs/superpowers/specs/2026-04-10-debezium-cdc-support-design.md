@@ -622,6 +622,7 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
     // CDC 模式专用字段
     private transient Map<RowKind, PreparedStatement> cdcStatements;
     private transient Map<RowKind, List<Row>> cdcBatchBuffer;
+    private transient String[] cdcColumns;  // 缓存 Row 的列名，避免重复获取
 
     private final int batchSize;
     private int pendingCount = 0;
@@ -764,26 +765,43 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
      * 设置 CDC SQL 参数
      */
     private void setCdcParameters(PreparedStatement stmt, Row row, RowKind kind) throws SQLException {
-        String[] columns = row.getFieldNames(true).toArray(new String[0]);
-        List<String> keyFields = config.getKeyFields();
+        // 缓存列名，避免重复获取
+        if (cdcColumns == null) {
+            cdcColumns = row.getFieldNames(true).toArray(new String[0]);
+        }
 
+        List<String> keyFields = config.getKeyFields();
         int index = 1;
 
-        if (kind == RowKind.UPDATE_AFTER) {
-            // UPDATE: SET 部分用非主键字段，WHERE 用主键字段
-            for (String col : columns) {
-                if (!keyFields.contains(col)) {
+        switch (kind) {
+            case INSERT:
+                // INSERT: 设置所有字段
+                for (String col : cdcColumns) {
                     stmt.setObject(index++, row.getField(col));
                 }
-            }
-            for (String key : keyFields) {
-                stmt.setObject(index++, row.getField(key));
-            }
-        } else {
-            // INSERT/DELETE: 直接按字段顺序设置
-            for (String col : columns) {
-                stmt.setObject(index++, row.getField(col));
-            }
+                break;
+
+            case UPDATE_AFTER:
+                // UPDATE: SET 部分用非主键字段，WHERE 用主键字段
+                for (String col : cdcColumns) {
+                    if (!keyFields.contains(col)) {
+                        stmt.setObject(index++, row.getField(col));
+                    }
+                }
+                for (String key : keyFields) {
+                    stmt.setObject(index++, row.getField(key));
+                }
+                break;
+
+            case DELETE:
+                // DELETE: 只设置主键字段（WHERE 条件）
+                for (String key : keyFields) {
+                    stmt.setObject(index++, row.getField(key));
+                }
+                break;
+
+            default:
+                throw new IllegalArgumentException("CDC 模式不支持 RowKind: " + kind);
         }
     }
 
