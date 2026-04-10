@@ -87,4 +87,14 @@ public class OracleDialect implements JdbcDialect {
                 updateClause, colList, insertValues
         );
     }
+
+    @Override
+    public String getUpdateSql(String table, String[] columns, List<String> keyFields) {
+        throw new UnsupportedOperationException("Oracle CDC 模式暂不支持");
+    }
+
+    @Override
+    public String getDeleteSql(String table, List<String> keyFields) {
+        throw new UnsupportedOperationException("Oracle CDC 模式暂不支持");
+    }
 }

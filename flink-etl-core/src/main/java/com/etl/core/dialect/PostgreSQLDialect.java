@@ -50,4 +50,14 @@ public class PostgreSQLDialect implements JdbcDialect {
         return String.format("INSERT INTO %s (%s) VALUES (%s) ON CONFLICT (%s) DO UPDATE SET %s",
                 quoteIdentifier(table), colList, placeholders, keyFieldsStr, updateClause);
     }
+
+    @Override
+    public String getUpdateSql(String table, String[] columns, List<String> keyFields) {
+        throw new UnsupportedOperationException("PostgreSQL CDC 模式暂不支持");
+    }
+
+    @Override
+    public String getDeleteSql(String table, List<String> keyFields) {
+        throw new UnsupportedOperationException("PostgreSQL CDC 模式暂不支持");
+    }
 }

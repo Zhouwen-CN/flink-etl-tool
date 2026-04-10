@@ -68,4 +68,33 @@ public class MySQLDialect implements JdbcDialect {
         return String.format("INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s",
                 quoteIdentifier(table), colList, placeholders, updateClause);
     }
+
+    @Override
+    public String getUpdateSql(String table, String[] columns, List<String> keyFields) {
+        // UPDATE table SET col1=?, col2=? WHERE key1=? AND key2=?
+
+        String setClause = Arrays.stream(columns)
+            .filter(col -> !keyFields.contains(col))
+            .map(col -> quoteIdentifier(col) + " = ?")
+            .collect(Collectors.joining(", "));
+
+        String whereClause = keyFields.stream()
+            .map(key -> quoteIdentifier(key) + " = ?")
+            .collect(Collectors.joining(" AND "));
+
+        return String.format("UPDATE %s SET %s WHERE %s",
+            quoteIdentifier(table), setClause, whereClause);
+    }
+
+    @Override
+    public String getDeleteSql(String table, List<String> keyFields) {
+        // DELETE FROM table WHERE key1=? AND key2=?
+
+        String whereClause = keyFields.stream()
+            .map(key -> quoteIdentifier(key) + " = ?")
+            .collect(Collectors.joining(" AND "));
+
+        return String.format("DELETE FROM %s WHERE %s",
+            quoteIdentifier(table), whereClause);
+    }
 }
