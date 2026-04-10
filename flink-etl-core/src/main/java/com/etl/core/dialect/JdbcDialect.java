@@ -65,4 +65,21 @@ public interface JdbcDialect extends Serializable {
      * @return UPSERT SQL
      */
     String getUpsertSql(String table, String[] columns, List<String> keyFields);
+
+    /**
+     * 生成 UPDATE SQL
+     * @param table 表名
+     * @param columns 所有列名数组
+     * @param keyFields 主键/唯一键字段列表（用于 WHERE 条件）
+     * @return UPDATE SQL
+     */
+    String getUpdateSql(String table, String[] columns, List<String> keyFields);
+
+    /**
+     * 生成 DELETE SQL
+     * @param table 表名
+     * @param keyFields 主键/唯一键字段列表（用于 WHERE 条件）
+     * @return DELETE SQL
+     */
+    String getDeleteSql(String table, List<String> keyFields);
 }
