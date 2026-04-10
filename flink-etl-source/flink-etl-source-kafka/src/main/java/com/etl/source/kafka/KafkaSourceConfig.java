@@ -2,12 +2,15 @@ package com.etl.source.kafka;
 
 import com.etl.core.config.SourceConfig;
 import com.etl.core.schema.EtlSchema;
+import com.etl.source.kafka.format.KafkaFormatLoader;
+import com.etl.source.kafka.format.KafkaFormatPlugin;
 import lombok.Builder;
 import lombok.Getter;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -34,6 +37,8 @@ public class KafkaSourceConfig implements Serializable {
     private final Properties kafkaProperties;
     /** Schema 定义 */
     private final EtlSchema schema;
+    /** 消息格式：json、debezium-json 等 */
+    private final String format;
 
     /**
      * 从 SourceConfig 解析配置
@@ -69,6 +74,19 @@ public class KafkaSourceConfig implements Serializable {
         // 解析额外的 Kafka 属性
         Properties kafkaProperties = parseKafkaProperties(config);
 
+        // 解析 format（默认 "json"）
+        String format = config.getString("format", "json");
+
+        // 校验 format 是否支持
+        KafkaFormatPlugin formatPlugin = KafkaFormatLoader.getFormatPlugin(format);
+        if (formatPlugin == null) {
+            String[] supported = KafkaFormatLoader.supportedFormats();
+            throw new IllegalArgumentException(
+                String.format("不支持的 Kafka format: '%s'，支持的格式: %s",
+                    format, Arrays.toString(supported))
+            );
+        }
+
         return KafkaSourceConfig.builder()
                 .bootstrapServers(bootstrapServers)
                 .groupId(groupId)
@@ -77,6 +95,7 @@ public class KafkaSourceConfig implements Serializable {
                 .startupMode(startupMode)
                 .kafkaProperties(kafkaProperties)
                 .schema(schema)
+                .format(format)
                 .build();
     }
 
