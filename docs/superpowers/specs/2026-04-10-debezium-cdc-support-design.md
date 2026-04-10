@@ -623,7 +623,6 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
 
     // CDC 模式专用字段
     private transient Map<RowKind, PreparedStatement> cdcStatements;
-    private transient Map<RowKind, List<Row>> cdcBatchBuffer;
 
     private final int batchSize;
     private int pendingCount = 0;
@@ -641,10 +640,9 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
             );
             connection.setAutoCommit(false);
 
-            // CDC 模式：初始化分类型缓存
+            // CDC 模式：初始化 Statement 缓存
             if (config.getMode() == WriteMode.CDC) {
                 cdcStatements = new HashMap<>();
-                cdcBatchBuffer = new HashMap<>();
             }
 
             log.info("JDBC Sink 已连接: url={}, mode={}, subtaskId={}",
@@ -683,13 +681,12 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
     private void writeCdcRow(Row row) throws SQLException {
         RowKind kind = row.getRowKind();
 
-        // 分类型缓存
-        cdcBatchBuffer.computeIfAbsent(kind, k -> new ArrayList<>()).add(row);
+        // 获取或创建 PreparedStatement
+        PreparedStatement stmt = getCdcStatement(kind);
 
-        // 某类型达到批量大小时，flush 该类型
-        if (cdcBatchBuffer.get(kind).size() >= batchSize) {
-            flushCdcKind(kind);
-        }
+        // 设置参数并 addBatch
+        setCdcParameters(stmt, row, kind);
+        stmt.addBatch();
     }
 
     /**
@@ -705,30 +702,6 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
         }
 
         normalStatement.addBatch();
-    }
-
-    /**
-     * Flush CDC 模式下某个 RowKind 的数据
-     */
-    private void flushCdcKind(RowKind kind) throws SQLException {
-        List<Row> rows = cdcBatchBuffer.get(kind);
-        if (rows.isEmpty()) {
-            return;
-        }
-
-        PreparedStatement stmt = getCdcStatement(kind);
-
-        for (Row row : rows) {
-            setCdcParameters(stmt, row, kind);
-            stmt.addBatch();
-        }
-
-        stmt.executeBatch();
-        connection.commit();
-        rows.clear();
-
-        log.debug("CDC flush 完成: kind={}, count={}, subtaskId={}",
-            kind, rows.size(), context.getSubtaskId());
     }
 
     /**
@@ -809,10 +782,12 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
     public void flush(boolean endOfInput) throws IOException, InterruptedException {
         try {
             if (config.getMode() == WriteMode.CDC) {
-                // CDC 模式：逐个类型 flush
-                for (RowKind kind : cdcBatchBuffer.keySet()) {
-                    flushCdcKind(kind);
+                // CDC 模式：遍历所有 Statement 执行 executeBatch
+                for (PreparedStatement stmt : cdcStatements.values()) {
+                    stmt.executeBatch();
                 }
+                connection.commit();
+                pendingCount = 0;
             } else {
                 // INSERT/UPSERT 模式：flush 正常批次
                 if (normalStatement != null && pendingCount > 0) {
@@ -1077,39 +1052,55 @@ DELETE FROM users WHERE id=1
 
 ---
 
-## 8. 批量执行优化
+## 8. 批量执行设计
 
-### 8.1 问题分析
+### 8.1 设计要点
 
-CDC 模式下，不同 RowKind 的数据需要使用不同的 PreparedStatement：
+CDC 模式下，不同 RowKind 的数据使用不同的 PreparedStatement：
 - INSERT → `INSERT INTO ... VALUES ...`
 - UPDATE → `UPDATE ... SET ... WHERE ...`
 - DELETE → `DELETE FROM ... WHERE ...`
 
-如果所有 RowKind 使用同一个 batch buffer，会导致 PreparedStatement 切换频繁，性能下降。
+### 8.2 实现策略
 
-### 8.2 优化策略
-
-**分类型批量缓存:**
+**多 Statement 管理:**
 
 ```java
-private Map<RowKind, List<Row>> cdcBatchBuffer = new HashMap<>();
+private Map<RowKind, PreparedStatement> cdcStatements;  // 缓存多个 Statement
+private int pendingCount = 0;  // 复用单个计数器（CDC 和普通模式共用）
 ```
 
-**分类型 flush:**
+**写入逻辑:**
 
 ```java
-// 某个 RowKind 达到 batchSize 时，单独 flush 该类型
-if (cdcBatchBuffer.get(kind).size() >= batchSize) {
-    flushCdcKind(kind);
+private void writeCdcRow(Row row) throws SQLException {
+    RowKind kind = row.getRowKind();
+    PreparedStatement stmt = getCdcStatement(kind);  // 获取对应 Statement
+    setCdcParameters(stmt, row, kind);
+    stmt.addBatch();  // 直接 addBatch，不缓存 Row
+    // pendingCount++ 在 write() 方法中统一处理
 }
 ```
 
-**优势:**
+**Flush 逻辑:**
 
-- ✅ 减少 PreparedStatement 切换次数
-- ✅ 每个 RowKind 使用独立的 batch buffer，最大化批量执行效率
-- ✅ 不同类型的数据独立提交，避免相互影响
+```java
+public void flush(boolean endOfInput) {
+    // 遍历所有 Statement 执行 executeBatch
+    for (PreparedStatement stmt : cdcStatements.values()) {
+        stmt.executeBatch();
+    }
+    connection.commit();  // 所有类型一起提交
+    pendingCount = 0;
+}
+```
+
+### 8.3 优势
+
+- ✅ **内存高效**: PreparedStatement 内部已有缓冲，不需要额外缓存 Row
+- ✅ **逻辑简洁**: 与普通模式一致，直接 addBatch，不维护 Row 列表
+- ✅ **统一提交**: pendingCount 达到阈值时，所有 RowKind 的 Statement 一起提交
+- ✅ **事务一致性**: 所有类型的数据在同一事务中提交，保证原子性
 
 ---
 
