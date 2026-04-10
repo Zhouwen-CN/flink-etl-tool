@@ -1,6 +1,9 @@
 package com.etl.core.config;
 
 
+import org.apache.flink.api.common.RuntimeExecutionMode;
+import org.apache.flink.configuration.Configuration;
+import org.apache.flink.configuration.ExecutionOptions;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.annotation.JsonCreator;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.annotation.JsonValue;
 
@@ -8,14 +11,26 @@ import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.annotation.JsonVal
  * Job 执行模式枚举
  */
 public enum ExecutionMode {
-    BATCH("batch"),
-    STREAM("streaming");
+    BATCH("batch") {
+        @Override
+        public void configure(Configuration configuration) {
+            configuration.set(ExecutionOptions.RUNTIME_MODE, RuntimeExecutionMode.BATCH);
+        }
+    },
+    STREAM("streaming") {
+        @Override
+        public void configure(Configuration configuration) {
+            configuration.set(ExecutionOptions.RUNTIME_MODE, RuntimeExecutionMode.STREAMING);
+        }
+    };
 
     private final String value;
 
     ExecutionMode(String value) {
         this.value = value;
     }
+
+    public abstract void configure(Configuration configuration);
 
     @JsonValue
     public String getValue() {
