@@ -1,0 +1,35 @@
+{
+  "job": {
+    "name": "mysql-to-mysql-custom",
+    "mode": "batch",
+    "parallelism": 4
+  },
+  "sources": [
+    {
+      "type": "jdbc",
+      "outputTable": "user_data",
+      "config": {
+        "url": "jdbc:mysql://localhost:3306/source_db",
+        "username": "root",
+        "password": "password",
+        "table": "users",
+        "splitKey": "id",
+        "batchSize": 1000
+      }
+    }
+  ],
+  "sinks": [
+    {
+      "type": "jdbc",
+      "inputTable": "user_data",
+      "config": {
+        "url": "jdbc:mysql://localhost:3306/target_db",
+        "username": "root",
+        "password": "password",
+        "mode": "custom",
+        "sql": "INSERT INTO user_stats(user_id, total_orders, last_update) VALUES(:id, :orderCount, NOW()) ON DUPLICATE KEY UPDATE total_orders=VALUES(total_orders), last_update=NOW()",
+        "batchSize": 100
+      }
+    }
+  ]
+}
