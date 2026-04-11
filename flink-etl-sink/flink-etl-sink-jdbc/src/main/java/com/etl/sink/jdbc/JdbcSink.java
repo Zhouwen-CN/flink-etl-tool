@@ -48,8 +48,8 @@ public class JdbcSink extends AbstractSink {
         // 根据写入模式进行校验和配置
         validateAndConfigureMode(mode, table, sql, keyFields);
 
-        // 如果需要自动获取主键（UPSERT/CDC 模式且未配置 keyFields）
-        if (needAutoFetchPrimaryKey(mode, keyFields)) {
+        // UPSERT/CDC 模式且未配置 keyFields 时，需要自动获取主键
+        if ((mode == WriteMode.UPSERT || mode == WriteMode.CDC) && keyFields == null) {
             // 必须配置 table
             Preconditions.checkArgument(table != null,
                     String.format("%s 模式必须配置 table，因为需要主键信息", mode));
@@ -94,10 +94,6 @@ public class JdbcSink extends AbstractSink {
                 // INSERT 模式：必须配置 table，不能配置 sql，keyFields 必须为 null
                 Preconditions.checkArgument(table != null,
                         "INSERT 模式必须配置 table");
-                Preconditions.checkArgument(sql == null,
-                        "INSERT 模式不支持 sql 配置，请移除 sql 参数");
-                Preconditions.checkArgument(keyFields == null,
-                        "INSERT 模式不支持 keyFields 配置，请移除 keyFields 参数");
                 log.info("JDBC Sink INSERT 模式: table={}", table);
                 break;
 
@@ -106,8 +102,6 @@ public class JdbcSink extends AbstractSink {
                 // UPSERT/CDC 模式：必须配置 table，不能配置 sql，keyFields 可选
                 Preconditions.checkArgument(table != null,
                         String.format("%s 模式必须配置 table", mode));
-                Preconditions.checkArgument(sql == null,
-                        String.format("%s 模式不支持 sql 配置，请移除 sql 参数", mode));
                 if (keyFields != null) {
                     log.info("JDBC Sink {} 模式使用用户配置主键: table={}, keyFields={}", mode, table, keyFields);
                 }
@@ -117,31 +111,12 @@ public class JdbcSink extends AbstractSink {
                 // CUSTOM 模式：必须配置 sql，不能配置 table，keyFields 必须为 null
                 Preconditions.checkArgument(sql != null,
                         "CUSTOM 模式必须配置 sql");
-                Preconditions.checkArgument(table == null,
-                        "CUSTOM 模式不支持 table 配置，请移除 table 参数");
-                Preconditions.checkArgument(keyFields == null,
-                        "CUSTOM 模式不支持 keyFields 配置，请移除 keyFields 参数");
                 log.info("JDBC Sink CUSTOM 模式: sql={}", sql);
                 break;
 
             default:
                 throw new IllegalArgumentException("不支持的写入模式: " + mode);
         }
-    }
-
-    /**
-     * 判断是否需要自动获取主键
-     */
-    private boolean needAutoFetchPrimaryKey(WriteMode mode, List<String> keyFields) {
-        // UPSERT/CDC 模式且未配置 keyFields 时，需要自动获取主键
-        return (mode == WriteMode.UPSERT || mode == WriteMode.CDC) && keyFields == null;
-    }
-
-    /**
-     * 获取 JDBC Sink 配置对象（用于测试）
-     */
-    public JdbcSinkConfig getJdbcSinkConfig() {
-        return jdbcSinkConfig;
     }
 
     @Override

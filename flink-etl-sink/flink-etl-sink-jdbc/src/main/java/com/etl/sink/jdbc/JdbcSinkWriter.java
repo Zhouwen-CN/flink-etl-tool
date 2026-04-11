@@ -225,33 +225,18 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
         try {
             if (config.getMode() == WriteMode.CDC) {
                 // CDC 模式：遍历所有 Statement 执行 executeBatch
-                if (cdcStatements != null && !cdcStatements.isEmpty()) {
-                    for (PreparedStatement stmt : cdcStatements.values()) {
-                        if (stmt != null) {
-                            stmt.executeBatch();
-                        }
-                    }
-                    if (connection != null) {
-                        connection.commit();
-                    }
+                for (PreparedStatement stmt : cdcStatements.values()) {
+                    stmt.executeBatch();
                 }
+                connection.commit();
                 pendingCount = 0;
             } else {
-                // INSERT/UPSERT/CUSTOM 模式：flush 正常批次
-                if (normalStatement != null) {
-                    int[] results = normalStatement.executeBatch();
-                    if (connection != null) {
-                        connection.commit();
-                    }
-                    pendingCount = 0;
+                // INSERT/UPSERT 模式：flush 正常批次
+                int[] results = normalStatement.executeBatch();
+                connection.commit();
+                pendingCount = 0;
 
-                    if (context != null) {
-                        log.debug("已写入 {} 条记录, subtaskId={}", results.length, context.getSubtaskId());
-                    }
-                } else {
-                    // normalStatement 未初始化，清零计数并返回
-                    pendingCount = 0;
-                }
+                log.debug("已写入 {} 条记录, subtaskId={}", results.length, this.context.getSubtaskId());
             }
         } catch (SQLException e) {
             // 回滚事务
