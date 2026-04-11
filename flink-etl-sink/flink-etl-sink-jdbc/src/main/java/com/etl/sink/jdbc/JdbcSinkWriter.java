@@ -109,17 +109,19 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
 
     private void initStatement() throws SQLException {
         String sql;
-        if (config.getSql() != null) {
+        if (config.getMode() == WriteMode.CUSTOM) {
+            // CUSTOM 模式：使用用户自定义 SQL
             NamedParameterSqlParser.ParsedSql parsed = NamedParameterSqlParser.parse(config.getSql());
             sql = parsed.getPreparedSql();
-            log.info("JDBC Sink sql 模式: {}", sql);
+            log.info("JDBC Sink CUSTOM 模式: {}", sql);
         } else {
+            // INSERT/UPSERT 模式：基于 table 配置生成 SQL
             if (config.getMode() == WriteMode.UPSERT) {
                 sql = config.getDialect().getUpsertSql(config.getTable(), columns, config.getKeyFields());
-                log.info("JDBC Sink upsert 模式: table={}, keyFields={}", config.getTable(), config.getKeyFields());
+                log.info("JDBC Sink UPSERT 模式: table={}, keyFields={}", config.getTable(), config.getKeyFields());
             } else {
                 sql = config.getDialect().getInsertSql(config.getTable(), columns);
-                log.info("JDBC Sink insert 模式: table={}, columns={}", config.getTable(), Arrays.toString(columns));
+                log.info("JDBC Sink INSERT 模式: table={}, columns={}", config.getTable(), Arrays.toString(columns));
             }
         }
 
@@ -223,18 +225,33 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
         try {
             if (config.getMode() == WriteMode.CDC) {
                 // CDC 模式：遍历所有 Statement 执行 executeBatch
-                for (PreparedStatement stmt : cdcStatements.values()) {
-                    stmt.executeBatch();
+                if (cdcStatements != null && !cdcStatements.isEmpty()) {
+                    for (PreparedStatement stmt : cdcStatements.values()) {
+                        if (stmt != null) {
+                            stmt.executeBatch();
+                        }
+                    }
+                    if (connection != null) {
+                        connection.commit();
+                    }
                 }
-                connection.commit();
                 pendingCount = 0;
             } else {
-                // INSERT/UPSERT 模式：flush 正常批次
-                int[] results = normalStatement.executeBatch();
-                connection.commit();
-                pendingCount = 0;
+                // INSERT/UPSERT/CUSTOM 模式：flush 正常批次
+                if (normalStatement != null) {
+                    int[] results = normalStatement.executeBatch();
+                    if (connection != null) {
+                        connection.commit();
+                    }
+                    pendingCount = 0;
 
-                log.debug("已写入 {} 条记录, subtaskId={}", results.length, this.context.getSubtaskId());
+                    if (context != null) {
+                        log.debug("已写入 {} 条记录, subtaskId={}", results.length, context.getSubtaskId());
+                    }
+                } else {
+                    // normalStatement 未初始化，清零计数并返回
+                    pendingCount = 0;
+                }
             }
         } catch (SQLException e) {
             // 回滚事务
