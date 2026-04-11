@@ -754,10 +754,10 @@ Writer 可以通过 `context` 字段访问：
 | `username` | 是 | - | 数据库用户名 |
 | `password` | 是 | - | 数据库密码 |
 | `dialect` | 否 | 自动识别 | 数据库方言，可选值：`mysql`、`postgresql`、`oracle`。不配置则根据 URL 自动识别 |
-| `table` | 条件必填 | - | 目标表名。与 `sql` 二选一，优先 |
-| `sql` | 条件必填 | - | 自定义 SQL，支持具名占位符 `:paramName` |
-| `mode` | 否 | `insert` | 写入模式：`insert`（插入）、`upsert`（存在则更新）、`cdc`（根据 RowKind 执行操作） |
-| `keyFields` | 条件必填 | 自动获取 | **UPSERT/CDC 模式必填**：主键/唯一键字段列表。UPSERT 模式未配置时自动从数据库获取主键信息 |
+| `table` | 条件必填 | - | 目标表名。INSERT/UPSERT/CDC 模式必填，CUSTOM 模式忽略 |
+| `sql` | 条件必填 | - | 自定义 SQL，支持具名占位符 `:paramName`。CUSTOM 模式必填，其他模式忽略 |
+| `mode` | 否 | `insert` | 写入模式：`insert`、`upsert`、`cdc`、`custom` |
+| `keyFields` | 条件必填 | 自动获取 | UPSERT/CDC 模式可选（自动获取主键），INSERT/CUSTOM 模式忽略 |
 | `batchSize` | 否 | `100` | 批量写入大小 |
 
 #### CDC 模式说明
@@ -804,6 +804,44 @@ CDC 模式用于处理带有 RowKind 标记的数据（如 Debezium CDC 数据�
 
 ---
 
+#### CUSTOM 模式说明
+
+**CUSTOM 模式配置：**
+
+CUSTOM 模式用于执行用户自定义 SQL，实现复杂写入逻辑（如多表插入、自定义 upsert、批量更新等）。
+
+**配置要求：**
+- `mode: "custom"` - 启用 CUSTOM 模式
+- `sql` - **必须配置**，支持具名占位符 `:paramName`
+- `table` 和 `keyFields` - **会被忽略**，即使配置也不会使用
+
+**配置示例：**
+
+```json
+{
+  "sink": {
+    "type": "jdbc",
+    "inputTable": "user_data",
+    "config": {
+      "url": "jdbc:mysql://localhost:3306/mydb",
+      "username": "root",
+      "password": "password",
+      "mode": "custom",
+      "sql": "INSERT INTO user_stats(user_id, total_orders, last_update) VALUES(:userId, :orderCount, NOW()) ON DUPLICATE KEY UPDATE total_orders=VALUES(total_orders), last_update=NOW()",
+      "batchSize": 100
+    }
+  }
+}
+```
+
+**适用场景：**
+- 自定义 upsert 逻辑（复杂条件判断）
+- 跨表更新或插入
+- 使用数据库函数或特殊语法
+- 不依赖自动生成 SQL 的场景
+
+---
+
 #### UPSERT 模式说明
 
 **主键配置机制（两种方式）：**
@@ -832,16 +870,25 @@ CDC 模式用于处理带有 RowKind 标记的数据（如 Debezium CDC 数据�
 
 ---
 
-#### 两种模式
+#### 模式与配置要求
 
-| 模式 | 说明 |
-|------|------|
-| `table` 模式 | 自动生成 `INSERT INTO table(col1, col2, ...) VALUES(?, ?...)`，列名从 Row 字段名获取。UPSERT 时自动获取主键 |
-| `sql` 模式 | 自定义 SQL，使用具名占位符 `:paramName`，可实现复杂写入逻辑（不支持 UPSERT 自动模式） |
+JDBC Sink 支持 4 种写入模式，每种模式有明确的配置要求：
+
+| 模式 | 必需配置 | 忽略配置 | keyFields 处理 |
+|------|---------|---------|---------------|
+| INSERT | `table` | `sql`、`keyFields` | 不需要 |
+| UPSERT | `table` | `sql` | 可选（自动获取主键） |
+| CDC | `table` | `sql` | 可选（自动获取主键） |
+| CUSTOM | `sql` | `table`、`keyFields` | 不需要 |
+
+**配置规则说明：**
+- 每个模式都有明确的必需配置，配置错误的参数会被忽略
+- UPSERT/CDC 模式的 `keyFields` 不配置时自动从数据库获取主键
+- 不建议配置不符合模式的参数，虽然会被忽略但容易造成混淆
 
 #### 配置示例
 
-**table 模式 - 自动生成 INSERT：**
+**INSERT 模式 - 自动生成 INSERT：**
 
 ```json
 {
@@ -859,7 +906,7 @@ CDC 模式用于处理带有 RowKind 标记的数据（如 Debezium CDC 数据�
 }
 ```
 
-**sql 模式 - 实现 upsert（MySQL）：**
+**CUSTOM 模式 - 自定义 SQL：**
 
 ```json
 {
