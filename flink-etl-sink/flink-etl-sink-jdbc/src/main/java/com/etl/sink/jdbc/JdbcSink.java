@@ -40,17 +40,19 @@ public class JdbcSink extends AbstractSink {
 
         String table = config.getString("table");
         String sql = config.getString("sql");
-        Preconditions.checkArgument(table != null || sql != null, "table 和 sql 必须配置其中一个");
-
         String modeStr = config.getString("mode", "INSERT");
         WriteMode mode = WriteMode.valueOf(modeStr.toUpperCase());
 
         List<String> keyFields = config.getList("keyFields");
 
-        // keyFields 没有配置，且 mode 不是 insert，尝试从数据库获取主键
-        if (keyFields == null && mode != WriteMode.INSERT) {
-            // UPSERT 模式必须配置 table
-            Preconditions.checkArgument(table != null, "UPSERT 模式必须配置 table，因为需要主键信息");
+        // 根据写入模式进行校验和配置
+        validateAndConfigureMode(mode, table, sql, keyFields);
+
+        // 如果需要自动获取主键（UPSERT/CDC 模式且未配置 keyFields）
+        if (needAutoFetchPrimaryKey(mode, keyFields)) {
+            // 必须配置 table
+            Preconditions.checkArgument(table != null,
+                    String.format("%s 模式必须配置 table，因为需要主键信息", mode));
 
             // 自动获取主键
             Map<String, Integer> pkInfo;
@@ -58,12 +60,11 @@ public class JdbcSink extends AbstractSink {
                 pkInfo = SqlUtils.getPrimaryKey(url, table, username, password);
             } catch (NoPrimaryKeyException e) {
                 throw new RuntimeException(
-                        String.format("表 '%s' 没有主键，无法使用 UPSERT 模式。请使用 INSERT 模式、手动配置 keyFields 或为表添加主键", e.getTableName()));
+                        String.format("表 '%s' 没有主键，无法使用 %s 模式。请使用 INSERT 模式、手动配置 keyFields 或为表添加主键",
+                                e.getTableName(), mode));
             }
             keyFields = new ArrayList<>(pkInfo.keySet());
-            log.info("JDBC Sink UPSERT 模式自动获取主键: table={}, keyFields={}", table, keyFields);
-        } else {
-            log.info("JDBC Sink INSERT 模式: table={}", table);
+            log.info("JDBC Sink {} 模式自动获取主键: table={}, keyFields={}", mode, table, keyFields);
         }
 
         Integer batchSize = config.getInteger("batchSize", super.getDefaultBatchSize());
@@ -82,6 +83,58 @@ public class JdbcSink extends AbstractSink {
                 .build();
 
         log.info("创建 JdbcSink: {}", this.jdbcSinkConfig);
+    }
+
+    /**
+     * 根据写入模式校验配置参数
+     */
+    private void validateAndConfigureMode(WriteMode mode, String table, String sql, List<String> keyFields) {
+        switch (mode) {
+            case INSERT:
+                // INSERT 模式：必须配置 table，不能配置 sql，keyFields 必须为 null
+                Preconditions.checkArgument(table != null,
+                        "INSERT 模式必须配置 table");
+                Preconditions.checkArgument(sql == null,
+                        "INSERT 模式不支持 sql 配置，请移除 sql 参数");
+                Preconditions.checkArgument(keyFields == null,
+                        "INSERT 模式不支持 keyFields 配置，请移除 keyFields 参数");
+                log.info("JDBC Sink INSERT 模式: table={}", table);
+                break;
+
+            case UPSERT:
+            case CDC:
+                // UPSERT/CDC 模式：必须配置 table，不能配置 sql，keyFields 可选
+                Preconditions.checkArgument(table != null,
+                        String.format("%s 模式必须配置 table", mode));
+                Preconditions.checkArgument(sql == null,
+                        String.format("%s 模式不支持 sql 配置，请移除 sql 参数", mode));
+                if (keyFields != null) {
+                    log.info("JDBC Sink {} 模式使用用户配置主键: table={}, keyFields={}", mode, table, keyFields);
+                }
+                break;
+
+            case CUSTOM:
+                // CUSTOM 模式：必须配置 sql，不能配置 table，keyFields 必须为 null
+                Preconditions.checkArgument(sql != null,
+                        "CUSTOM 模式必须配置 sql");
+                Preconditions.checkArgument(table == null,
+                        "CUSTOM 模式不支持 table 配置，请移除 table 参数");
+                Preconditions.checkArgument(keyFields == null,
+                        "CUSTOM 模式不支持 keyFields 配置，请移除 keyFields 参数");
+                log.info("JDBC Sink CUSTOM 模式: sql={}", sql);
+                break;
+
+            default:
+                throw new IllegalArgumentException("不支持的写入模式: " + mode);
+        }
+    }
+
+    /**
+     * 判断是否需要自动获取主键
+     */
+    private boolean needAutoFetchPrimaryKey(WriteMode mode, List<String> keyFields) {
+        // UPSERT/CDC 模式且未配置 keyFields 时，需要自动获取主键
+        return (mode == WriteMode.UPSERT || mode == WriteMode.CDC) && keyFields == null;
     }
 
     /**
