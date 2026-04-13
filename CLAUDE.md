@@ -41,14 +41,14 @@ mvn clean install -DskipTests
 
 ```
 flink-etl-tool/
-├── flink-etl-core/               # 核心框架（SPI 接口、配置解析、Job 编排、Source 抽象层）
-├── flink-etl-client/             # 客户端启动器（打包入口）
-├── flink-etl-source/             # Source 插件父模块
-│   ├── flink-etl-source-jdbc/    # JDBC 通用实现
+├── flink-etl-core/               # 核心框架
+├── flink-etl-client/             # 客户端启动器
+├── flink-etl-source/             # Source 插件
+│   ├── flink-etl-source-jdbc/    # JDBC Source
 │   ├── flink-etl-source-localfile/  # 本地文件 Source
 │   ├── flink-etl-source-http/    # HTTP Source
 │   └── flink-etl-source-kafka/   # Kafka Source
-├── flink-etl-sink/               # Sink 插件父模块
+├── flink-etl-sink/               # Sink 插件
 │   ├── flink-etl-sink-console/   # Console Sink
 │   ├── flink-etl-sink-jdbc/      # JDBC Sink
 │   └── flink-etl-sink-kafka/     # Kafka Sink
@@ -57,189 +57,142 @@ flink-etl-tool/
 
 ### 核心执行流程
 
-1. `EtlClient.main()` 解析命令行参数
-2. `CliArgumentParser.parse()` 解析参数 → 配置来源
-3. `ConfigParser` 解析 JSON 配置 → `JobConfig`
-4. `JobExecutor` 创建 Flink 执行环境和 Table 环境
-5. `JobBuilder.build()` 构建处理链：Source → DataStream<Row> → Table → Transform → Sink
-6. 提交到 Flink 执行引擎运行
+```
+EtlClient.main()
+  └─ CliArgumentParser.parse()        # 解析命令行 → JobConfig（支持变量替换）
+       └─ ConfigParser.parse()        # 校验配置完整性（outputTable/inputTable 链路）
+            └─ JobExecutor.execute()
+                 ├─ 创建 StreamExecutionEnvironment（batch/streaming 模式）
+                 └─ JobBuilder.build()
+                      ├─ 1. Source → DataStream<Row> → Table（注册为 outputTable）
+                      ├─ 2. Transform 链（SQL 引用的表名就是上游的 outputTable）
+                      └─ 3. Table → DataStream<Row> → Sink（从 inputTable 读取）
+```
+
+### 数据流转机制
+
+- `sources[].outputTable` → Source 输出注册为 Flink Table
+- `transforms[].inputTable`（SQL 中引用的表名）→ 从上游 Table 读取
+- `transforms[].outputTable` → Transform 结果注册为中间表
+- `sinks[].inputTable` → 从该 Table 读取数据写入 Sink
+- **校验规则**：`inputTable` 必须在上游 `outputTable` 中定义；多个 Source/Transform 的 `outputTable` 不可重复
 
 ### SPI 插件机制
 
-项目使用 Java SPI (`ServiceLoader`) + `@AutoService` 注解实现插件化。核心接口：
+使用 Java SPI (`ServiceLoader`) + `@AutoService` 注解实现插件化：
 
-- **SourcePlugin**: 数据源插件，创建 Flink Source
-- **SinkPlugin**: 数据写入插件，创建 Flink SinkFunction<Row>
-- **TransformPlugin**: 数据转换插件，基于 Table API 进行 SQL 转换
-- **UdfPlugin**: UDF 插件，创建自定义函数用于 SQL Transform
+| 接口 | 作用 | 加载方式 |
+|------|------|---------|
+| `SourcePlugin` | 创建 Flink Source | `PluginLoader.loadSourcePlugin(type)` |
+| `SinkPlugin` | 创建 Flink Sink | `PluginLoader.loadSinkPlugin(type)` |
+| `TransformPlugin` | 基于 Table API 做 SQL 转换 | `PluginLoader.loadTransformPlugin(type)` |
+| `UdfPlugin` | 创建 Flink UDF | `PluginLoader.loadAllUdfPlugins()` 批量加载 |
 
-插件加载通过 [PluginLoader.java](flink-etl-core/src/main/java/com/etl/core/spi/PluginLoader.java) 实现。
+### Source 抽象层
 
-### Source 抽象层架构
+简化 Flink FLIP-27 Source API，核心类在 `flink-etl-core/source/`：
 
-简化 Flink FLIP-27 Source API 的实现：
+- `AbstractSplitSource<SplitT, CheckpointT>` — Source 基类
+- `BaseSplitEnumerator` — 分片枚举器（自动处理分片分配和回收）
+- `BaseSourceReader` — 源阅读器（封装线程模型和状态管理）
+- `BaseSplitReader<SplitT>` — 分片读取器（阻塞式数据读取）
 
-**核心抽象类（core 模块）：**
-- `AbstractSplitSource<SplitT, CheckpointT>` - Source 基类
-- `BaseSplitEnumerator` - 分片枚举器基类（自动处理分片分配和回收）
-- `BaseSourceReader` - 源阅读器基类（封装线程模型和状态管理）
-- `BaseSplitReader` - 分片读取器接口（阻塞式数据读取）
+所有 Source 输出 `Row` 类型，通过 `ResultTypeQueryable<Row>` 提供类型信息。
 
-**数据类型：** 所有 Source 直接使用 Flink `Row` 类型输出，通过 `ResultTypeQueryable<Row>` 提供 RowTypeInfo。
+### Sink 抽象层
 
-### Sink 抽象层架构
+使用 `AbstractSink` + `AbstractSinkWriter<ConfigT>` 基类，采用 at-least-once 语义：
 
-简化 Flink Sink API 的实现，采用 at-least-once 语义：
+- 参数校验集中在 Sink 构造函数
+- `AbstractSinkWriter` 只提供 `context` 和 `config` 字段访问，子类自行实现 `write()`、`flush()`、`close()`
+- `context` 可获取 subtaskId、并行度、metricGroup
+- 异常时抛出 `IOException`，Flink 从 checkpoint 重试
 
-**核心抽象类（core 模块）：**
-- `AbstractSink` - Sink 基类
-- `AbstractSinkWriter<ConfigT>` - SinkWriter 基类
+### 数据库方言抽象
 
-### 扩展新数据源
+`flink-etl-core/dialect/` 下的 `JdbcDialect` 接口封装各数据库差异：
 
-1. 创建新模块，依赖 `flink-etl-core`
-2. 实现 `SourcePlugin` 接口，添加 `@AutoService(SourcePlugin.class)` 注解
+- `MySQLDialect` — backtick 转义、`ON DUPLICATE KEY UPDATE` upsert
+- `PostgreSQLDialect` — 双引号转义、`ON CONFLICT` upsert
+- `OracleDialect` — 双引号转义、`MERGE INTO` upsert
+- `H2Dialect` — 测试用
+
+`JdbcDialectLoader` 根据 JDBC URL 自动识别方言，也支持通过 `dialect` 参数显式指定。
+
+### 写入模式（WriteMode）
+
+`flink-etl-core/dialect/WriteMode.java` 定义四种模式：
+
+| 模式 | 必需配置 | 忽略配置 | keyFields |
+|------|---------|---------|-----------|
+| INSERT | `table` | `sql`、`keyFields` | 不需要 |
+| UPSERT | `table` | `sql` | 可选（自动获取主键） |
+| CDC | `table` | `sql` | 可选（自动获取主键） |
+| CUSTOM | `sql` | `table`、`keyFields` | 不需要 |
+
+## 扩展新插件
+
+### 扩展新 Source
+
+1. 在 `flink-etl-source/` 下创建新模块，依赖 `flink-etl-core`
+2. 实现 `SourcePlugin`，添加 `@AutoService(SourcePlugin.class)` 注解
 3. 继承 `AbstractSplitSource` 实现分片读取
-   - 关系型数据库：参考 `JdbcSource`，分片逻辑在 Enumerator 的 `start()` 方法中计算
+   - 关系型数据库：参考 `JdbcSource`，分片逻辑在 Enumerator 的 `start()` 中计算
    - 文件类：参考 `LocalFileSource`
-4. 创建配置封装类（实现 `Serializable`），在 Source 构造函数中集中校验参数
-5. 在 `flink-etl-client/pom.xml` 添加新模块依赖
-
-**设计要点：** 参数校验集中在 Source 构造函数；配置对象使用 `final` 字段 + `@Builder`；Enumerator/Reader 只关注业务逻辑。
+4. 配置封装类实现 `Serializable`，参数校验集中在 Source 构造函数
+5. 在 `flink-etl-client/pom.xml` 添加模块依赖
 
 ### 扩展新 Sink
 
-1. 创建新模块，依赖 `flink-etl-core`
-2. 实现 `SinkPlugin` 接口，添加 `@AutoService(SinkPlugin.class)` 注解
-3. 继承 `AbstractSink`，在构造函数中进行参数校验和配置对象构建
-4. 继承 `AbstractSinkWriter<ConfigT>` 实现 `write()`、`flush()`、`close()` 方法
-5. 在 `flink-etl-client/pom.xml` 添加新模块依赖
-
-**设计要点：** 参数校验集中在 Sink 构造函数；批量 Sink 自行管理 batchSize；异常时抛出 IOException，Flink 会从 checkpoint 重试。
+1. 在 `flink-etl-sink/` 下创建新模块，依赖 `flink-etl-core`
+2. 实现 `SinkPlugin`，添加 `@AutoService(SinkPlugin.class)` 注解
+3. 继承 `AbstractSink`，在构造函数中校验参数
+4. 继承 `AbstractSinkWriter<ConfigT>` 实现 `write()`、`flush()`、`close()`
+5. 在 `flink-etl-client/pom.xml` 添加模块依赖
 
 ### 扩展新 UDF
 
-1. 在 `flink-etl-core/src/main/java/com/etl/core/udf/` 对应目录创建 UDF 类：
-   - 标量函数：`scalar/` 目录（ScalarFunction）
-   - 表值函数：`table/` 目录（TableFunction）
-   - 聚合函数：`agg/` 目录（AggregateFunction）
-   - 表值聚合函数：`tagg/` 目录（TableAggregateFunction）
-2. 实现 `UdfPlugin` 接口，添加 `@AutoService(UdfPlugin.class)` 注解
-3. 实现 `identifier()` 方法返回函数名（在 SQL 中使用的名称）
-4. 实现 `createFunction()` 方法返回 Flink UDF 实例
-5. 编译项目：`mvn clean install -DskipTests`（生成 SPI 配置文件）
+1. 在 `flink-etl-core/src/main/java/com/etl/core/udf/` 对应目录创建类：
+   - 标量函数：`scalar/`（ScalarFunction）
+   - 表值函数：`table/`（TableFunction）
+   - 聚合函数：`agg/`（AggregateFunction）
+   - 表值聚合函数：`tagg/`（TableAggregateFunction）
+2. 实现 `UdfPlugin`，添加 `@AutoService(UdfPlugin.class)` 注解
+3. `identifier()` 返回函数名（SQL 中使用）；`createFunction()` 返回 Flink UDF 实例
+4. 编译安装：`mvn clean install -DskipTests`（生成 SPI 配置文件）
+5. Job 启动时自动加载并注册所有 UDF
 
-**设计要点：** UDF 必须放在 `flink-etl-core` 模块；函数名必须唯一；Job 启动时自动加载并注册所有 UDF。详细设计见 [docs/superpowers/specs/2026-04-07-flink-udf-design.md](docs/superpowers/specs/2026-04-07-flink-udf-design.md)。
+## 类型转换
 
-## 开发实践
+项目中有多个独立的类型转换模块，各司其职：
 
-### Schema 配置
+| 模块 | 作用 |
+|------|------|
+| `TypeConverter` | JDBC ResultSet → Java 对象 |
+| `JsonToRowConverter` | JSON 数据 → `Row` 对象 |
+| `RowToJsonConverter` | `Row` 对象 → JSON（用于 Kafka Sink） |
+| `SqlTypeConverter` | SQL 类型字符串 → Flink `LogicalType` |
 
-- JDBC Source 可自动推断 Schema，其他 Source 必须显式配置
-- Schema 类型支持（简单类型、ARRAY、OBJECT）详见 [PLUGINS.md#schema-配置](PLUGINS.md#schema-配置)
+支持的 Schema 类型：简单类型（STRING、BOOLEAN、INT、LONG、DOUBLE、DECIMAL、TIMESTAMP）、ARRAY（`["TYPE"]`）、OBJECT（嵌套结构）、ARRAY\<OBJECT\>。
 
-### 类型转换
-
-- JDBC ResultSet → `TypeConverter.convertFromValue()`
-- JSON 数据 → `JsonToRowConverter.convertJsonToRows()`
-- SQL 类型字符串 → `SqlTypeConverter.toFlinkType()`
-- Row 转 JSON → `RowToJsonConverter.convertRowToJsonNode()`
-
-### 内置 UDF 函数
-
-项目提供内置 UDF 函数，可在 SQL Transform 中直接使用：
-
-- `hash_code(input)` - 返回输入值的哈希码，null 输入返回 0
-
-示例：`SELECT hash_code(id) AS id_hash FROM users`
-
-完整 UDF 列表和使用说明见 [PLUGINS.md#udf-插件](PLUGINS.md#udf-插件)。
-
-### 异常处理
-
-| 场景 | Source | Sink |
-|------|--------|------|
-| 读取/写入失败 | 抛出异常，Reader 重试 | 抛出 `IOException`，checkpoint 重试 |
-| 配置校验失败 | Source 构造函数抛 `IllegalArgumentException` | Sink 构造函数抛 `IllegalArgumentException` |
-
-Sink 异常处理详见 [PLUGINS.md#sink-插件开发指南](PLUGINS.md#sink-插件开发指南)。
-
-### 测试规范
+## 测试规范
 
 - 测试文件位置：`src/test/java/`，镜像 `src/main/java/` 结构
-- 测试类命名：`<ClassName>Test.java`
-- 使用 JUnit 5：`@Test`、`@BeforeEach`、`assertThrows()`
+- 测试类命名：`<ClassName>Test.java`，使用 JUnit 5
 - 测试覆盖：配置解析、类型转换、Dialect SQL 生成、Schema 校验
 - JDBC 测试：使用 Mock 或 H2 测试数据库
 - Flink 测试：参考 `AbstractSinkWriterTest` 使用 MiniCluster
 - Kafka 测试：使用 EmbeddedKafka 或 Mock Consumer/Producer
 
-### 插件打包
-
-- 新插件添加依赖：在 `flink-etl-client/pom.xml` 添加模块依赖
-- 依赖管理：MySQL/OceanBase 驱动已包含，Oracle 需手动添加；Kafka connector 使用 Flink 版本；CSV 使用 Commons CSV；JSONPath 用于 HTTP Source
-
 ## 文档维护
 
 **重要：** 每次修改或新增 Source、Sink、Transform、UDF 插件时，必须同步更新 [PLUGINS.md](PLUGINS.md) 文档。
 
-**设计文档：** 重要架构决策和功能设计文档位于 `docs/superpowers/specs/` 和 `docs/superpowers/plans/`，可作为开发参考。
-
-## 配置文件格式
-
-配置采用 DataX 风格的 JSON 结构。**详细配置参数和示例请参考 [PLUGINS.md](PLUGINS.md)。**
-
-```json
-{
-  "job": {
-    "name": "job-name",
-    "mode": "batch",
-    "parallelism": 4
-  },
-  "sources": [{ "type": "...", "outputTable": "...", "config": {...} }],
-  "transforms": [{ "type": "sql", "outputTable": "...", "config": { "sql": "..." } }],
-  "sinks": [{ "type": "...", "inputTable": "...", "config": {...} }]
-}
-```
-
-**数据流转机制：**
-- `sources` → 每个 Source 的 `outputTable` 注册为 Table
-- `transforms` → 链式处理，SQL 中引用上游的 `outputTable`
-- `sinks` → 从 `inputTable` 读取数据写入目标
-
-**job 配置项：**
-- `name`: Job 名称
-- `mode`: `batch` 或 `streaming`
-- `parallelism`: 并行度（可选），分片数量等于并行度
-
-**变量替换：**
-配置支持变量替换，通过命令行参数动态传递值：
-- 格式：`${variable}` 或 `${variable:-default}`（带默认值）
-- 变量值通过命令行参数传递（例如：`--db_url xxx`）
-- 未定义变量（无默认值）会抛异常，明确提示缺失参数
-
-示例配置：
-```json
-{
-  "sources": [{
-    "config": {
-      "url": "${db_url}",
-      "user": "${db_user:-root}",
-      "password": "${db_password}"
-    }
-  }]
-}
-```
-
-运行命令：
-```bash
---db_url jdbc:mysql://localhost:3306/test --db_password secret
-```
+**设计文档：** 重要架构决策位于 `docs/superpowers/specs/`，开发计划位于 `docs/superpowers/plans/`。
 
 ## 技术栈
 
 - Java 1.8
-- Apache Flink 1.15.2
-- Flink Table API
+- Apache Flink 1.15.2（Flink Table API、FLIP-27 Source API）
 - SLF4J + Log4j2
 - Maven

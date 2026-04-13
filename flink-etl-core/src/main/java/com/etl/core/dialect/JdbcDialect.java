@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 /**
  * JDBC 数据库方言接口
  * 提供数据库特定的 SQL 生成和 URL 处理能力
+ * 因为 jdbc source 和 jdbc sink都需要，所以放在了 core 模块
  */
 public interface JdbcDialect extends Serializable {
 
