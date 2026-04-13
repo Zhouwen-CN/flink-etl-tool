@@ -663,6 +663,28 @@ public class MockSplitReader extends BaseSplitReader<Row, MockSplit> {
 - streaming 模式：使用 `ScheduledExecutorService` 定时生成数据，`close()` 时停止调度器
 - 继承 `BaseSplitReader`，自动处理线程模型（fetchNextBatch 在单独线程中执行）
 
+**Streaming 模式线程模型说明：**
+
+Streaming 模式下，`fetchNextBatch()` 的行为与 batch 模式不同：
+
+1. **单次启动机制**：`fetchNextBatch()` 在第一次被调用时启动 `ScheduledExecutorService`，然后立即返回（不阻塞）
+2. **调度器独立运行**：启动后，scheduler 在独立的线程中按 `intervalMs` 定时向 `outputQueue` 添加数据
+3. **不设置 finished 标志**：streaming 模式下 `finished` 永不为 `true`，因为数据无限生成
+4. **BaseSplitReader 线程模型**：
+   - `BaseSplitReader` 的工作线程会周期调用 `fetchNextBatch()`
+   - 第一次调用启动 scheduler
+   - 后续调用时 scheduler 已启动，`fetchNextBatch()` 直接返回（无操作）
+   - 工作线程从 `outputQueue` 取出 scheduler 生成的数据并发射到下游
+5. **两种机制的协调**：
+   - scheduler 线程：定时生成数据 → 放入 `outputQueue`
+   - BaseSplitReader 工作线程：从 `outputQueue` 取数据 → 发射到下游
+   - `outputQueue` 作为两个线程之间的缓冲区，自动协调生产/消费速率
+
+**实现细节补充：**
+- 在 `fetchStreamingData()` 开始处添加检查：`if (scheduler != null && !scheduler.isShutdown()) return;` 防止重复启动
+- 添加注释说明 streaming 模式不设置 `finished = true`
+- 在 `close()` 中关闭 scheduler，停止数据生成
+
 ### DataRowGenerator 工具类
 
 ```java
