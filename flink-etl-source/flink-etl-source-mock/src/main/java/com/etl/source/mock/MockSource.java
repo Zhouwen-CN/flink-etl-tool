@@ -49,9 +49,13 @@ public class MockSource extends AbstractSplitSource<MockSplit, MockEnumCheckpoin
         // 1. Schema 校验
         EtlSchema schema = config.getSchema();
         Preconditions.checkNotNull(schema, "schema is null");
-        validateSimpleTypesOnly(schema);
 
-        // 2. 解析用户配置
+        // 2. 检查是否存在复杂类型
+        if (schema.hasComplexType()) {
+            throw new SchemaConfigException("Mock Source 只支持简单类型：STRING, BOOLEAN, INT, LONG, DOUBLE, DECIMAL, TIMESTAMP");
+        }
+
+        // 3. 解析用户配置
         JsonNode data = parseDataConfig(config);
         Integer numRows = config.getInteger("numRows", 10);
         Long intervalMs = config.getLong("intervalMs", 1000L);
@@ -123,28 +127,5 @@ public class MockSource extends AbstractSplitSource<MockSplit, MockEnumCheckpoin
     @Override
     public SimpleVersionedSerializer<MockEnumCheckpoint> getEnumeratorCheckpointSerializer() {
         return new DefaultCheckpointSerializer<>();
-    }
-
-    /**
-     * 校验 schema 不包含复杂类型
-     */
-    private void validateSimpleTypesOnly(EtlSchema schema) {
-        for (int i = 0; i < schema.getFieldCount(); i++) {
-            TypeInformation<?> type = schema.getFieldType(i);
-            if (isComplexType(type)) {
-                throw new SchemaConfigException(
-                    "Mock Source 不支持复杂类型字段 '" + schema.getFieldName(i) + "'。" +
-                    "只支持简单类型：STRING, BOOLEAN, INT, LONG, DOUBLE, DECIMAL, TIMESTAMP");
-            }
-        }
-    }
-
-    /**
-     * 检查是否为复杂类型
-     */
-    private boolean isComplexType(TypeInformation<?> type) {
-        return type instanceof RowTypeInfo
-            || type instanceof BasicArrayTypeInfo
-            || type instanceof ObjectArrayTypeInfo;
     }
 }

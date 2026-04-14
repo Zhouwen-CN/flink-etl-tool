@@ -72,7 +72,10 @@ public class LocalFileSource extends AbstractSplitSource<LocalFileSplit, LocalFi
         Preconditions.checkNotNull(schema, "schema is null");
 
         // CSV 格式不支持复杂类型，校验 schema
-        validateSchemaForCsv(schema, format);
+        if (schema.hasComplexType()) {
+            throw new SchemaConfigException("LocalFileSource CSV 格式只支持简单类型：STRING, BOOLEAN, INT, LONG, DOUBLE, DECIMAL, TIMESTAMP");
+
+        }
 
         // 编码
         String encoding = config.getString("encoding", "utf-8");
@@ -158,31 +161,5 @@ public class LocalFileSource extends AbstractSplitSource<LocalFileSplit, LocalFi
     public SimpleVersionedSerializer<LocalFileEnumCheckpoint> getEnumeratorCheckpointSerializer() {
         // 使用默认序列化器，基于 JDK 原生序列化
         return new DefaultCheckpointSerializer<>();
-    }
-
-    /**
-     * 校验 schema 不包含复杂类型（仅对 CSV 格式）
-     */
-    private void validateSchemaForCsv(EtlSchema schema, String format) {
-        if (!"csv".equalsIgnoreCase(format)) {
-            return;
-        }
-        for (int i = 0; i < schema.getFieldCount(); i++) {
-            TypeInformation<?> type = schema.getFieldType(i);
-            if (isComplexType(type)) {
-                throw new SchemaConfigException(
-                    "CSV 格式不支持复杂类型字段 '" + schema.getFieldName(i) + "'。" +
-                    "请使用简单类型：STRING, BOOLEAN, INT, LONG, DOUBLE, DECIMAL, TIMESTAMP");
-            }
-        }
-    }
-
-    /**
-     * 检查是否为复杂类型
-     */
-    private boolean isComplexType(TypeInformation<?> type) {
-        return type instanceof RowTypeInfo
-            || type instanceof BasicArrayTypeInfo
-            || type instanceof ObjectArrayTypeInfo;
     }
 }

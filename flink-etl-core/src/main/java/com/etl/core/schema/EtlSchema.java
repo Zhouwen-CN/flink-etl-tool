@@ -1,8 +1,12 @@
 package com.etl.core.schema;
 
+import com.etl.core.exception.SchemaConfigException;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.java.typeutils.ObjectArrayTypeInfo;
+import org.apache.flink.api.java.typeutils.RowTypeInfo;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -85,5 +89,22 @@ public class EtlSchema implements Serializable {
      */
     public List<String> getFieldNamesAsList() {
         return fieldNames != null ? Arrays.asList(fieldNames) : Collections.emptyList();
+    }
+
+    /**
+     * 是否存在复杂类型
+     */
+    public boolean hasComplexType(){
+        boolean hasComplexType = false;
+        for (TypeInformation<?> fieldType : fieldTypes) {
+            if (fieldType instanceof RowTypeInfo
+                  || fieldType instanceof BasicArrayTypeInfo
+                  || fieldType instanceof ObjectArrayTypeInfo) {
+                hasComplexType = true;
+                break;
+            }
+        }
+
+        return hasComplexType;
     }
 }
