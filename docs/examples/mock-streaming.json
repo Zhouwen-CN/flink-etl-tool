@@ -1,0 +1,23 @@
+{
+  "job": {
+    "name": "mock-streaming",
+    "mode": "streaming"
+  },
+  "sources": [{
+    "type": "mock",
+    "outputTable": "events",
+    "config": {
+      "schema": {
+        "eventId": "LONG",
+        "eventType": "STRING",
+        "timestamp": "TIMESTAMP"
+      },
+      "intervalMs": 500
+    }
+  }],
+  "sinks": [{
+    "type": "console",
+    "inputTable": "events",
+    "config": {}
+  }]
+}

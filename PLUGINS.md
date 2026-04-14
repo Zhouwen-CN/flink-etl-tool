@@ -12,6 +12,7 @@
   - [LocalFile Source](#localfile-source)
   - [HTTP Source](#http-source)
   - [Kafka Source](#kafka-source)
+  - [Mock Source](#mock-source)
 - [Sink 插件](#sink-插件)
   - [Console Sink](#console-sink)
   - [JDBC Sink](#jdbc-sink)
@@ -665,6 +666,228 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 
 - 流式消费，持续运行（`mode: "streaming"`）
 - 支持 checkpoint 时自动提交 offset 到 Kafka
+
+---
+
+### Mock Source
+
+用于测试和开发场景的数据模拟插件，支持固定数据和随机数据生成两种模式。
+
+#### 配置参数
+
+| 参数 | 必填 | 默认值 | 说明 |
+|------|:----:|--------|------|
+| `schema` | 是 | - | Schema 定义，定义输出数据结构 |
+| `rows` | 条件必填 | - | 固定数据配置，与 `numRows` 二选一。batch 模式优先使用 |
+| `numRows` | 条件必填 | - | 随机生成行数，与 `rows` 二选一。batch 模式使用 |
+| `intervalMs` | 条件必填 | - | 流式生成间隔（毫秒），streaming 模式必填 |
+
+**配置规则说明：**
+
+- **Batch 模式**：
+  - 优先使用 `rows` 配置（固定数据）
+  - 未配置 `rows` 时使用 `numRows`（随机生成）
+  - `intervalMs` 配置会被忽略
+
+- **Streaming 模式**：
+  - 必须配置 `intervalMs`
+  - `rows` 和 `numRows` 配置会被忽略
+  - 持续生成随机数据流
+
+#### rows 配置格式
+
+`rows` 是一个数组，每个元素包含 `kind` 和 `data` 两个字段：
+
+**RowKind 类型说明：**
+
+| kind 值 | 说明 | Flink RowKind 标记 |
+|---------|------|-------------------|
+| `INSERT` | 插入数据 | `+I` |
+| `UPDATE_BEFORE` | 更新前数据 | `-U` |
+| `UPDATE_AFTER` | 更新后数据 | `+U` |
+| `DELETE` | 删除数据 | `-D` |
+
+**data 格式：**
+
+- JSON 对象，字段名必须与 `schema` 定义一致
+- 字段值根据 schema 类型自动转换：
+  - `LONG`、`INT`、`DOUBLE` → 数值类型
+  - `STRING` → 字符串类型
+  - `BOOLEAN` → 布尔类型
+  - `TIMESTAMP` → 时间戳（支持毫秒值或 ISO 格式）
+
+#### 配置示例
+
+**Batch 模式 - 固定数据：**
+
+```json
+{
+  "source": {
+    "type": "mock",
+    "outputTable": "users",
+    "config": {
+      "schema": {
+        "id": "LONG",
+        "name": "STRING",
+        "age": "INT",
+        "active": "BOOLEAN"
+      },
+      "rows": [
+        {
+          "kind": "INSERT",
+          "data": {
+            "id": 1,
+            "name": "Alice",
+            "age": 25,
+            "active": true
+          }
+        },
+        {
+          "kind": "INSERT",
+          "data": {
+            "id": 2,
+            "name": "Bob",
+            "age": 30,
+            "active": false
+          }
+        },
+        {
+          "kind": "UPDATE_AFTER",
+          "data": {
+            "id": 1,
+            "name": "Alice Updated",
+            "age": 26,
+            "active": true
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+**Batch 模式 - 随机生成：**
+
+```json
+{
+  "source": {
+    "type": "mock",
+    "outputTable": "orders",
+    "config": {
+      "schema": {
+        "orderId": "LONG",
+        "amount": "DOUBLE",
+        "status": "STRING",
+        "created_at": "TIMESTAMP"
+      },
+      "numRows": 50
+    }
+  }
+}
+```
+
+**Streaming 模式 - 持续生成：**
+
+```json
+{
+  "source": {
+    "type": "mock",
+    "outputTable": "events",
+    "config": {
+      "schema": {
+        "eventId": "LONG",
+        "eventType": "STRING",
+        "timestamp": "TIMESTAMP"
+      },
+      "intervalMs": 500
+    }
+  }
+}
+```
+
+**CDC 测试场景：**
+
+```json
+{
+  "source": {
+    "type": "mock",
+    "outputTable": "users_cdc",
+    "config": {
+      "schema": {
+        "id": "LONG",
+        "name": "STRING",
+        "email": "STRING"
+      },
+      "rows": [
+        {
+          "kind": "INSERT",
+          "data": {
+            "id": 1,
+            "name": "Alice",
+            "email": "alice@example.com"
+          }
+        },
+        {
+          "kind": "UPDATE_AFTER",
+          "data": {
+            "id": 1,
+            "name": "Alice Updated",
+            "email": "alice_new@example.com"
+          }
+        },
+        {
+          "kind": "DELETE",
+          "data": {
+            "id": 2,
+            "name": "Bob",
+            "email": "bob@example.com"
+          }
+        }
+      ]
+    }
+  },
+  "sink": {
+    "type": "jdbc",
+    "inputTable": "users_cdc",
+    "config": {
+      "url": "jdbc:mysql://localhost:3306/test_db",
+      "username": "root",
+      "password": "password",
+      "table": "users",
+      "mode": "cdc",
+      "keyFields": ["id"]
+    }
+  }
+}
+```
+
+#### 使用场景
+
+- **功能测试**：使用固定数据验证业务逻辑，无需依赖外部数据源
+- **性能测试**：使用随机生成大量数据测试系统吞吐量
+- **CDC 测试**：模拟 Debezium CDC 数据流，测试 JDBC Sink CDC 模式
+- **开发调试**：快速生成测试数据，无需启动数据库或 Kafka
+- **流式演示**：演示流处理功能，持续生成事件数据
+
+#### 数据生成规则
+
+**随机数据生成规则（numRows 或 streaming 模式）：**
+
+- `LONG`：递增序列（从 1 开始）
+- `INT`：随机整数（0-100）
+- `DOUBLE`：随机浮点数（0.0-1000.0）
+- `STRING`：随机字符串（UUID 格式）
+- `BOOLEAN`：随机布尔值
+- `TIMESTAMP`：当前时间戳
+- `DECIMAL`：随机 Decimal 值（精度由 schema 定义）
+- `ARRAY`：随机数组（元素数量随机）
+- `OBJECT`：随机嵌套对象（子字段按上述规则生成）
+
+**固定数据（rows 模式）：**
+
+- 完全按照配置的 `data` 字段生成数据
+- 支持所有 RowKind 类型，可用于测试 CDC 场景
+- 数据类型严格匹配 schema 定义
 
 ---
 

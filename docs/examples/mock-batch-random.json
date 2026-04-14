@@ -1,0 +1,24 @@
+{
+  "job": {
+    "name": "mock-batch-random",
+    "mode": "batch"
+  },
+  "sources": [{
+    "type": "mock",
+    "outputTable": "orders",
+    "config": {
+      "schema": {
+        "orderId": "LONG",
+        "amount": "DOUBLE",
+        "status": "STRING",
+        "created_at": "TIMESTAMP"
+      },
+      "numRows": 50
+    }
+  }],
+  "sinks": [{
+    "type": "console",
+    "inputTable": "orders",
+    "config": {}
+  }]
+}
