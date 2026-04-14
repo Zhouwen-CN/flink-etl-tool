@@ -243,4 +243,65 @@ public class JdbcSinkWriterTest {
             mockedDriverManager.close();
         }
     }
+
+    /**
+     * 测试 INSERT 模式过滤 __ 开头的隐藏字段
+     * 当 Row 包含 __topic__ 等隐藏字段时，这些字段不应被写入 SQL
+     */
+    @Test
+    public void testInsertModeIgnoresHiddenFields() throws Exception {
+        // Mock Connection 和 PreparedStatement
+        mockConnection = mock(Connection.class);
+        mockStatement = mock(PreparedStatement.class);
+        when(mockConnection.prepareStatement(anyString())).thenReturn(mockStatement);
+        when(mockConnection.getAutoCommit()).thenReturn(false);
+        doNothing().when(mockConnection).commit();
+
+        // 准备配置：INSERT 模式
+        JdbcSinkConfig config = JdbcSinkConfig.builder()
+            .url("jdbc:mysql://localhost:3306/test")
+            .username("root")
+            .password("password")
+            .mode(WriteMode.INSERT)
+            .table("test_table")
+            .batchSize(100)
+            .dialect(new MySQLDialect())
+            .build();
+
+        // Mock DriverManager
+        MockedStatic<DriverManager> mockedDriverManager = mockStatic(DriverManager.class);
+        mockedDriverManager.when(() ->
+            DriverManager.getConnection(config.getUrl(), config.getUsername(), config.getPassword())
+        ).thenReturn(mockConnection);
+
+        JdbcSinkWriter writer = null;
+        try {
+            writer = new JdbcSinkWriter(mockContext, config);
+
+            // 写入包含隐藏字段的 Row（模拟 Kafka Source 输出的数据）
+            Row row = Row.withNames();
+            row.setField("id", "1");
+            row.setField("name", "Alice");
+            row.setField("__topic__", "test-topic");  // 隐藏字段，应该被忽略
+            row.setField("__partition__", 0);          // 隐藏字段，应该被忽略
+            writer.write(row, null);
+
+            // 验证：SQL 中不应包含 __topic__ 和 __partition__ 字段
+            verify(mockConnection).prepareStatement(
+                eq("INSERT INTO `test_table` (`name`, `id`) VALUES (?, ?)")
+            );
+            // 只验证 id 和 name 两个字段，不包含隐藏字段
+            verify(mockStatement, times(2)).setObject(anyInt(), any());
+
+            // 手动 flush
+            when(mockStatement.executeBatch()).thenReturn(new int[]{1});
+            writer.flush(false);
+
+        } finally {
+            if (writer != null) {
+                try { writer.close(); } catch (Exception e) {}
+            }
+            mockedDriverManager.close();
+        }
+    }
 }
