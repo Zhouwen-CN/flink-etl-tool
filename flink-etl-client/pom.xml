@@ -44,6 +44,11 @@
             <artifactId>flink-etl-source-kafka</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.etl</groupId>
+            <artifactId>flink-etl-source-mock</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- Sink 插件 -->
         <dependency>
