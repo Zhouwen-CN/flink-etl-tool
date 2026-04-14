@@ -12,29 +12,6 @@
 
     <artifactId>flink-etl-source-mock</artifactId>
     <name>Mock Source Plugin</name>
+    <description>Mock Source 插件，用于生成测试数据</description>
 
-    <dependencies>
-        <!-- 核心框架依赖 -->
-        <dependency>
-            <groupId>com.etl</groupId>
-            <artifactId>flink-etl-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <!-- AutoService 注解 -->
-        <dependency>
-            <groupId>com.google.auto.service</groupId>
-            <artifactId>auto-service</artifactId>
-            <version>1.0.1</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- 测试依赖 -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>5.9.2</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
 </project>
