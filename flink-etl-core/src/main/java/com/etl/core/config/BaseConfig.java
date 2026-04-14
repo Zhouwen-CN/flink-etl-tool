@@ -112,6 +112,44 @@ public abstract class BaseConfig implements Serializable {
     }
 
     /**
+     * 获取长整数类型的配置值，支持默认值
+     *
+     * @param key 配置键
+     * @param defaultValue 默认值
+     * @return 配置值
+     */
+    public Long getLong(String key, Long defaultValue) {
+        if (config == null) {
+            return defaultValue;
+        }
+        Object value = config.get(key);
+        if (value == null) {
+            return defaultValue;
+        }
+        if (value instanceof Long) {
+            return (Long) value;
+        }
+        if (value instanceof Integer) {
+            return ((Integer) value).longValue();
+        }
+        try {
+            return Long.parseLong(String.valueOf(value));
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("配置项 '" + key + "' 的值 '" + value + "' 无法转换为长整数", e);
+        }
+    }
+
+    /**
+     * 检查配置项是否存在
+     *
+     * @param key 配置键
+     * @return 如果配置项存在则返回 true，否则返回 false
+     */
+    public boolean contains(String key) {
+        return config != null && config.containsKey(key);
+    }
+
+    /**
      * 获取列表类型的配置值
      *
      * @param key 配置键
