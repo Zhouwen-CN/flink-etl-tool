@@ -56,8 +56,6 @@ flink-etl-tool/
 └── flink-etl-transform/          # Transform 插件（SQL Transform）
 ```
 
-示例配置在 `docs/examples/` 目录，包含 mysql-to-console、kafka-to-console、mock-* 等 14 个场景。
-
 ### 核心执行流程
 
 ```
@@ -122,17 +120,6 @@ EtlClient.main()
 
 `JdbcDialectLoader` 根据 JDBC URL 自动识别方言，也支持通过 `dialect` 参数显式指定。
 
-### 写入模式（WriteMode）
-
-`flink-etl-core/dialect/WriteMode.java` 定义四种模式：
-
-| 模式 | 必需配置 | 忽略配置 | keyFields |
-|------|---------|---------|-----------|
-| INSERT | `table` | `sql`、`keyFields` | 不需要 |
-| UPSERT | `table` | `sql` | 可选（自动获取主键） |
-| CDC | `table` | `sql` | 可选（自动获取主键） |
-| CUSTOM | `sql` | `table`、`keyFields` | 不需要 |
-
 ## 扩展新插件
 
 ### 扩展新 Source
@@ -182,16 +169,16 @@ EtlClient.main()
 
 - 测试文件位置：`src/test/java/`，镜像 `src/main/java/` 结构
 - 测试类命名：`<ClassName>Test.java`，使用 JUnit 5
-- 测试覆盖：配置解析、类型转换、Dialect SQL 生成、Schema 校验
-- JDBC 测试：使用 Mock 或 H2 测试数据库
-- Flink 测试：参考 `AbstractSinkWriterTest` 使用 MiniCluster
-- Kafka 测试：使用 EmbeddedKafka 或 Mock Consumer/Producer
+- 测试范围：专注于功能测试，例如单个函数、工具类的单元测试
+- 集成测试：不建议针对整个任务流程进行测试，例如根据配置文件启动完整 job 的测试场景
 
 ## 文档维护
 
 **重要：** 每次修改或新增 Source、Sink、Transform、UDF 插件时，必须同步更新 [PLUGINS.md](PLUGINS.md) 文档。
 
 **设计文档：** 重要架构决策位于 `docs/superpowers/specs/`，开发计划位于 `docs/superpowers/plans/`。
+
+**示例配置：** 在 `docs/examples/` 目录中，包含 mysql-to-console、kafka-to-console、mock-* 等 14 个场景。
 
 ## 技术栈
 

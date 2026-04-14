@@ -25,6 +25,7 @@ import java.util.Map;
 @Slf4j
 public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
 
+    private static final String FIELD_FILTER_PREFIX = "__";
     private final transient Connection connection;
     private transient String[] columns;
 
@@ -73,7 +74,7 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
             // 首次写入时缓存列名（过滤掉 __ 开头的隐藏字段）
             if (columns == null) {
                 columns = row.getFieldNames(true).stream()
-                    .filter(name -> !name.startsWith("__"))
+                        .filter(name -> !name.startsWith(FIELD_FILTER_PREFIX))
                     .toArray(String[]::new);
                 log.debug("JDBC Sink 写入字段（已过滤隐藏字段）: {}", Arrays.toString(columns));
             }
