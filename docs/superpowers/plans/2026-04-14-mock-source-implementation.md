@@ -805,14 +805,9 @@ public class MockSplit extends BaseSourceSplit {
 
     private final MockSourceConfig mockConfig;
 
-    public MockSplit(String splitId, MockSourceConfig mockConfig) {
-        super(splitId);
+    public MockSplit(MockSourceConfig mockConfig) {
+        super("mock-split-0");  // 固定分片 ID
         this.mockConfig = mockConfig;
-    }
-
-    @Override
-    public String splitId() {
-        return "mock-split-0";
     }
 }
 ```
@@ -921,7 +916,7 @@ public class MockSplitEnumerator
     @Override
     public void start() {
         // 创建固定的单分片
-        MockSplit split = new MockSplit("mock-split-0", mockConfig);
+        MockSplit split = new MockSplit(mockConfig);
 
         // 添加到待分配队列
         pendingSplits.add(split);
@@ -1108,6 +1103,15 @@ public class MockSplitReader extends BaseSplitReader<Row, MockSplit> {
 
     /**
      * streaming 模式：定时生成数据
+     *
+     * 注意：此方法的线程模型与 BaseSplitReader 的协调机制：
+     * 1. BaseSplitReader 的工作线程会周期调用 fetchNextBatch()
+     * 2. 第一次调用时，启动 ScheduledExecutorService（scheduler）
+     * 3. scheduler 在独立线程中定时生成数据并添加到 outputQueue
+     * 4. 后续 fetchNextBatch() 调用时，scheduler 已启动，直接返回
+     * 5. BaseSplitReader 工作线程从 outputQueue 取数据并发射到下游
+     * 6. outputQueue 作为两个线程之间的缓冲区，协调生产/消费速率
+     * 7. streaming 模式下 finished 永不为 true，因为数据无限生成
      */
     private void fetchStreamingData() throws IOException {
         // 防止重复启动 scheduler
@@ -1183,7 +1187,6 @@ Create `MockRecordEmitter.java`:
 ```java
 package com.etl.source.mock;
 
-import com.etl.core.source.BaseSplitState;
 import org.apache.flink.connector.base.source.reader.RecordEmitter;
 import org.apache.flink.types.Row;
 
@@ -1347,6 +1350,8 @@ public class MockSource extends AbstractSplitSource<MockSplit, MockEnumCheckpoin
     }
 
     private MockSourceConfig.RunMode getRunModeFromJobConfig(SourceConfig config) {
+        // 注意：SourceConfig 在 JobBuilder 创建时，会从 JobConfig 传递 mode 参数
+        // 参考 JobBuilder.build() 中对 SourceConfig 的初始化逻辑
         String mode = config.getString("mode", "batch");
         return MockSourceConfig.RunMode.valueOf(mode.toUpperCase());
     }
@@ -1357,6 +1362,7 @@ public class MockSource extends AbstractSplitSource<MockSplit, MockEnumCheckpoin
         }
 
         // 解析 rows 配置（JSON 数组）
+        // 注意：SourceConfig.getList() 方法需要验证，可能需要使用 JSON 解析器
         List<Map<String, Object>> rowsList = config.getList("rows");
         List<MockSourceConfig.RowData> rowsData = new java.util.ArrayList<>();
 
