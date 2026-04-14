@@ -70,9 +70,12 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
     @Override
     public void write(Row row, Context context) throws IOException, InterruptedException {
         try {
-            // 首次写入时缓存列名（CDC 和普通模式共用）
+            // 首次写入时缓存列名（过滤掉 __ 开头的隐藏字段）
             if (columns == null) {
-                columns = row.getFieldNames(true).toArray(new String[0]);
+                columns = row.getFieldNames(true).stream()
+                    .filter(name -> !name.startsWith("__"))
+                    .toArray(String[]::new);
+                log.info("JDBC Sink 写入字段（已过滤隐藏字段）: {}", Arrays.toString(columns));
             }
 
             if (config.getMode() == WriteMode.CDC) {
