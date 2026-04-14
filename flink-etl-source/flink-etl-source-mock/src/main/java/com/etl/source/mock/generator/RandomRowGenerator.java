@@ -1,6 +1,7 @@
 package com.etl.source.mock.generator;
 
 import com.etl.core.schema.EtlSchema;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.types.Row;
@@ -9,14 +10,34 @@ import org.apache.flink.types.RowKind;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 /**
  * 根据 Schema 随机生成 Row 数据
  */
+@Slf4j
 public class RandomRowGenerator {
 
     private static final Random RANDOM = new Random();
+
+    /**
+     * 批量生成 Row 数据
+     *
+     * @param schema Schema 定义
+     * @param numRows 生成的行数
+     * @return 生成的 Row 列表
+     */
+    public static List<Row> generateRows(EtlSchema schema, int numRows) {
+        List<Row> rows = new ArrayList<>();
+        for (int i = 0; i < numRows; i++) {
+            Row row = generateRow(schema);
+            rows.add(row);
+        }
+        log.info("随机生成 {} 行数据", numRows);
+        return rows;
+    }
 
     /**
      * 根据 Schema 随机生成一个 Row
