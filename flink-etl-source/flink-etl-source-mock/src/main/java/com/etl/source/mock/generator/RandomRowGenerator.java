@@ -9,7 +9,9 @@ import org.apache.flink.types.RowKind;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -78,7 +80,7 @@ public class RandomRowGenerator {
             return RANDOM.nextDouble();
         } else if (type.equals(Types.BIG_DEC)) {
             return generateRandomBigDecimal();
-        } else if (type.equals(Types.SQL_TIMESTAMP)) {
+        } else if (type.equals(Types.LOCAL_DATE_TIME)) {
             return generateRandomTimestamp();
         }
 
@@ -87,10 +89,10 @@ public class RandomRowGenerator {
     }
 
     /**
-     * 生成随机字符串（长度 1-100）
+     * 生成随机字符串（长度 1-10）
      */
     private static String generateRandomString() {
-        int length = RANDOM.nextInt(100) + 1;
+        int length = RANDOM.nextInt(10) + 1;
         StringBuilder sb = new StringBuilder(length);
 
         for (int i = 0; i < length; i++) {
@@ -112,9 +114,10 @@ public class RandomRowGenerator {
     /**
      * 生成随机 Timestamp（当前时间附近）
      */
-    private static Timestamp generateRandomTimestamp() {
+    private static LocalDateTime generateRandomTimestamp() {
         long currentTime = System.currentTimeMillis();
         long offset = RANDOM.nextInt(1000000);
-        return new Timestamp(currentTime + offset);
+        return LocalDateTime.ofInstant(
+            Instant.ofEpochMilli(currentTime + offset), ZoneId.systemDefault());
     }
 }

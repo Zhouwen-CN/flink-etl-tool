@@ -104,14 +104,14 @@ class RandomRowGeneratorTest {
     @Test
     void testGenerateRowWithTimestampType() {
         String[] fieldNames = {"ts"};
-        TypeInformation<?>[] fieldTypes = {Types.SQL_TIMESTAMP};
+        TypeInformation<?>[] fieldTypes = {Types.LOCAL_DATE_TIME};
         EtlSchema schema = new EtlSchema(fieldNames, fieldTypes);
 
         Row row = RandomRowGenerator.generateRow(schema);
 
         assertEquals(1, row.getArity());
         assertNotNull(row.getField(0));
-        assertTrue(row.getField(0) instanceof java.sql.Timestamp);
+        assertTrue(row.getField(0) instanceof java.time.LocalDateTime);
     }
 
     @Test
@@ -123,7 +123,7 @@ class RandomRowGeneratorTest {
             Types.INT,
             Types.DOUBLE,
             Types.BOOLEAN,
-            Types.SQL_TIMESTAMP
+            Types.LOCAL_DATE_TIME
         };
         EtlSchema schema = new EtlSchema(fieldNames, fieldTypes);
 
@@ -136,6 +136,6 @@ class RandomRowGeneratorTest {
         assertTrue(row.getField(2) instanceof Integer);
         assertTrue(row.getField(3) instanceof Double);
         assertTrue(row.getField(4) instanceof Boolean);
-        assertTrue(row.getField(5) instanceof java.sql.Timestamp);
+        assertTrue(row.getField(5) instanceof java.time.LocalDateTime);
     }
 }

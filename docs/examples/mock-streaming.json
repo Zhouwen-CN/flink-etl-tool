@@ -1,7 +1,8 @@
 {
   "job": {
     "name": "mock-streaming",
-    "mode": "streaming"
+    "mode": "streaming",
+    "parallelism": 1
   },
   "sources": [{
     "type": "mock",

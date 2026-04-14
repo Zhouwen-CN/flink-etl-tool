@@ -1,7 +1,8 @@
 {
   "job": {
     "name": "mock-batch-random",
-    "mode": "batch"
+    "mode": "batch",
+    "parallelism": 1
   },
   "sources": [{
     "type": "mock",
