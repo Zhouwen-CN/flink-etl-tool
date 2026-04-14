@@ -6,7 +6,6 @@ import lombok.Data;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
 
 import java.io.Serializable;
-import java.util.List;
 
 /**
  * Mock Source 配置封装类
@@ -22,10 +21,10 @@ public class MockSourceConfig implements Serializable {
     private EtlSchema schema;
 
     /**
-     * 固定数据配置
+     * 固定数据配置（JSON 数组）
      * 配置后数据读取完毕程序自然停止
      */
-    private List<RowData> rows;
+    private JsonNode data;
 
     /**
      * 随机生成的行数
@@ -35,19 +34,7 @@ public class MockSourceConfig implements Serializable {
 
     /**
      * 数据生成间隔（毫秒）
-     * 仅在未配置 rows 和 numRows 时生效
+     * 仅在未配置 data 和 numRows 时生效
      */
     private Long intervalMs;
-
-    /**
-     * Row 数据配置
-     */
-    @Data
-    public static class RowData implements Serializable {
-        /** RowKind: INSERT, UPDATE_BEFORE, UPDATE_AFTER, DELETE */
-        private String kind;
-
-        /** JSON 数据 */
-        private JsonNode data;
-    }
 }

@@ -9,6 +9,7 @@ import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
 import com.etl.core.utils.JsonUtils;
 import com.etl.source.mock.config.MockSourceConfig;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;
@@ -24,9 +25,6 @@ import org.apache.flink.core.io.SimpleVersionedSerializer;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Preconditions;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 
 /**
@@ -34,8 +32,8 @@ import java.util.function.Supplier;
  * <p>
  * 始终以 CONTINUOUS_UNBOUNDED 模式运行，行为由用户配置决定：
  * <ul>
- *   <li>配置了 rows 或 numRows：数据读取完毕后程序自然停止</li>
- *   <li>未配置 rows 和 numRows：按 intervalMs（默认 1000ms）持续生成数据</li>
+ *   <li>配置了 data 或 numRows：数据读取完毕后程序自然停止</li>
+ *   <li>未配置 data 和 numRows：按 intervalMs（默认 1000ms）持续生成数据</li>
  * </ul>
  */
 @Slf4j
@@ -54,7 +52,7 @@ public class MockSource extends AbstractSplitSource<MockSplit, MockEnumCheckpoin
         validateSimpleTypesOnly(schema);
 
         // 2. 解析用户配置
-        List<MockSourceConfig.RowData> rows = parseRowsConfig(config);
+        JsonNode data = parseDataConfig(config);
         Integer numRows = config.getInteger("numRows", 10);
         Long intervalMs = config.getLong("intervalMs", 1000L);
 
@@ -62,42 +60,26 @@ public class MockSource extends AbstractSplitSource<MockSplit, MockEnumCheckpoin
         this.mockConfig = MockSourceConfig.builder()
                 .bounded(bounded)
                 .schema(schema)
-                .rows(rows)
+                .data(data)
                 .numRows(numRows)
                 .intervalMs(intervalMs)
                 .build();
 
-        log.info("创建 MockSource: bounded={}, rows={}, numRows={}, intervalMs={}",
-            bounded, rows != null ? rows.size() : null, mockConfig.getNumRows(), intervalMs);
+        log.info("创建 MockSource: bounded={}, data={}, numRows={}, intervalMs={}",
+            bounded, data != null ? data.size() : null, mockConfig.getNumRows(), intervalMs);
     }
 
-    @SuppressWarnings("unchecked")
-    private List<MockSourceConfig.RowData> parseRowsConfig(SourceConfig config) {
-        if (!config.contains("rows")) {
+    private JsonNode parseDataConfig(SourceConfig config) {
+        if (!config.contains("data")) {
             return null;
         }
 
-        // 解析 rows 配置（JSON 数组）
-        Object rowsObj = config.get("rows");
-        if (!(rowsObj instanceof List)) {
-            throw new IllegalArgumentException("配置项 'rows' 必须是列表类型");
+        Object dataObj = config.get("data");
+        JsonNode data = JsonUtils.valueToTree(dataObj);
+        if (!data.isArray()) {
+            throw new IllegalArgumentException("配置项 'data' 必须是数组类型");
         }
-
-        List<Map<String, Object>> rowsList = (List<Map<String, Object>>) rowsObj;
-        List<MockSourceConfig.RowData> rowsData = new ArrayList<>();
-
-        for (Map<String, Object> rowMap : rowsList) {
-            MockSourceConfig.RowData rowData = new MockSourceConfig.RowData();
-            rowData.setKind((String) rowMap.get("kind"));
-
-            // data 字段转为 JsonNode
-            Object dataObj = rowMap.get("data");
-            rowData.setData(JsonUtils.valueToTree(dataObj));
-
-            rowsData.add(rowData);
-        }
-
-        return rowsData;
+        return data;
     }
 
     @Override

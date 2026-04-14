@@ -678,43 +678,29 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 | 参数 | 必填 | 默认值 | 说明 |
 |------|:----:|--------|------|
 | `schema` | 是 | - | Schema 定义，定义输出数据结构 |
-| `rows` | 条件必填 | - | 固定数据配置，与 `numRows` 二选一。batch 模式优先使用 |
-| `numRows` | 条件必填 | - | 随机生成行数，与 `rows` 二选一。batch 模式使用 |
+| `data` | 条件必填 | - | 固定数据配置（JSON 数组），与 `numRows` 二选一。batch 模式优先使用 |
+| `numRows` | 条件必填 | - | 随机生成行数，与 `data` 二选一。batch 模式使用 |
 | `intervalMs` | 条件必填 | - | 流式生成间隔（毫秒），streaming 模式必填 |
 
 **配置规则说明：**
 
 - **Batch 模式**：
-  - 优先使用 `rows` 配置（固定数据）
-  - 未配置 `rows` 时使用 `numRows`（随机生成）
+  - 优先使用 `data` 配置（固定数据）
+  - 未配置 `data` 时使用 `numRows`（随机生成）
   - `intervalMs` 配置会被忽略
 
 - **Streaming 模式**：
   - 必须配置 `intervalMs`
-  - `rows` 和 `numRows` 配置会被忽略
+  - `data` 和 `numRows` 配置会被忽略
   - 持续生成随机数据流
 
-#### rows 配置格式
+#### data 配置格式
 
-`rows` 是一个数组，每个元素包含 `kind` 和 `data` 两个字段：
-
-**RowKind 类型说明：**
-
-| kind 值 | 说明 | Flink RowKind 标记 |
-|---------|------|-------------------|
-| `INSERT` | 插入数据 | `+I` |
-| `UPDATE_BEFORE` | 更新前数据 | `-U` |
-| `UPDATE_AFTER` | 更新后数据 | `+U` |
-| `DELETE` | 删除数据 | `-D` |
-
-**data 格式：**
-
-- JSON 对象，字段名必须与 `schema` 定义一致
-- 字段值根据 schema 类型自动转换：
-  - `LONG`、`INT`、`DOUBLE` → 数值类型
-  - `STRING` → 字符串类型
-  - `BOOLEAN` → 布尔类型
-  - `TIMESTAMP` → 时间戳（支持毫秒值或 ISO 格式）
+`data` 是一个 JSON 数组，每个元素是一行数据，字段名必须与 `schema` 定义一致。字段值根据 schema 类型自动转换：
+- `LONG`、`INT`、`DOUBLE` → 数值类型
+- `STRING` → 字符串类型
+- `BOOLEAN` → 布尔类型
+- `TIMESTAMP` → 时间戳（支持毫秒值或 ISO 格式）
 
 #### 配置示例
 
@@ -732,33 +718,24 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
         "age": "INT",
         "active": "BOOLEAN"
       },
-      "rows": [
+      "data": [
         {
-          "kind": "INSERT",
-          "data": {
-            "id": 1,
-            "name": "Alice",
-            "age": 25,
-            "active": true
-          }
+          "id": 1,
+          "name": "Alice",
+          "age": 25,
+          "active": true
         },
         {
-          "kind": "INSERT",
-          "data": {
-            "id": 2,
-            "name": "Bob",
-            "age": 30,
-            "active": false
-          }
+          "id": 2,
+          "name": "Bob",
+          "age": 30,
+          "active": false
         },
         {
-          "kind": "UPDATE_AFTER",
-          "data": {
-            "id": 1,
-            "name": "Alice Updated",
-            "age": 26,
-            "active": true
-          }
+          "id": 1,
+          "name": "Alice Updated",
+          "age": 26,
+          "active": true
         }
       ]
     }
@@ -818,30 +795,21 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
         "name": "STRING",
         "email": "STRING"
       },
-      "rows": [
+      "data": [
         {
-          "kind": "INSERT",
-          "data": {
-            "id": 1,
-            "name": "Alice",
-            "email": "alice@example.com"
-          }
+          "id": 1,
+          "name": "Alice",
+          "email": "alice@example.com"
         },
         {
-          "kind": "UPDATE_AFTER",
-          "data": {
-            "id": 1,
-            "name": "Alice Updated",
-            "email": "alice_new@example.com"
-          }
+          "id": 1,
+          "name": "Alice Updated",
+          "email": "alice_new@example.com"
         },
         {
-          "kind": "DELETE",
-          "data": {
-            "id": 2,
-            "name": "Bob",
-            "email": "bob@example.com"
-          }
+          "id": 2,
+          "name": "Bob",
+          "email": "bob@example.com"
         }
       ]
     }
@@ -883,10 +851,9 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 - `ARRAY`：随机数组（元素数量随机）
 - `OBJECT`：随机嵌套对象（子字段按上述规则生成）
 
-**固定数据（rows 模式）：**
+**固定数据（data 模式）：**
 
-- 完全按照配置的 `data` 字段生成数据
-- 支持所有 RowKind 类型，可用于测试 CDC 场景
+- 完全按照配置的 JSON 数据生成 Row
 - 数据类型严格匹配 schema 定义
 
 ---

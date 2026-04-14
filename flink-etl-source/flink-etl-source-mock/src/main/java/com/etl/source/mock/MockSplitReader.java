@@ -1,9 +1,9 @@
 package com.etl.source.mock;
 
 import com.etl.core.schema.EtlSchema;
+import com.etl.core.schema.JsonToRowConverter;
 import com.etl.core.source.BaseSplitReader;
 import com.etl.source.mock.config.MockSourceConfig;
-import com.etl.source.mock.generator.DataRowGenerator;
 import com.etl.source.mock.generator.RandomRowGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
@@ -82,17 +82,15 @@ public class MockSplitReader implements BaseSplitReader<Row, MockSplit> {
             log.info("开始读取分片: {}", split.splitId());
         }
 
-        // 有界模式 - 预生成所有数据
-        if(batchDataIterator == null){
-            if (mockConfig.getRows() != null) {
-                List<Row> rows = DataRowGenerator.generateRows(mockConfig.getRows(), schema);
-                batchDataIterator = rows.iterator();
-                log.info("有界模式：从 rows 配置生成 {} 行数据", rows.size());
-            } else {
-                List<Row> rows = RandomRowGenerator.generateRows(schema, mockConfig.getNumRows());
-                batchDataIterator = rows.iterator();
-                log.info("有界模式：随机生成 {} 行数据", mockConfig.getNumRows());
-            }
+        // 有界模式 - 生成所有数据
+        if (mockConfig.getData() != null) {
+            List<Row> rows = JsonToRowConverter.convertJsonToRows(mockConfig.getData(), schema);
+            batchDataIterator = rows.iterator();
+            log.info("有界模式：从 data 配置生成 {} 行数据", rows.size());
+        } else {
+            List<Row> rows = RandomRowGenerator.generateRows(schema, mockConfig.getNumRows());
+            batchDataIterator = rows.iterator();
+            log.info("有界模式：随机生成 {} 行数据", mockConfig.getNumRows());
         }
 
         // 读取所有数据

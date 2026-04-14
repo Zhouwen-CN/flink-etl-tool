@@ -12,38 +12,26 @@
         "name": "STRING",
         "email": "STRING"
       },
-      "rows": [
+      "data": [
         {
-          "kind": "INSERT",
-          "data": {
-            "id": 1,
-            "name": "Alice",
-            "email": "alice@example.com"
-          }
+          "id": 1,
+          "name": "Alice",
+          "email": "alice@example.com"
         },
         {
-          "kind": "INSERT",
-          "data": {
-            "id": 2,
-            "name": "Bob",
-            "email": "bob@example.com"
-          }
+          "id": 2,
+          "name": "Bob",
+          "email": "bob@example.com"
         },
         {
-          "kind": "UPDATE_AFTER",
-          "data": {
-            "id": 1,
-            "name": "Alice Updated",
-            "email": "alice_new@example.com"
-          }
+          "id": 1,
+          "name": "Alice Updated",
+          "email": "alice_new@example.com"
         },
         {
-          "kind": "DELETE",
-          "data": {
-            "id": 2,
-            "name": "Bob",
-            "email": "bob@example.com"
-          }
+          "id": 2,
+          "name": "Bob",
+          "email": "bob@example.com"
         }
       ]
     }

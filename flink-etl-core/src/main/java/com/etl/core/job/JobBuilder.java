@@ -1,6 +1,7 @@
 package com.etl.core.job;
 
 import com.etl.core.config.JobConfig;
+import com.etl.core.config.JobMeta;
 import com.etl.core.config.SinkConfig;
 import com.etl.core.config.SourceConfig;
 import com.etl.core.config.TransformConfig;
@@ -10,6 +11,7 @@ import com.etl.core.spi.SourcePlugin;
 import com.etl.core.spi.TransformPlugin;
 import com.etl.core.spi.UdfPlugin;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.api.connector.source.Source;
@@ -41,7 +43,9 @@ public class JobBuilder {
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
     public static void build(StreamExecutionEnvironment env, JobConfig config) {
-        log.info("开始构建 Flink Job: {}", config.getJob().getName());
+        JobMeta job = config.getJob();
+        RuntimeExecutionMode runtimeMode = job.getMode().getRuntimeMode();
+        log.info("开始构建 Flink Job: {}", job.getName());
         // 创建 Table 环境
         StreamTableEnvironment stEnv = StreamTableEnvironment.create(env);
 
@@ -57,7 +61,7 @@ public class JobBuilder {
 
             // DataStream<Row> -> Table
             String sourceOutputTable = sourceConfig.getOutputTable();
-            stEnv.createTemporaryView(sourceOutputTable, stEnv.fromChangelogStream(sourceStream));
+            stEnv.createTemporaryView(sourceOutputTable, fromDataStream(stEnv, sourceStream, runtimeMode));
             log.info("注册 Table: {}", sourceOutputTable);
         }
 
@@ -84,7 +88,7 @@ public class JobBuilder {
             DataStream<Row> resultStream;
             try {
                 Table sinkTable = stEnv.from(sinkInputTable);
-                resultStream = stEnv.toChangelogStream(sinkTable);
+                resultStream = toDataStream(stEnv,sinkTable,runtimeMode);
                 log.info("Table 转换为 DataStream");
             } catch (ValidationException | TableException e) {
                 throw e;
@@ -107,6 +111,28 @@ public class JobBuilder {
         }
 
         log.info("Flink Job 构建完成");
+    }
+
+    /**
+     * datastream 转 table
+     */
+    private static Table fromDataStream(StreamTableEnvironment stEnv, DataStream<Row> dataStream, RuntimeExecutionMode runtimeMode) {
+        if (runtimeMode == RuntimeExecutionMode.BATCH) {
+            return stEnv.fromDataStream(dataStream);
+        }
+
+        return stEnv.fromChangelogStream(dataStream);
+    }
+
+    /**
+     * table 转 datastream
+     */
+    private static  DataStream<Row> toDataStream(StreamTableEnvironment stEnv, Table table,RuntimeExecutionMode runtimeMode){
+        if (runtimeMode == RuntimeExecutionMode.BATCH) {
+            return stEnv.toDataStream(table);
+        }
+
+        return stEnv.toChangelogStream(table);
     }
 
     /**
