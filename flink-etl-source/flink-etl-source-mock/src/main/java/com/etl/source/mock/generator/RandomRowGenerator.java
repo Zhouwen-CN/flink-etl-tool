@@ -60,41 +60,29 @@ public class RandomRowGenerator {
 
     /**
      * 根据类型信息生成随机值
+     * 仅支持简单类型：STRING, BOOLEAN, INT, LONG, DOUBLE, DECIMAL, TIMESTAMP
      *
      * @param type Flink TypeInformation
-     * @return 随机生成的值
+     * @return 随机生成的值，不支持的类型返回 null
      */
     private static Object generateRandomValue(TypeInformation<?> type) {
-        // 处理基本类型
-        if (type == Types.LONG) {
+        if (type.equals(Types.LONG)) {
             return RANDOM.nextLong();
-        } else if (type == Types.INT) {
+        } else if (type.equals(Types.INT)) {
             return RANDOM.nextInt();
-        } else if (type == Types.STRING) {
+        } else if (type.equals(Types.STRING)) {
             return generateRandomString();
-        } else if (type == Types.BOOLEAN) {
+        } else if (type.equals(Types.BOOLEAN)) {
             return RANDOM.nextBoolean();
-        } else if (type == Types.DOUBLE) {
+        } else if (type.equals(Types.DOUBLE)) {
             return RANDOM.nextDouble();
-        } else if (type == Types.FLOAT) {
-            return RANDOM.nextFloat();
-        } else if (type == Types.BIG_DEC) {
+        } else if (type.equals(Types.BIG_DEC)) {
             return generateRandomBigDecimal();
-        } else if (type == Types.SQL_TIMESTAMP) {
+        } else if (type.equals(Types.SQL_TIMESTAMP)) {
             return generateRandomTimestamp();
-        } else if (type == Types.SQL_DATE) {
-            return generateRandomDate();
-        } else if (type == Types.SQL_TIME) {
-            return generateRandomTime();
-        } else if (type == Types.SHORT) {
-            return (short) RANDOM.nextInt(Short.MAX_VALUE + 1);
-        } else if (type == Types.BYTE) {
-            return (byte) RANDOM.nextInt(Byte.MAX_VALUE + 1);
-        } else if (type == Types.CHAR) {
-            return (char) (RANDOM.nextInt(26) + 'a');
         }
 
-        // 对于不支持的类型，返回 null
+        // 不支持的类型返回 null
         return null;
     }
 
@@ -128,22 +116,5 @@ public class RandomRowGenerator {
         long currentTime = System.currentTimeMillis();
         long offset = RANDOM.nextInt(1000000);
         return new Timestamp(currentTime + offset);
-    }
-
-    /**
-     * 生成随机 Date（当前日期附近）
-     */
-    private static java.sql.Date generateRandomDate() {
-        long currentTime = System.currentTimeMillis();
-        long offset = RANDOM.nextInt(1000000) * 86400000L; // 天级别偏移
-        return new java.sql.Date(currentTime + offset);
-    }
-
-    /**
-     * 生成随机 Time
-     */
-    private static java.sql.Time generateRandomTime() {
-        long millis = RANDOM.nextInt(86400000);
-        return new java.sql.Time(millis);
     }
 }
