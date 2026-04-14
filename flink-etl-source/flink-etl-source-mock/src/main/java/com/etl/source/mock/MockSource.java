@@ -7,8 +7,10 @@ import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseSplitReader;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
+import com.etl.core.utils.JsonUtils;
 import com.etl.source.mock.config.MockSourceConfig;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.connector.source.Boundedness;
@@ -40,9 +42,11 @@ import java.util.function.Supplier;
 public class MockSource extends AbstractSplitSource<MockSplit, MockEnumCheckpoint> {
 
     private final MockSourceConfig mockConfig;
+    private final boolean bounded;
 
-    public MockSource(SourceConfig config) {
+    public MockSource(SourceConfig config, RuntimeExecutionMode runtimeMode) {
         super(config);
+        this.bounded = runtimeMode == RuntimeExecutionMode.BATCH;
 
         // 1. Schema 校验
         EtlSchema schema = config.getSchema();
@@ -51,30 +55,18 @@ public class MockSource extends AbstractSplitSource<MockSplit, MockEnumCheckpoin
 
         // 2. 解析用户配置
         List<MockSourceConfig.RowData> rows = parseRowsConfig(config);
-        Integer numRows = config.getInteger("numRows");
+        Integer numRows = config.getInteger("numRows", 10);
         Long intervalMs = config.getLong("intervalMs", 1000L);
-        // 计算 numRows 值（避免 ternary auto-unboxing NPE）
-        Integer numRowsValue;
-        if (rows != null) {
-            numRowsValue = rows.size();
-        } else {
-            numRowsValue = numRows;
-        }
-
-        // 3. 校验 rows 和 numRows 不能同时指定
-        if (rows != null && numRows != null) {
-            throw new IllegalArgumentException("rows 和 numRows 不能同时配置，请只选择其中一种");
-        }
 
         // 4. 封装配置对象
         this.mockConfig = MockSourceConfig.builder()
-            .schema(schema)
-            .rows(rows)
-            .numRows(numRowsValue)
-            .intervalMs(intervalMs)
-            .build();
+                .bounded(bounded)
+                .schema(schema)
+                .rows(rows)
+                .numRows(numRows)
+                .intervalMs(intervalMs)
+                .build();
 
-        boolean bounded = rows != null || numRows != null;
         log.info("创建 MockSource: bounded={}, rows={}, numRows={}, intervalMs={}",
             bounded, rows != null ? rows.size() : null, mockConfig.getNumRows(), intervalMs);
     }
@@ -97,7 +89,11 @@ public class MockSource extends AbstractSplitSource<MockSplit, MockEnumCheckpoin
         for (Map<String, Object> rowMap : rowsList) {
             MockSourceConfig.RowData rowData = new MockSourceConfig.RowData();
             rowData.setKind((String) rowMap.get("kind"));
-            rowData.setData((Map<String, Object>) rowMap.get("data"));
+
+            // data 字段转为 JsonNode
+            Object dataObj = rowMap.get("data");
+            rowData.setData(JsonUtils.valueToTree(dataObj));
+
             rowsData.add(rowData);
         }
 
@@ -106,8 +102,9 @@ public class MockSource extends AbstractSplitSource<MockSplit, MockEnumCheckpoin
 
     @Override
     public Boundedness getBoundedness() {
-        // 始终返回 CONTINUOUS_UNBOUNDED
-        // 有界/无界行为由 rows/numRows 配置决定
+        if (bounded) {
+            return Boundedness.BOUNDED;
+        }
         return Boundedness.CONTINUOUS_UNBOUNDED;
     }
 

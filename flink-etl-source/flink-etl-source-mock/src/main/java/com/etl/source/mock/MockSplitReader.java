@@ -31,7 +31,6 @@ import java.util.Set;
 @Slf4j
 public class MockSplitReader implements BaseSplitReader<Row, MockSplit> {
 
-    /** 是否为有界模式（配置了 rows 或 numRows） */
     private final boolean bounded;
 
     private final MockSourceConfig mockConfig;
@@ -51,9 +50,7 @@ public class MockSplitReader implements BaseSplitReader<Row, MockSplit> {
     public MockSplitReader(MockSourceConfig mockConfig) {
         this.mockConfig = mockConfig;
         this.schema = mockConfig.getSchema();
-
-        // 判断是否为有界模式
-        this.bounded = mockConfig.getRows() != null || mockConfig.getNumRows() != null;
+        this.bounded = mockConfig.isBounded();
     }
 
     @Override

@@ -4,6 +4,7 @@ import com.etl.core.config.SourceConfig;
 import com.etl.core.spi.SourcePlugin;
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.connector.source.Source;
 
 /**
@@ -20,8 +21,8 @@ public class MockSourcePlugin implements SourcePlugin {
     }
 
     @Override
-    public Source<?, ?, ?> createSource(SourceConfig config) {
+    public Source<?, ?, ?> createSource(SourceConfig config, RuntimeExecutionMode runtimeMode) {
         log.info("创建 Mock Source");
-        return new MockSource(config);
+        return new MockSource(config, runtimeMode);
     }
 }

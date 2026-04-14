@@ -3,10 +3,10 @@ package com.etl.source.mock.config;
 import com.etl.core.schema.EtlSchema;
 import lombok.Builder;
 import lombok.Data;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Mock Source 配置封装类
@@ -14,6 +14,9 @@ import java.util.Map;
 @Data
 @Builder
 public class MockSourceConfig implements Serializable {
+
+    /** 是否有界 */
+    private boolean bounded;
 
     /** Schema 定义 */
     private EtlSchema schema;
@@ -44,7 +47,7 @@ public class MockSourceConfig implements Serializable {
         /** RowKind: INSERT, UPDATE_BEFORE, UPDATE_AFTER, DELETE */
         private String kind;
 
-        /** 字段值映射 */
-        private Map<String, Object> data;
+        /** JSON 数据 */
+        private JsonNode data;
     }
 }
