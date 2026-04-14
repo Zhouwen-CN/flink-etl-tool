@@ -75,7 +75,7 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
                 columns = row.getFieldNames(true).stream()
                     .filter(name -> !name.startsWith("__"))
                     .toArray(String[]::new);
-                log.info("JDBC Sink 写入字段（已过滤隐藏字段）: {}", Arrays.toString(columns));
+                log.debug("JDBC Sink 写入字段（已过滤隐藏字段）: {}", Arrays.toString(columns));
             }
 
             if (config.getMode() == WriteMode.CDC) {
