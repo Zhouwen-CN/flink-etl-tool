@@ -18,17 +18,21 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Mock Split 读取器
- * 核心逻辑：batch 模式读取固定数据，streaming 模式定时生成数据
+ * <p>
+ * 行为由配置决定：
+ * <ul>
+ *   <li>配置了 rows 或 numRows：bounded 模式，数据读取完毕后程序自然停止</li>
+ *   <li>未配置 rows 和 numRows：unbounded 模式，按 intervalMs 持续生成数据</li>
+ * </ul>
  */
 @Slf4j
 public class MockSplitReader implements BaseSplitReader<Row, MockSplit> {
+
+    /** 是否为有界模式（配置了 rows 或 numRows） */
+    private final boolean bounded;
 
     private final MockSourceConfig mockConfig;
     private final EtlSchema schema;
@@ -36,53 +40,35 @@ public class MockSplitReader implements BaseSplitReader<Row, MockSplit> {
     private final Queue<MockSplit> pendingSplits = new ArrayDeque<>();
     private final Set<String> finishedSplits = new HashSet<>();
 
-    // batch 模式状态
+    // 有界模式状态
     private MockSplit currentSplit;
     private Iterator<Row> batchDataIterator;
     private int currentRowIndex = 0;
 
-    // streaming 模式状态
-    private ScheduledExecutorService scheduler;
-    private volatile boolean running = true;
-    private final AtomicLong rowCounter = new AtomicLong(0);
-    private Queue<Row> streamingDataQueue;
+    // 无界模式状态
+    private long rowCounter = 0;
 
     public MockSplitReader(MockSourceConfig mockConfig) {
         this.mockConfig = mockConfig;
         this.schema = mockConfig.getSchema();
 
-        // 初始化数据生成器
-        if (mockConfig.getRows() != null) {
-            // batch 模式 - 固定数据
-            List<Row> rows = DataRowGenerator.generateRows(mockConfig.getRows(), schema);
-            batchDataIterator = rows.iterator();
-            log.info("Batch 模式：从 rows 配置生成 {} 行数据", rows.size());
-        } else if (mockConfig.getRunMode() == MockSourceConfig.RunMode.BATCH) {
-            // batch 模式 - 随机生成
-            List<Row> rows = RandomRowGenerator.generateRows(schema, mockConfig.getNumRows());
-            batchDataIterator = rows.iterator();
-            log.info("Batch 模式：随机生成 {} 行数据", rows.size());
-        } else {
-            // streaming 模式 - 准备定时生成
-            streamingDataQueue = new ArrayDeque<>();
-            scheduler = Executors.newSingleThreadScheduledExecutor();
-            log.info("Streaming 模式：准备启动定时生成器，间隔 {} ms", mockConfig.getIntervalMs());
-        }
+        // 判断是否为有界模式
+        this.bounded = mockConfig.getRows() != null || mockConfig.getNumRows() != null;
     }
 
     @Override
     public RecordsWithSplitIds<Row> fetch() throws IOException {
-        if (mockConfig.getRunMode() == MockSourceConfig.RunMode.BATCH) {
-            return fetchBatchData();
+        if (bounded) {
+            return fetchBoundedData();
         } else {
-            return fetchStreamingData();
+            return fetchUnboundedData();
         }
     }
 
     /**
-     * batch 模式：从 iterator 读取数据
+     * 有界模式：从 iterator 读取预生成的数据，数据读取完毕后标记分片结束
      */
-    private RecordsWithSplitIds<Row> fetchBatchData() throws IOException {
+    private RecordsWithSplitIds<Row> fetchBoundedData() throws IOException {
         RecordsBySplits.Builder<Row> builder = new RecordsBySplits.Builder<>();
 
         // 如果没有当前分片，尝试开始新分片
@@ -94,91 +80,75 @@ public class MockSplitReader implements BaseSplitReader<Row, MockSplit> {
                 return builder.build();
             }
 
-            // 开始新分片
             currentSplit = split;
             currentRowIndex = 0;
             log.info("开始读取分片: {}", split.splitId());
         }
 
-        // 读取数据（一次返回所有数据）
+        // 有界模式 - 预生成所有数据
+        if(batchDataIterator == null){
+            if (mockConfig.getRows() != null) {
+                List<Row> rows = DataRowGenerator.generateRows(mockConfig.getRows(), schema);
+                batchDataIterator = rows.iterator();
+                log.info("有界模式：从 rows 配置生成 {} 行数据", rows.size());
+            } else {
+                List<Row> rows = RandomRowGenerator.generateRows(schema, mockConfig.getNumRows());
+                batchDataIterator = rows.iterator();
+                log.info("有界模式：随机生成 {} 行数据", mockConfig.getNumRows());
+            }
+        }
+
+        // 读取所有数据
         while (batchDataIterator.hasNext()) {
             Row row = batchDataIterator.next();
             currentRowIndex++;
             builder.add(currentSplit.splitId(), row);
-            log.debug("读取第 {} 行数据: {}", currentRowIndex, row);
+            log.debug("读取第 {} 行: {}", currentRowIndex, row);
         }
 
         // 数据读取完毕，标记分片结束
         finishedSplits.add(currentSplit.splitId());
-        log.info("Batch 模式数据读取完毕，共 {} 行", currentRowIndex);
+        log.info("有界模式数据读取完毕，共 {} 行", currentRowIndex);
 
-        // 清空当前分片状态
         currentSplit = null;
-
         return builder.build();
     }
 
     /**
-     * streaming 模式：定时生成数据
+     * 无界模式：每次 fetch 生成一行数据后 sleep
      */
-    private RecordsWithSplitIds<Row> fetchStreamingData() throws IOException {
+    private RecordsWithSplitIds<Row> fetchUnboundedData() throws IOException {
         RecordsBySplits.Builder<Row> builder = new RecordsBySplits.Builder<>();
 
         // 如果没有当前分片，尝试开始新分片
         if (currentSplit == null) {
             MockSplit split = pendingSplits.poll();
             if (split == null) {
-                // 没有待处理的分片，返回空结果
                 return builder.build();
             }
 
-            // 开始新分片
             currentSplit = split;
-            log.info("开始 streaming 分片: {}", split.splitId());
-
-            // 启动定时任务
-            startStreamingGenerator();
+            log.info("开始无界模式分片: {}", split.splitId());
         }
 
-        // 从队列中取出已生成的数据
-        Row row;
-        int count = 0;
-        while ((row = streamingDataQueue.poll()) != null) {
+        // 生成一行数据
+        try {
+            Row row = RandomRowGenerator.generateRow(schema);
+            rowCounter++;
             builder.add(currentSplit.splitId(), row);
-            count++;
+            log.debug("生成第 {} 行: {}", rowCounter, row);
+        } catch (Exception e) {
+            throw new IOException("生成数据失败", e);
         }
 
-        if (count > 0) {
-            log.debug("Streaming 模式取出 {} 行数据", count);
+        // sleep 间隔
+        try {
+            Thread.sleep(mockConfig.getIntervalMs());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
 
         return builder.build();
-    }
-
-    /**
-     * 启动 streaming 模式的定时生成器
-     */
-    private void startStreamingGenerator() {
-        scheduler.scheduleAtFixedRate(() -> {
-            if (!running) {
-                return;
-            }
-
-            try {
-                // 生成随机数据
-                Row row = RandomRowGenerator.generateRow(schema);
-                rowCounter.incrementAndGet();
-
-                // 添加到队列
-                streamingDataQueue.offer(row);
-
-                log.debug("生成第 {} 行数据: {}", rowCounter.get(), row);
-            } catch (Exception e) {
-                log.error("生成数据失败", e);
-            }
-        }, 0, mockConfig.getIntervalMs(), TimeUnit.MILLISECONDS);
-
-        log.info("Streaming 模式：scheduler 已启动");
     }
 
     @Override
@@ -189,21 +159,10 @@ public class MockSplitReader implements BaseSplitReader<Row, MockSplit> {
 
     @Override
     public void close() throws Exception {
-        running = false;
-
-        if (scheduler != null) {
-            scheduler.shutdown();
-            try {
-                if (!scheduler.awaitTermination(5, TimeUnit.SECONDS)) {
-                    scheduler.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                scheduler.shutdownNow();
-                Thread.currentThread().interrupt();
-            }
-            log.info("MockSplitReader 关闭，streaming 模式共生成 {} 行数据", rowCounter.get());
+        if (!bounded) {
+            log.info("MockSplitReader 关闭，无界模式共生成 {} 行数据", rowCounter);
         } else {
-            log.info("MockSplitReader 关闭，batch 模式共读取 {} 行数据", currentRowIndex);
+            log.info("MockSplitReader 关闭，有界模式共读取 {} 行数据", currentRowIndex);
         }
     }
 }

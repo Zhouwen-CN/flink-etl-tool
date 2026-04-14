@@ -33,7 +33,6 @@ public class MockSplit implements BaseSourceSplit {
     public String toString() {
         return "MockSplit{" +
                 "splitId='" + splitId + '\'' +
-                ", runMode=" + mockConfig.getRunMode() +
                 '}';
     }
 }

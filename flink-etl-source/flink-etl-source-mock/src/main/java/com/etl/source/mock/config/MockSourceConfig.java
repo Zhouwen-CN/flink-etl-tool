@@ -3,7 +3,6 @@ package com.etl.source.mock.config;
 import com.etl.core.schema.EtlSchema;
 import lombok.Builder;
 import lombok.Data;
-import org.apache.flink.types.RowKind;
 
 import java.io.Serializable;
 import java.util.List;
@@ -16,28 +15,26 @@ import java.util.Map;
 @Builder
 public class MockSourceConfig implements Serializable {
 
-    /** 运行模式：batch 或 streaming */
-    private RunMode runMode;
-
     /** Schema 定义 */
     private EtlSchema schema;
 
-    /** 固定数据配置（batch 模式） */
+    /**
+     * 固定数据配置
+     * 配置后数据读取完毕程序自然停止
+     */
     private List<RowData> rows;
 
-    /** batch 模式随机生成的行数 */
+    /**
+     * 随机生成的行数
+     * 配置后数据读取完毕程序自然停止；未配置时按 intervalMs 持续生成
+     */
     private Integer numRows;
 
-    /** streaming 模式生成间隔（毫秒） */
-    private Long intervalMs;
-
     /**
-     * 运行模式枚举
+     * 数据生成间隔（毫秒）
+     * 仅在未配置 rows 和 numRows 时生效
      */
-    public enum RunMode {
-        BATCH,
-        STREAMING
-    }
+    private Long intervalMs;
 
     /**
      * Row 数据配置

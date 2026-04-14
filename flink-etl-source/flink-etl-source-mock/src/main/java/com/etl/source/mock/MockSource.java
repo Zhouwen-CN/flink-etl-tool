@@ -29,7 +29,12 @@ import java.util.function.Supplier;
 
 /**
  * Mock Source 主类
- * 支持固定数据和随机生成两种模式
+ * <p>
+ * 始终以 CONTINUOUS_UNBOUNDED 模式运行，行为由用户配置决定：
+ * <ul>
+ *   <li>配置了 rows 或 numRows：数据读取完毕后程序自然停止</li>
+ *   <li>未配置 rows 和 numRows：按 intervalMs（默认 1000ms）持续生成数据</li>
+ * </ul>
  */
 @Slf4j
 public class MockSource extends AbstractSplitSource<MockSplit, MockEnumCheckpoint> {
@@ -39,48 +44,39 @@ public class MockSource extends AbstractSplitSource<MockSplit, MockEnumCheckpoin
     public MockSource(SourceConfig config) {
         super(config);
 
-        // 1. 获取运行模式（从 job.mode 传入）
-        MockSourceConfig.RunMode runMode = getRunModeFromJobConfig(config);
-
-        // 2. Schema 校验
+        // 1. Schema 校验
         EtlSchema schema = config.getSchema();
         Preconditions.checkNotNull(schema, "schema is null");
         validateSimpleTypesOnly(schema);
 
-        // 3. 配置参数获取
+        // 2. 解析用户配置
         List<MockSourceConfig.RowData> rows = parseRowsConfig(config);
-        Integer numRows = config.getInteger("numRows", 10);
+        Integer numRows = config.getInteger("numRows");
         Long intervalMs = config.getLong("intervalMs", 1000L);
-
-        // 4. 配置冲突警告
-        if (runMode == MockSourceConfig.RunMode.BATCH && config.contains("intervalMs")) {
-            log.warn("batch 模式下 intervalMs 参数被忽略");
-        }
-        if (runMode == MockSourceConfig.RunMode.STREAMING &&
-            (config.contains("rows") || config.contains("numRows"))) {
-            log.warn("streaming 模式下 rows/numRows 参数被忽略");
+        // 计算 numRows 值（避免 ternary auto-unboxing NPE）
+        Integer numRowsValue;
+        if (rows != null) {
+            numRowsValue = rows.size();
+        } else {
+            numRowsValue = numRows;
         }
 
-        // 5. 封装配置对象
+        // 3. 校验 rows 和 numRows 不能同时指定
+        if (rows != null && numRows != null) {
+            throw new IllegalArgumentException("rows 和 numRows 不能同时配置，请只选择其中一种");
+        }
+
+        // 4. 封装配置对象
         this.mockConfig = MockSourceConfig.builder()
-            .runMode(runMode)
             .schema(schema)
             .rows(rows)
-            .numRows(runMode == MockSourceConfig.RunMode.BATCH ?
-                (rows != null ? rows.size() : numRows) : null)
-            .intervalMs(runMode == MockSourceConfig.RunMode.STREAMING ? intervalMs : null)
+            .numRows(numRowsValue)
+            .intervalMs(intervalMs)
             .build();
 
-        log.info("创建 MockSource: runMode={}, rows={}, numRows={}, intervalMs={}",
-            runMode, rows != null ? rows.size() : null,
-            mockConfig.getNumRows(), mockConfig.getIntervalMs());
-    }
-
-    private MockSourceConfig.RunMode getRunModeFromJobConfig(SourceConfig config) {
-        // 注意：SourceConfig 在 JobBuilder 创建时，会从 JobConfig 传递 mode 参数
-        // 参考 JobBuilder.build() 中对 SourceConfig 的初始化逻辑
-        String mode = config.getString("mode", "batch");
-        return MockSourceConfig.RunMode.valueOf(mode.toUpperCase());
+        boolean bounded = rows != null || numRows != null;
+        log.info("创建 MockSource: bounded={}, rows={}, numRows={}, intervalMs={}",
+            bounded, rows != null ? rows.size() : null, mockConfig.getNumRows(), intervalMs);
     }
 
     @SuppressWarnings("unchecked")
@@ -110,9 +106,9 @@ public class MockSource extends AbstractSplitSource<MockSplit, MockEnumCheckpoin
 
     @Override
     public Boundedness getBoundedness() {
-        return mockConfig.getRunMode() == MockSourceConfig.RunMode.BATCH
-            ? Boundedness.BOUNDED
-            : Boundedness.CONTINUOUS_UNBOUNDED;
+        // 始终返回 CONTINUOUS_UNBOUNDED
+        // 有界/无界行为由 rows/numRows 配置决定
+        return Boundedness.CONTINUOUS_UNBOUNDED;
     }
 
     @Override
