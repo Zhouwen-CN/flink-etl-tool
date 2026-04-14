@@ -5,7 +5,8 @@ import com.etl.source.mock.config.MockSourceConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Mock Source 分片枚举器
@@ -41,13 +42,16 @@ public class MockSplitEnumerator
         pendingSplits.add(split);
 
         log.info("Mock Source 创建单分片: {}", split.splitId());
-
-        // 立即通知所有已注册的 Reader 分片已就绪
-        context.callAllReadersToRequestSplits();
     }
 
     @Override
     public MockEnumCheckpoint snapshotState(long checkpointId) {
-        return new MockEnumCheckpoint(Collections.unmodifiableList(pendingSplits));
+        List<MockSplit> pending = new ArrayList<>(pendingSplits);
+        return new MockEnumCheckpoint(pending);
+    }
+
+    @Override
+    public void close() {
+        log.info("MockSplitEnumerator 关闭");
     }
 }
