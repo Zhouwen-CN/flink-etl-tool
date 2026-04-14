@@ -678,19 +678,19 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 | 参数 | 必填 | 默认值 | 说明 |
 |------|:----:|--------|------|
 | `schema` | 是 | - | Schema 定义，定义输出数据结构 |
-| `data` | 条件必填 | - | 固定数据配置（JSON 数组），与 `numRows` 二选一。batch 模式优先使用 |
-| `numRows` | 条件必填 | - | 随机生成行数，与 `data` 二选一。batch 模式使用 |
-| `intervalMs` | 条件必填 | - | 流式生成间隔（毫秒），streaming 模式必填 |
+| `data` | 否 | - | 固定数据配置（JSON 数组），与 `numRows` 二选一。batch 模式优先使用 |
+| `numRows` | 否 | `10` | 随机生成行数，与 `data` 二选一。batch 模式使用 |
+| `intervalMs` | 否 | `1000` | 流式生成间隔（毫秒），streaming 模式使用 |
 
 **配置规则说明：**
 
 - **Batch 模式**：
   - 优先使用 `data` 配置（固定数据）
-  - 未配置 `data` 时使用 `numRows`（随机生成）
+  - 未配置 `data` 时使用 `numRows`（随机生成，默认 10 行）
   - `intervalMs` 配置会被忽略
 
 - **Streaming 模式**：
-  - 必须配置 `intervalMs`
+  - 使用 `intervalMs` 控制生成间隔（默认 1000ms）
   - `data` 和 `numRows` 配置会被忽略
   - 持续生成随机数据流
 
@@ -782,74 +782,24 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 }
 ```
 
-**CDC 测试场景：**
-
-```json
-{
-  "source": {
-    "type": "mock",
-    "outputTable": "users_cdc",
-    "config": {
-      "schema": {
-        "id": "LONG",
-        "name": "STRING",
-        "email": "STRING"
-      },
-      "data": [
-        {
-          "id": 1,
-          "name": "Alice",
-          "email": "alice@example.com"
-        },
-        {
-          "id": 1,
-          "name": "Alice Updated",
-          "email": "alice_new@example.com"
-        },
-        {
-          "id": 2,
-          "name": "Bob",
-          "email": "bob@example.com"
-        }
-      ]
-    }
-  },
-  "sink": {
-    "type": "jdbc",
-    "inputTable": "users_cdc",
-    "config": {
-      "url": "jdbc:mysql://localhost:3306/test_db",
-      "username": "root",
-      "password": "password",
-      "table": "users",
-      "mode": "cdc",
-      "keyFields": ["id"]
-    }
-  }
-}
-```
-
 #### 使用场景
 
 - **功能测试**：使用固定数据验证业务逻辑，无需依赖外部数据源
 - **性能测试**：使用随机生成大量数据测试系统吞吐量
-- **CDC 测试**：模拟 Debezium CDC 数据流，测试 JDBC Sink CDC 模式
 - **开发调试**：快速生成测试数据，无需启动数据库或 Kafka
-- **流式演示**：演示流处理功能，持续生成事件数据
+- **流式演示**：演示流处理功能，持续生成随机数据流
 
 #### 数据生成规则
 
 **随机数据生成规则（numRows 或 streaming 模式）：**
 
-- `LONG`：递增序列（从 1 开始）
-- `INT`：随机整数（0-100）
-- `DOUBLE`：随机浮点数（0.0-1000.0）
-- `STRING`：随机字符串（UUID 格式）
+- `LONG`：随机长整数
+- `INT`：随机整数
+- `DOUBLE`：随机浮点数
+- `STRING`：随机小写字母字符串（长度 1-10）
 - `BOOLEAN`：随机布尔值
-- `TIMESTAMP`：当前时间戳
-- `DECIMAL`：随机 Decimal 值（精度由 schema 定义）
-- `ARRAY`：随机数组（元素数量随机）
-- `OBJECT`：随机嵌套对象（子字段按上述规则生成）
+- `DECIMAL`：随机 Decimal 值（0-10000，保留 2 位小数）
+- `TIMESTAMP`：当前时间附近的 LocalDateTime
 
 **固定数据（data 模式）：**
 

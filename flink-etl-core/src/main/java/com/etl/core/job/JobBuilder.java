@@ -56,7 +56,7 @@ public class JobBuilder {
         for (SourceConfig sourceConfig : config.getSources()) {
             String sourceType = sourceConfig.getType();
             SourcePlugin sourcePlugin = PluginLoader.loadSourcePlugin(sourceType);
-            Source source = sourcePlugin.createSource(sourceConfig, config.getJob().getMode().getRuntimeMode());
+            Source source = sourcePlugin.createSource(sourceConfig, runtimeMode);
             DataStream<Row> sourceStream = env.fromSource(source, WatermarkStrategy.noWatermarks(), sourceType + " source");
 
             // DataStream<Row> -> Table
@@ -88,7 +88,7 @@ public class JobBuilder {
             DataStream<Row> resultStream;
             try {
                 Table sinkTable = stEnv.from(sinkInputTable);
-                resultStream = toDataStream(stEnv,sinkTable,runtimeMode);
+                resultStream = toDataStream(stEnv, sinkTable, runtimeMode);
                 log.info("Table 转换为 DataStream");
             } catch (ValidationException | TableException e) {
                 throw e;
@@ -127,7 +127,7 @@ public class JobBuilder {
     /**
      * table 转 datastream
      */
-    private static  DataStream<Row> toDataStream(StreamTableEnvironment stEnv, Table table,RuntimeExecutionMode runtimeMode){
+    private static DataStream<Row> toDataStream(StreamTableEnvironment stEnv, Table table, RuntimeExecutionMode runtimeMode) {
         if (runtimeMode == RuntimeExecutionMode.BATCH) {
             return stEnv.toDataStream(table);
         }
