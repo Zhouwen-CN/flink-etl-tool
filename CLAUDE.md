@@ -47,13 +47,16 @@ flink-etl-tool/
 │   ├── flink-etl-source-jdbc/    # JDBC Source
 │   ├── flink-etl-source-localfile/  # 本地文件 Source
 │   ├── flink-etl-source-http/    # HTTP Source
-│   └── flink-etl-source-kafka/   # Kafka Source
+│   ├── flink-etl-source-kafka/   # Kafka Source
+│   └── flink-etl-source-mock/    # Mock Source（测试/演示用）
 ├── flink-etl-sink/               # Sink 插件
 │   ├── flink-etl-sink-console/   # Console Sink
 │   ├── flink-etl-sink-jdbc/      # JDBC Sink
 │   └── flink-etl-sink-kafka/     # Kafka Sink
 └── flink-etl-transform/          # Transform 插件（SQL Transform）
 ```
+
+示例配置在 `docs/examples/` 目录，包含 mysql-to-console、kafka-to-console、mock-* 等 14 个场景。
 
 ### 核心执行流程
 
@@ -158,9 +161,9 @@ EtlClient.main()
    - 聚合函数：`agg/`（AggregateFunction）
    - 表值聚合函数：`tagg/`（TableAggregateFunction）
 2. 实现 `UdfPlugin`，添加 `@AutoService(UdfPlugin.class)` 注解
-3. `identifier()` 返回函数名（SQL 中使用）；`createFunction()` 返回 Flink UDF 实例
+3. `identifier()` 返回 SQL 中使用的函数名；`createFunction()` 返回 Flink UDF 实例
 4. 编译安装：`mvn clean install -DskipTests`（生成 SPI 配置文件）
-5. Job 启动时自动加载并注册所有 UDF
+5. Job 启动时自动扫描并注册所有 UDF
 
 ## 类型转换
 
