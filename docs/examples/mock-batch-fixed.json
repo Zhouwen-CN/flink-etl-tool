@@ -1,52 +1,56 @@
 {
   "job": {
     "name": "mock-batch-fixed",
-    "mode": "batch"
+    "mode": "streaming",
+    "parallelism": 1
   },
-  "sources": [{
-    "type": "mock",
-    "outputTable": "users",
-    "config": {
-      "schema": {
-        "id": "LONG",
-        "name": "STRING",
-        "age": "INT",
-        "active": "BOOLEAN"
-      },
-      "rows": [
-        {
-          "kind": "INSERT",
-          "data": {
-            "id": 1,
-            "name": "Alice",
-            "age": 25,
-            "active": true
-          }
+  "sources": [
+    {
+      "type": "mock",
+      "outputTable": "users",
+      "config": {
+        "schema": {
+          "id": "LONG",
+          "name": "STRING",
+          "age": "INT",
+          "active": "BOOLEAN"
         },
-        {
-          "kind": "INSERT",
-          "data": {
-            "id": 2,
-            "name": "Bob",
-            "age": 30,
-            "active": false
+        "rows": [
+          {
+            "kind": "INSERT",
+            "data": {
+              "id": 1,
+              "name": "Alice",
+              "age": 25,
+              "active": true
+            }
+          },
+          {
+            "kind": "INSERT",
+            "data": {
+              "id": 2,
+              "name": "Bob",
+              "age": 30,
+              "active": false
+            }
+          },
+          {
+            "kind": "UPDATE_AFTER",
+            "data": {
+              "id": 1,
+              "name": "Alice Updated",
+              "age": 26,
+              "active": true
+            }
           }
-        },
-        {
-          "kind": "UPDATE_AFTER",
-          "data": {
-            "id": 1,
-            "name": "Alice Updated",
-            "age": 26,
-            "active": true
-          }
-        }
-      ]
+        ]
+      }
     }
-  }],
-  "sinks": [{
-    "type": "console",
-    "inputTable": "users",
-    "config": {}
-  }]
+  ],
+  "sinks": [
+    {
+      "type": "console",
+      "inputTable": "users"
+    }
+  ]
 }

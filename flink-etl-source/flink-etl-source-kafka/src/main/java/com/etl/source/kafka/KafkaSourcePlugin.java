@@ -5,6 +5,7 @@ import com.etl.core.spi.SourcePlugin;
 import com.etl.source.kafka.format.KafkaFormatPlugin;
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.connector.source.Source;
 import org.apache.flink.connector.kafka.source.KafkaSource;
 import org.apache.flink.connector.kafka.source.KafkaSourceBuilder;
@@ -28,7 +29,7 @@ public class KafkaSourcePlugin implements SourcePlugin {
     }
 
     @Override
-    public Source<?, ?, ?> createSource(SourceConfig config) {
+    public Source<?, ?, ?> createSource(SourceConfig config, RuntimeExecutionMode runtimeMode) {
         log.info("创建 Kafka Source");
 
         // 解析配置

@@ -1,9 +1,8 @@
 package com.etl.core.config;
 
 
+import lombok.Getter;
 import org.apache.flink.api.common.RuntimeExecutionMode;
-import org.apache.flink.configuration.Configuration;
-import org.apache.flink.configuration.ExecutionOptions;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.annotation.JsonCreator;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.annotation.JsonValue;
 
@@ -11,30 +10,16 @@ import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.annotation.JsonVal
  * Job 执行模式枚举
  */
 public enum ExecutionMode {
-    BATCH("batch") {
-        @Override
-        public void configure(Configuration configuration) {
-            configuration.set(ExecutionOptions.RUNTIME_MODE, RuntimeExecutionMode.BATCH);
-        }
-    },
-    STREAM("streaming") {
-        @Override
-        public void configure(Configuration configuration) {
-            configuration.set(ExecutionOptions.RUNTIME_MODE, RuntimeExecutionMode.STREAMING);
-        }
-    };
+    BATCH("batch", RuntimeExecutionMode.BATCH),
+    STREAM("streaming", RuntimeExecutionMode.STREAMING);
 
     private final String value;
+    @Getter
+    private final RuntimeExecutionMode runtimeMode;
 
-    ExecutionMode(String value) {
+    ExecutionMode(String value, RuntimeExecutionMode runtimeMode) {
         this.value = value;
-    }
-
-    public abstract void configure(Configuration configuration);
-
-    @JsonValue
-    public String getValue() {
-        return value;
+        this.runtimeMode = runtimeMode;
     }
 
     @JsonCreator
@@ -48,5 +33,10 @@ public enum ExecutionMode {
             }
         }
         throw new IllegalArgumentException("未知的执行模式: " + value + "，仅支持 batch | stream");
+    }
+
+    @JsonValue
+    public String getValue() {
+        return value;
     }
 }

@@ -52,7 +52,7 @@ public class JobBuilder {
         for (SourceConfig sourceConfig : config.getSources()) {
             String sourceType = sourceConfig.getType();
             SourcePlugin sourcePlugin = PluginLoader.loadSourcePlugin(sourceType);
-            Source source = sourcePlugin.createSource(sourceConfig);
+            Source source = sourcePlugin.createSource(sourceConfig, config.getJob().getMode().getRuntimeMode());
             DataStream<Row> sourceStream = env.fromSource(source, WatermarkStrategy.noWatermarks(), sourceType + " source");
 
             // DataStream<Row> -> Table
@@ -86,7 +86,7 @@ public class JobBuilder {
                 Table sinkTable = stEnv.from(sinkInputTable);
                 resultStream = stEnv.toChangelogStream(sinkTable);
                 log.info("Table 转换为 DataStream");
-            } catch (ValidationException e) {
+            } catch (ValidationException | TableException e) {
                 throw e;
             } catch (Exception e) {
                 throw new IllegalArgumentException("无法从表 '" + sinkInputTable + "' 读取数据，请检查 inputTable 配置是否正确，或上游 source.outputTable / transform.outputTable 是否已正确配置", e);

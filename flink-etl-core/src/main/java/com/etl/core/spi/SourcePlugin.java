@@ -1,6 +1,7 @@
 package com.etl.core.spi;
 
 import com.etl.core.config.SourceConfig;
+import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.connector.source.Source;
 
 /**
@@ -12,8 +13,9 @@ public interface SourcePlugin extends Plugin {
     /**
      * 创建 Flink Source
      *
-     * @param config Source 配置
+     * @param config      Source 配置
+     * @param runtimeMode
      * @return Flink Source 实例
      */
-    Source<?, ?, ?> createSource(SourceConfig config);
+    Source<?, ?, ?> createSource(SourceConfig config, RuntimeExecutionMode runtimeMode);
 }

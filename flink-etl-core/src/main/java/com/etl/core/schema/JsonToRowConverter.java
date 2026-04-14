@@ -125,7 +125,7 @@ public class JsonToRowConverter {
      * @param schema Schema 定义
      * @return Row 对象
      */
-    private static Row convertJsonToRow(JsonNode node, EtlSchema schema) {
+    public static Row convertJsonToRow(JsonNode node, EtlSchema schema) {
         if (node == null || !node.isObject()) {
             throw new IllegalArgumentException("期望对象类型，但得到: " + (node == null ? "null" : node.getNodeType()));
         }

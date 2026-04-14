@@ -6,6 +6,7 @@ import com.etl.core.config.JobMeta;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.CoreOptions;
+import org.apache.flink.configuration.ExecutionOptions;
 import org.apache.flink.configuration.TaskManagerOptions;
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.environment.CheckpointConfig;
@@ -52,20 +53,20 @@ public class JobExecutor {
      * @return Flink 执行环境
      */
     StreamExecutionEnvironment createExecutionEnvironment(JobMeta jobConfig) {
-        ExecutionMode mode = jobConfig.getMode();
-        Integer parallelism = jobConfig.getParallelism();
-        log.info("创建 Flink 执行环境：mode={}, parallelism={}", mode, parallelism);
-
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         Configuration configuration = new Configuration();
-        mode.configure(configuration);
 
+        ExecutionMode mode = jobConfig.getMode();
+        configuration.set(ExecutionOptions.RUNTIME_MODE, mode.getRuntimeMode());
+
+        Integer parallelism = jobConfig.getParallelism();
         if (parallelism != null) {
             configuration.set(CoreOptions.DEFAULT_PARALLELISM, parallelism);
             // 本地执行环境需要配置足够的 slot 数量
             configuration.set(TaskManagerOptions.NUM_TASK_SLOTS, parallelism);
             log.info("设置 Job 并行度：{}, TaskManager slots: {}", parallelism, parallelism);
         }
+        log.info("创建 Flink 执行环境：mode={}, parallelism={}", mode, parallelism);
 
         env.configure(configuration);
 
