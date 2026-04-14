@@ -16,7 +16,7 @@ import org.apache.flink.types.Row;
  * TODO: Task 10 将完整实现此类的分片逻辑、Enumerator 和 Reader
  */
 @Slf4j
-public class MockSource extends AbstractSplitSource<MockSplit, MockCheckpoint> {
+public class MockSource extends AbstractSplitSource<MockSplit, MockEnumCheckpoint> {
 
     public MockSource(SourceConfig config) {
         super(config);
@@ -30,12 +30,12 @@ public class MockSource extends AbstractSplitSource<MockSplit, MockCheckpoint> {
     }
 
     @Override
-    public SplitEnumerator<MockSplit, MockCheckpoint> createEnumerator(SplitEnumeratorContext<MockSplit> enumContext) {
+    public SplitEnumerator<MockSplit, MockEnumCheckpoint> createEnumerator(SplitEnumeratorContext<MockSplit> enumContext) {
         throw new UnsupportedOperationException("MockSource 尚未实现，请等待 Task 10 完成");
     }
 
     @Override
-    public SplitEnumerator<MockSplit, MockCheckpoint> restoreEnumerator(SplitEnumeratorContext<MockSplit> enumContext, MockCheckpoint checkpoint) {
+    public SplitEnumerator<MockSplit, MockEnumCheckpoint> restoreEnumerator(SplitEnumeratorContext<MockSplit> enumContext, MockEnumCheckpoint checkpoint) {
         throw new UnsupportedOperationException("MockSource 尚未实现，请等待 Task 10 完成");
     }
 
@@ -50,7 +50,7 @@ public class MockSource extends AbstractSplitSource<MockSplit, MockCheckpoint> {
     }
 
     @Override
-    public SimpleVersionedSerializer<MockCheckpoint> getEnumeratorCheckpointSerializer() {
+    public SimpleVersionedSerializer<MockEnumCheckpoint> getEnumeratorCheckpointSerializer() {
         throw new UnsupportedOperationException("MockSource 尚未实现，请等待 Task 10 完成");
     }
 }
