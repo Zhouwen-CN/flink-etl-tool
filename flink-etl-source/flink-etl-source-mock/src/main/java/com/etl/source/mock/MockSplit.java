@@ -1,15 +1,20 @@
 package com.etl.source.mock;
 
-import org.apache.flink.api.connector.source.SourceSplit;
+import com.etl.core.source.BaseSourceSplit;
+import com.etl.source.mock.config.MockSourceConfig;
+import lombok.Getter;
 
 /**
- * Mock Source 分片占位实现
- * TODO: Task 10 将实现完整的分片逻辑
+ * Mock Source 单分片
+ * 固定 ID: "mock-split-0"
  */
-public class MockSplit implements SourceSplit {
+@Getter
+public class MockSplit extends BaseSourceSplit {
 
-    @Override
-    public String splitId() {
-        return "mock-split-placeholder";
+    private final MockSourceConfig mockConfig;
+
+    public MockSplit(MockSourceConfig mockConfig) {
+        super("mock-split-0");  // 固定分片 ID
+        this.mockConfig = mockConfig;
     }
 }
