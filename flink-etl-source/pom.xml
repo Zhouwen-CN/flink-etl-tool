@@ -21,6 +21,7 @@
         <module>flink-etl-source-localfile</module>
         <module>flink-etl-source-http</module>
         <module>flink-etl-source-kafka</module>
+        <module>flink-etl-source-mock</module>
     </modules>
 
     <dependencies>
