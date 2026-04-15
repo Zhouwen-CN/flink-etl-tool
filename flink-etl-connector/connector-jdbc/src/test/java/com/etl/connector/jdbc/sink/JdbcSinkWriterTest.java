@@ -6,6 +6,7 @@ import com.etl.connector.jdbc.sink.config.JdbcSinkConfig;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.metrics.groups.SinkWriterMetricGroup;
 import org.apache.flink.types.Row;
+import org.apache.flink.types.RowKind;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -297,6 +298,159 @@ public class JdbcSinkWriterTest {
             when(mockStatement.executeBatch()).thenReturn(new int[]{1});
             writer.flush(false);
 
+        } finally {
+            if (writer != null) {
+                try { writer.close(); } catch (Exception e) {}
+            }
+            mockedDriverManager.close();
+        }
+    }
+
+    /**
+     * 测试 CDC INSERT 模式当前行为
+     * 验证 CDC INSERT 模式生成 INSERT SQL
+     */
+    @Test
+    public void testCdcInsertModeCurrentBehavior() throws Exception {
+        mockConnection = mock(Connection.class);
+        mockStatement = mock(PreparedStatement.class);
+        when(mockConnection.prepareStatement(anyString())).thenReturn(mockStatement);
+        when(mockConnection.getAutoCommit()).thenReturn(false);
+        doNothing().when(mockConnection).commit();
+
+        JdbcSinkConfig config = JdbcSinkConfig.builder()
+            .url("jdbc:mysql://localhost:3306/test")
+            .username("root")
+            .password("password")
+            .mode(WriteMode.CDC)
+            .table("test_table")
+            .keyFields(Arrays.asList("id"))
+            .batchSize(100)
+            .dialect(new MySQLDialect())
+            .build();
+
+        MockedStatic<DriverManager> mockedDriverManager = mockStatic(DriverManager.class);
+        mockedDriverManager.when(() ->
+            DriverManager.getConnection(config.getUrl(), config.getUsername(), config.getPassword())
+        ).thenReturn(mockConnection);
+
+        JdbcSinkWriter writer = null;
+        try {
+            writer = new JdbcSinkWriter(mockContext, config);
+
+            Row row = Row.withNames();
+            row.setField("id", "1");
+            row.setField("name", "Alice");
+            row.setKind(RowKind.INSERT);
+            writer.write(row, null);
+
+            // 验证 INSERT SQL
+            verify(mockConnection).prepareStatement(eq("INSERT INTO `test_table` (`name`, `id`) VALUES (?, ?)"));
+
+            when(mockStatement.executeBatch()).thenReturn(new int[]{1});
+            writer.flush(false);
+        } finally {
+            if (writer != null) {
+                try { writer.close(); } catch (Exception e) {}
+            }
+            mockedDriverManager.close();
+        }
+    }
+
+    /**
+     * 测试 CDC UPDATE_AFTER 模式当前行为
+     * 验证 CDC UPDATE_AFTER 模式生成 UPDATE SQL
+     */
+    @Test
+    public void testCdcUpdateAfterModeCurrentBehavior() throws Exception {
+        mockConnection = mock(Connection.class);
+        mockStatement = mock(PreparedStatement.class);
+        when(mockConnection.prepareStatement(anyString())).thenReturn(mockStatement);
+        when(mockConnection.getAutoCommit()).thenReturn(false);
+        doNothing().when(mockConnection).commit();
+
+        JdbcSinkConfig config = JdbcSinkConfig.builder()
+            .url("jdbc:mysql://localhost:3306/test")
+            .username("root")
+            .password("password")
+            .mode(WriteMode.CDC)
+            .table("test_table")
+            .keyFields(Arrays.asList("id"))
+            .batchSize(100)
+            .dialect(new MySQLDialect())
+            .build();
+
+        MockedStatic<DriverManager> mockedDriverManager = mockStatic(DriverManager.class);
+        mockedDriverManager.when(() ->
+            DriverManager.getConnection(config.getUrl(), config.getUsername(), config.getPassword())
+        ).thenReturn(mockConnection);
+
+        JdbcSinkWriter writer = null;
+        try {
+            writer = new JdbcSinkWriter(mockContext, config);
+
+            Row row = Row.withNames();
+            row.setField("id", "1");
+            row.setField("name", "Alice-updated");
+            row.setKind(RowKind.UPDATE_AFTER);
+            writer.write(row, null);
+
+            // 验证 UPDATE SQL
+            verify(mockConnection).prepareStatement(eq("UPDATE `test_table` SET `name` = ? WHERE `id` = ?"));
+
+            when(mockStatement.executeBatch()).thenReturn(new int[]{1});
+            writer.flush(false);
+        } finally {
+            if (writer != null) {
+                try { writer.close(); } catch (Exception e) {}
+            }
+            mockedDriverManager.close();
+        }
+    }
+
+    /**
+     * 测试 CDC DELETE 模式当前行为
+     * 验证 CDC DELETE 模式生成 DELETE SQL
+     */
+    @Test
+    public void testCdcDeleteModeBehavior() throws Exception {
+        mockConnection = mock(Connection.class);
+        mockStatement = mock(PreparedStatement.class);
+        when(mockConnection.prepareStatement(anyString())).thenReturn(mockStatement);
+        when(mockConnection.getAutoCommit()).thenReturn(false);
+        doNothing().when(mockConnection).commit();
+
+        JdbcSinkConfig config = JdbcSinkConfig.builder()
+            .url("jdbc:mysql://localhost:3306/test")
+            .username("root")
+            .password("password")
+            .mode(WriteMode.CDC)
+            .table("test_table")
+            .keyFields(Arrays.asList("id"))
+            .batchSize(100)
+            .dialect(new MySQLDialect())
+            .build();
+
+        MockedStatic<DriverManager> mockedDriverManager = mockStatic(DriverManager.class);
+        mockedDriverManager.when(() ->
+            DriverManager.getConnection(config.getUrl(), config.getUsername(), config.getPassword())
+        ).thenReturn(mockConnection);
+
+        JdbcSinkWriter writer = null;
+        try {
+            writer = new JdbcSinkWriter(mockContext, config);
+
+            Row row = Row.withNames();
+            row.setField("id", "1");
+            row.setField("name", "Alice");
+            row.setKind(RowKind.DELETE);
+            writer.write(row, null);
+
+            // 验证 DELETE SQL
+            verify(mockConnection).prepareStatement(eq("DELETE FROM `test_table` WHERE `id` = ?"));
+
+            when(mockStatement.executeBatch()).thenReturn(new int[]{1});
+            writer.flush(false);
         } finally {
             if (writer != null) {
                 try { writer.close(); } catch (Exception e) {}
