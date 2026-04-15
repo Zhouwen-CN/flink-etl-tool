@@ -187,7 +187,7 @@ public class MockSourcePlugin implements SourcePlugin {
 Create `META-INF/services/com.etl.core.spi.SourcePlugin`:
 
 ```
-com.etl.source.mock.MockSourcePlugin
+com.etl.connector.mock.source.MockSourcePlugin
 ```
 
 - [ ] **Step 3: Compile to verify SPI generation**
@@ -297,7 +297,7 @@ package com.etl.source.mock.generator;
 
 import com.etl.core.exception.SchemaConfigException;
 import com.etl.core.schema.EtlSchema;
-import com.etl.source.mock.config.MockSourceConfig;
+import config.com.etl.mock.source.MockSourceConfig;
 import org.apache.flink.types.Row;
 import org.apache.flink.types.RowKind;
 import org.junit.jupiter.api.Test;
@@ -409,7 +409,7 @@ package com.etl.source.mock.generator;
 
 import com.etl.core.exception.SchemaConfigException;
 import com.etl.core.schema.EtlSchema;
-import com.etl.source.mock.config.MockSourceConfig;
+import config.com.etl.mock.source.MockSourceConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
@@ -793,7 +793,7 @@ Create `MockSplit.java`:
 package com.etl.source.mock;
 
 import com.etl.core.source.BaseSourceSplit;
-import com.etl.source.mock.config.MockSourceConfig;
+import config.com.etl.mock.source.MockSourceConfig;
 import lombok.Getter;
 
 /**
@@ -882,7 +882,7 @@ Create `MockSplitEnumerator.java`:
 package com.etl.source.mock;
 
 import com.etl.core.source.BaseSplitEnumerator;
-import com.etl.source.mock.config.MockSourceConfig;
+import config.com.etl.mock.source.MockSourceConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 
@@ -957,7 +957,7 @@ Create `MockSplitReaderTest.java`:
 package com.etl.source.mock;
 
 import com.etl.core.schema.EtlSchema;
-import com.etl.source.mock.config.MockSourceConfig;
+import config.com.etl.mock.source.MockSourceConfig;
 import com.etl.source.mock.generator.DataRowGenerator;
 import org.apache.flink.types.Row;
 import org.junit.jupiter.api.Test;
@@ -1018,9 +1018,9 @@ package com.etl.source.mock;
 
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.source.BaseSplitReader;
-import com.etl.source.mock.config.MockSourceConfig;
+import config.com.etl.mock.source.MockSourceConfig;
 import com.etl.source.mock.generator.DataRowGenerator;
-import com.etl.source.mock.generator.RandomRowGenerator;
+import generator.com.etl.mock.source.RandomRowGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.types.Row;
 
@@ -1280,7 +1280,7 @@ import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseSplitReader;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
-import com.etl.source.mock.config.MockSourceConfig;
+import config.com.etl.mock.source.MockSourceConfig;
 import com.etl.source.mock.generator.DataRowGenerator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;

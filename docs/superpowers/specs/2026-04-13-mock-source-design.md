@@ -1123,7 +1123,7 @@ public void testStreamingMockToConsole() throws Exception {
 **META-INF/services/com.etl.core.spi.SourcePlugin：**
 
 ```
-com.etl.source.mock.MockSourcePlugin
+com.etl.connector.mock.source.MockSourcePlugin
 ```
 
 ---

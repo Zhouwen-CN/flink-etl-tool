@@ -1,0 +1,37 @@
+package com.etl.connector.jdbc.sink.config;
+
+import com.etl.connector.jdbc.dialect.JdbcDialect;
+import com.etl.connector.jdbc.dialect.WriteMode;
+import lombok.Builder;
+import lombok.Getter;
+
+import java.io.Serializable;
+import java.util.List;
+
+/**
+ * JDBC Sink 配置
+ */
+@Getter
+@Builder
+public class JdbcSinkConfig implements Serializable {
+    private static final long serialVersionUID = 1L;
+
+    /** 数据库连接 URL */
+    private final String url;
+    /** 用户名 */
+    private final String username;
+    /** 密码 */
+    private final String password;
+    /** 目标表名（与 sql 二选一，优先） */
+    private final String table;
+    /** 自定义 SQL，支持具名占位符 :paramName */
+    private final String sql;
+    /** 批量写入大小，默认 100 */
+    private final Integer batchSize;
+    /** 写入模式：INSERT 或 UPSERT */
+    private final WriteMode mode;
+    /** Upsert 模式下的主键/唯一键字段列表 */
+    private final List<String> keyFields;
+    /** 数据库方言 */
+    private final JdbcDialect dialect;
+}

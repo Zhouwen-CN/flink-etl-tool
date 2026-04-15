@@ -164,16 +164,16 @@ flink-etl-connector/
 
 **不调整包名**: 保持原有的包名结构，只调整物理路径。
 
-- 原 `com.etl.source.jdbc.JdbcSource` → 物理路径从 `flink-etl-source-jdbc` 迁移到 `flink-etl-connector/connector-jdbc`，但包名保持不变
-- 原 `com.etl.sink.jdbc.JdbcSink` → 物理路径迁移，包名保持不变
-- 原 `com.etl.core.dialect.JdbcDialect` → **需要调整包名**为 `com.etl.connector.jdbc.dialect.JdbcDialect`（因为这是 core 到 connector 的跨模块迁移）
+- 原 `source.com.etl.connector.jdbc.JdbcSource` → 物理路径从 `flink-etl-source-jdbc` 迁移到 `flink-etl-connector/connector-jdbc`，但包名保持不变
+- 原 `sink.com.etl.connector.jdbc.JdbcSink` → 物理路径迁移，包名保持不变
+- 原 `com.etl.core.dialect.JdbcDialect` → **需要调整包名**为 `dialect.com.etl.connector.jdbc.JdbcDialect`（因为这是 core 到 connector 的跨模块迁移）
 
 **例外**: dialect 和 converter 从 core 模块迁移到 connector 模块时，需要调整包名：
 
 | 原包名 | 新包名 |
 |--------|--------|
 | `com.etl.core.dialect.*` | `com.etl.connector.jdbc.dialect.*` |
-| `com.etl.core.jdbc.TypeConverter` | `com.etl.connector.jdbc.converter.TypeConverter` |
+| `com.etl.core.jdbc.TypeConverter` | `com.etl.core.schema.TypeConverter` |
 
 ## Maven POM 文件调整
 
@@ -349,7 +349,7 @@ flink-etl-connector/
 
 **从 flink-etl-core/jdbc 迁移到 connector-jdbc/converter/**:
 - 迁移 `flink-etl-core/src/main/java/com/etl/core/jdbc/TypeConverter.java`
-- **需要调整包名**：`com.etl.core.jdbc.TypeConverter` → `com.etl.connector.jdbc.converter.TypeConverter`
+- **需要调整包名**：`com.etl.core.jdbc.TypeConverter` → `com.etl.core.schema.TypeConverter`
 - 更新所有引用该类的 import 语句
 
 **原 utils 目录迁移**:
@@ -442,7 +442,7 @@ flink-etl-connector/
 | `com.etl.source.jdbc.*` | `com.etl.source.jdbc.*` | 包名不变，只迁移物理路径 |
 | `com.etl.sink.jdbc.*` | `com.etl.sink.jdbc.*` | 包名不变，只迁移物理路径 |
 | `com.etl.core.dialect.*` | `com.etl.connector.jdbc.dialect.*` | 包名调整 |
-| `com.etl.core.jdbc.TypeConverter` | `com.etl.connector.jdbc.converter.TypeConverter` | 包名调整 |
+| `com.etl.core.jdbc.TypeConverter` | `com.etl.core.schema.TypeConverter` | 包名调整 |
 | `com.etl.source.kafka.*` | `com.etl.source.kafka.*` | 包名不变 |
 | `com.etl.sink.kafka.*` | `com.etl.sink.kafka.*` | 包名不变 |
 | `com.etl.source.localfile.*` | `com.etl.source.localfile.*` | 包名不变 |

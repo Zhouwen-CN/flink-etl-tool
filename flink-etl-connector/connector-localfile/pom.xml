@@ -15,4 +15,12 @@
 
     <name>Flink ETL Connector - LocalFile</name>
     <description>本地文件连接器（Source）</description>
+
+    <dependencies>
+        <!-- CSV 解析库 -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-csv</artifactId>
+        </dependency>
+    </dependencies>
 </project>

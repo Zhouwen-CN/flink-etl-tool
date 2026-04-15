@@ -281,11 +281,11 @@ git commit -m "refactor(jdbc-source): RangeSplit 简化为直接存储查询 SQL
 完整替换文件内容：
 
 ```java
-package com.etl.source.jdbc.utils;
+package com.etl.jdbc.source.utils;
 
 import com.etl.core.utils.SqlUtils;
-import com.etl.source.jdbc.RangeSplit;
-import com.etl.source.jdbc.enums.SplitStrategy;
+import source.com.etl.connector.jdbc.RangeSplit;
+import enums.source.com.etl.connector.jdbc.SplitStrategy;
 import lombok.extern.slf4j.Slf4j;
 
 import java.sql.*;
@@ -330,8 +330,8 @@ public final class JdbcSplitHelper {
      * @return 分片列表
      */
     public static List<RangeSplit> calculateNumericSplits(String url, String username, String password,
-                                                           String table, String sql, String splitColumn,
-                                                           int parallelism) {
+                                                          String table, String sql, String splitColumn,
+                                                          int parallelism) {
         // 1. 查询分片列范围
         long[] range = querySplitColumnRange(url, username, password, table, sql, splitColumn);
         long min = range[0];
@@ -376,7 +376,7 @@ public final class JdbcSplitHelper {
      * @return [min, max]，空表返回 [0, -1]
      */
     private static long[] querySplitColumnRange(String url, String username, String password,
-                                                 String table, String sql, String splitColumn) {
+                                                String table, String sql, String splitColumn) {
         String quotedColumn = SqlUtils.quoteIdentifier(splitColumn, url);
         String rangeQuery;
         if (table != null) {
@@ -420,7 +420,7 @@ public final class JdbcSplitHelper {
      * 构建范围查询 SQL
      */
     private static String buildRangeQuery(String url, String table, String sql,
-                                           String splitColumn, long start, long end) {
+                                          String splitColumn, long start, long end) {
         String quotedColumn = SqlUtils.quoteIdentifier(splitColumn, url);
         if (table != null) {
             String quotedTable = SqlUtils.quoteIdentifier(table, url);
@@ -445,8 +445,8 @@ public final class JdbcSplitHelper {
      * @throws IllegalArgumentException 如果分片列类型不支持
      */
     public static void validateSplitColumnType(String url, String username, String password,
-                                                String table, String sql, String splitColumn,
-                                                SplitStrategy strategy) {
+                                               String table, String sql, String splitColumn,
+                                               SplitStrategy strategy) {
         int jdbcType = SqlUtils.getColumnType(table, sql, splitColumn, url, username, password);
 
         if (!strategy.supports(jdbcType)) {
@@ -485,9 +485,9 @@ git commit -m "refactor(jdbc-source): JdbcSplitHelper 简化分片生成逻辑�
 - [ ] **Step 1: 更新 splitColumn 注释并添加 splitStrategy 字段**
 
 ```java
-package com.etl.source.jdbc.config;
+package com.etl.jdbc.source.config;
 
-import com.etl.source.jdbc.enums.SplitStrategy;
+import enums.source.com.etl.connector.jdbc.SplitStrategy;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -587,9 +587,10 @@ this.jdbcSourceConfig = JdbcSourceConfig.builder()
 ```
 
 需要在文件头部添加 import：
+
 ```java
-import com.etl.source.jdbc.enums.SplitStrategy;
-import com.etl.source.jdbc.utils.JdbcSplitHelper;
+import enums.source.com.etl.connector.jdbc.SplitStrategy;
+import utils.source.com.etl.connector.jdbc.JdbcSplitHelper;
 ```
 
 - [ ] **Step 2: 验证编译通过**
@@ -646,8 +647,9 @@ public void start() {
 ```
 
 需要在文件头部添加 import：
+
 ```java
-import com.etl.source.jdbc.enums.SplitStrategy;
+import enums.source.com.etl.connector.jdbc.SplitStrategy;
 ```
 
 - [ ] **Step 2: 验证编译通过**

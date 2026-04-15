@@ -474,7 +474,7 @@ git commit -m "refactor(jdbc-source): 使用 JdbcDialect 替代硬编码 URL 包
 - [ ] **Step 1: 添加 mode 和 keyFields 字段**
 
 ```java
-package com.etl.sink.jdbc.config;
+package com.etl.jdbc.sink.config;
 
 import com.etl.core.dialect.JdbcDialect;
 import com.etl.core.dialect.WriteMode;
@@ -537,7 +537,7 @@ import com.etl.core.dialect.JdbcDialect;
 import com.etl.core.dialect.JdbcDialectLoader;
 import com.etl.core.dialect.WriteMode;
 import com.etl.core.spi.SinkPlugin;
-import com.etl.sink.jdbc.config.JdbcSinkConfig;
+import com.etl.jdbc.sink.configJdbcSinkConfig;
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.streaming.api.functions.sink.SinkFunction;

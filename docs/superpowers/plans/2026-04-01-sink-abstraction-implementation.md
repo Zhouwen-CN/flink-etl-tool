@@ -987,14 +987,13 @@ import com.etl.core.dialect.JdbcDialect;
 import com.etl.core.dialect.JdbcDialectLoader;
 import com.etl.core.dialect.WriteMode;
 import com.etl.core.sink.AbstractSink;
-import com.etl.sink.jdbc.config.JdbcSinkConfig;
+import com.etl.jdbc.sink.configJdbcSinkConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.sink2.SinkWriter;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Preconditions;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -1004,63 +1003,63 @@ import java.util.List;
 @Slf4j
 public class JdbcSink extends AbstractSink {
 
-    private final JdbcSinkConfig jdbcSinkConfig;
+   private final JdbcSinkConfig jdbcSinkConfig;
 
-    public JdbcSink(SinkConfig config) {
-        super(config);
+   public JdbcSink(SinkConfig config) {
+      super(config);
 
-        // 1. 必要参数校验
-        String url = Preconditions.checkNotNull(config.getString("url"), "url is null");
-        String username = config.getString("username");
-        String password = config.getString("password");
+      // 1. 必要参数校验
+      String url = Preconditions.checkNotNull(config.getString("url"), "url is null");
+      String username = config.getString("username");
+      String password = config.getString("password");
 
-        // 2. Dialect 初始化
-        JdbcDialect dialect = JdbcDialects.get(url);
+      // 2. Dialect 初始化
+      JdbcDialect dialect = JdbcDialects.get(url);
 
-        // 3. table/sql 模式选择和校验
-        String table = config.getString("table");
-        String sql = config.getString("sql");
-        Preconditions.checkArgument(table != null || sql != null,
-            "table 和 sql 必须配置其中一个");
+      // 3. table/sql 模式选择和校验
+      String table = config.getString("table");
+      String sql = config.getString("sql");
+      Preconditions.checkArgument(table != null || sql != null,
+              "table 和 sql 必须配置其中一个");
 
-        // 4. mode 和 keyFields 参数处理
-        String modeStr = config.getString("mode", "INSERT");
-        WriteMode mode = WriteMode.valueOf(modeStr.toUpperCase());
+      // 4. mode 和 keyFields 参数处理
+      String modeStr = config.getString("mode", "INSERT");
+      WriteMode mode = WriteMode.valueOf(modeStr.toUpperCase());
 
-        List<String> keyFields = null;
-        if (mode == WriteMode.UPSERT) {
-            List<String> keyFieldsConfig = config.getList("keyFields");
-            Preconditions.checkNotNull(keyFieldsConfig, "UPSERT 模式必须配置 keyFields");
-            keyFields = keyFieldsConfig;
-            log.info("JDBC Sink upsert 模式: table={}, keyFields={}", table, keyFields);
-        } else {
-            log.info("JDBC Sink insert 模式: table={}", table);
-        }
+      List<String> keyFields = null;
+      if (mode == WriteMode.UPSERT) {
+         List<String> keyFieldsConfig = config.getList("keyFields");
+         Preconditions.checkNotNull(keyFieldsConfig, "UPSERT 模式必须配置 keyFields");
+         keyFields = keyFieldsConfig;
+         log.info("JDBC Sink upsert 模式: table={}, keyFields={}", table, keyFields);
+      } else {
+         log.info("JDBC Sink insert 模式: table={}", table);
+      }
 
-        // 5. batchSize 参数处理
-        Integer batchSize = config.getInteger("batchSize", 100);
-        Preconditions.checkArgument(batchSize != null && batchSize > 0, "batchSize must be greater than 0");
+      // 5. batchSize 参数处理
+      Integer batchSize = config.getInteger("batchSize", 100);
+      Preconditions.checkArgument(batchSize != null && batchSize > 0, "batchSize must be greater than 0");
 
-        // 6. 构建 JdbcSinkConfig 对象
-        this.jdbcSinkConfig = JdbcSinkConfig.builder()
-            .url(dialect.wrapUrl(url))
-            .username(username)
-            .password(password)
-            .table(table)
-            .sql(sql)
-            .dialect(dialect)
-            .mode(mode)
-            .keyFields(keyFields)
-            .batchSize(batchSize)
-            .build();
+      // 6. 构建 JdbcSinkConfig 对象
+      this.jdbcSinkConfig = JdbcSinkConfig.builder()
+              .url(dialect.wrapUrl(url))
+              .username(username)
+              .password(password)
+              .table(table)
+              .sql(sql)
+              .dialect(dialect)
+              .mode(mode)
+              .keyFields(keyFields)
+              .batchSize(batchSize)
+              .build();
 
-        log.info("创建 JdbcSink: {}", this.jdbcSinkConfig);
-    }
+      log.info("创建 JdbcSink: {}", this.jdbcSinkConfig);
+   }
 
-    @Override
-    public SinkWriter<Row> createWriter(InitContext context) throws IOException {
-        return new JdbcSinkWriter(context, jdbcSinkConfig);
-    }
+   @Override
+   public SinkWriter<Row> createWriter(InitContext context) throws IOException {
+      return new JdbcSinkWriter(context, jdbcSinkConfig);
+   }
 }
 ```
 
@@ -1101,20 +1100,13 @@ package com.etl.sink.jdbc;
 
 import com.etl.core.dialect.WriteMode;
 import com.etl.core.sink.AbstractSinkWriter;
-import com.etl.sink.jdbc.config.JdbcSinkConfig;
+import com.etl.jdbc.sink.configJdbcSinkConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.metrics.groups.SinkWriterMetricGroup;
-import org.apache.flink.types.Row;
 
-import java.io.IOException;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * JDBC Sink Writer 实现
@@ -1123,16 +1115,16 @@ import java.util.stream.Collectors;
 @Slf4j
 public class JdbcSinkWriter extends AbstractSinkWriter {
 
-    private final JdbcSinkConfig config;
-    private transient Connection connection;
-    private transient PreparedStatement statement;
-    private transient String[] columns;
-    private SinkWriterMetricGroup metricGroup;
+   private final JdbcSinkConfig config;
+   private transient Connection connection;
+   private transient PreparedStatement statement;
+   private transient String[] columns;
+   private SinkWriterMetricGroup metricGroup;
 
-    public JdbcSinkWriter(Sink.InitContext context, JdbcSinkConfig config) {
-        super(context, config.getBatchSize());
-        this.config = config;
-    }
+   public JdbcSinkWriter(Sink.InitContext context, JdbcSinkConfig config) {
+      super(context, config.getBatchSize());
+      this.config = config;
+   }
 }
 ```
 

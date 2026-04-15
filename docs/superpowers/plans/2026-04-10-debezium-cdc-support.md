@@ -67,7 +67,7 @@ flink-etl-sink-jdbc/src/test/java/com/etl/sink/jdbc/
 - [ ] **Step 1: 创建 Format SPI 接口**
 
 ```java
-package com.etl.source.kafka.format;
+package com.etl.kafka.source.format;
 
 import com.etl.core.schema.EtlSchema;
 import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDeserializationSchema;
@@ -122,9 +122,10 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 - [ ] **Step 1: 编写测试 - 加载不存在的格式应返回 null**
 
 ```java
-package com.etl.source.kafka.format;
+package com.etl.kafka.source.format;
 
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class KafkaFormatLoaderTest {
@@ -154,12 +155,11 @@ Expected: FAIL - KafkaFormatLoader 类不存在
 - [ ] **Step 3: 实现 KafkaFormatLoader**
 
 ```java
-package com.etl.source.kafka.format;
+package com.etl.kafka.source.format;
 
 import java.util.ServiceLoader;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Arrays;
 
 /**
  * Kafka Format Plugin 加载器
@@ -263,10 +263,11 @@ git mv flink-etl-source-kafka/src/main/java/com/etl/source/kafka/JsonToRowDeseri
 - [ ] **Step 2: 编写测试 - JsonFormatPlugin 应返回 "json" 标识符**
 
 ```java
-package com.etl.source.kafka.format;
+package com.etl.kafka.source.format;
 
 import com.etl.core.schema.EtlSchema;
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class JsonFormatPluginTest {
@@ -280,9 +281,9 @@ class JsonFormatPluginTest {
     @Test
     void testCreateDeserializer() {
         EtlSchema schema = EtlSchema.builder()
-            .field("id", "LONG")
-            .field("name", "STRING")
-            .build();
+                .field("id", "LONG")
+                .field("name", "STRING")
+                .build();
 
         JsonFormatPlugin plugin = new JsonFormatPlugin();
         assertNotNull(plugin.createDeserializer(schema));
@@ -301,7 +302,7 @@ Expected: FAIL - JsonFormatPlugin 类不存在
 - [ ] **Step 4: 实现 JsonFormatPlugin**
 
 ```java
-package com.etl.source.kafka.format;
+package com.etl.kafka.source.format;
 
 import com.etl.core.schema.EtlSchema;
 import com.google.auto.service.AutoService;
@@ -361,7 +362,7 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 - [ ] **Step 1: 编写测试 - INSERT 操作 (op='c')**
 
 ```java
-package com.etl.source.kafka.format;
+package com.etl.kafka.source.format;
 
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.utils.JsonUtils;
@@ -385,18 +386,18 @@ class DebeziumJsonDeserializationSchemaTest {
     void testInsertOperation() throws Exception {
         // 准备 schema
         EtlSchema schema = EtlSchema.builder()
-            .field("id", "LONG")
-            .field("name", "STRING")
-            .build();
+                .field("id", "LONG")
+                .field("name", "STRING")
+                .build();
 
         // 准备 Debezium INSERT 数据
         String debeziumJson = "{\"op\":\"c\",\"ts_ms\":1234567890,\"after\":{\"id\":1,\"name\":\"Alice\"}}";
 
         DebeziumJsonDeserializationSchema deserializer =
-            new DebeziumJsonDeserializationSchema(schema);
+                new DebeziumJsonDeserializationSchema(schema);
 
         ConsumerRecord<byte[], byte[]> record = new ConsumerRecord<>(
-            "test-topic", 0, 0, null, debeziumJson.getBytes(StandardCharsets.UTF_8)
+                "test-topic", 0, 0, null, debeziumJson.getBytes(StandardCharsets.UTF_8)
         );
 
         // Mock Collector
@@ -408,7 +409,8 @@ class DebeziumJsonDeserializationSchemaTest {
             }
 
             @Override
-            public void close() {}
+            public void close() {
+            }
         };
 
         deserializer.deserialize(record, collector);
@@ -434,7 +436,7 @@ Expected: FAIL - DebeziumJsonDeserializationSchema 类不存在
 - [ ] **Step 3: 实现 DebeziumJsonDeserializationSchema**
 
 ```java
-package com.etl.source.kafka.format;
+package com.etl.kafka.source.format;
 
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.JsonToRowConverter;
@@ -510,7 +512,7 @@ public class DebeziumJsonDeserializationSchema implements KafkaRecordDeserializa
                 return RowKind.DELETE;
             default:
                 throw new IllegalArgumentException(
-                    String.format("未知的 Debezium op 类型: '%s'，支持的操作: c, r, u, d", op)
+                        String.format("未知的 Debezium op 类型: '%s'，支持的操作: c, r, u, d", op)
                 );
         }
     }
@@ -627,10 +629,11 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 - [ ] **Step 1: 编写测试**
 
 ```java
-package com.etl.source.kafka.format;
+package com.etl.kafka.source.format;
 
 import com.etl.core.schema.EtlSchema;
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class DebeziumJsonFormatPluginTest {
@@ -644,8 +647,8 @@ class DebeziumJsonFormatPluginTest {
     @Test
     void testCreateDeserializer() {
         EtlSchema schema = EtlSchema.builder()
-            .field("id", "LONG")
-            .build();
+                .field("id", "LONG")
+                .build();
 
         DebeziumJsonFormatPlugin plugin = new DebeziumJsonFormatPlugin();
         assertNotNull(plugin.createDeserializer(schema));
@@ -664,7 +667,7 @@ Expected: FAIL
 - [ ] **Step 3: 实现 DebeziumJsonFormatPlugin**
 
 ```java
-package com.etl.source.kafka.format;
+package com.etl.kafka.source.format;
 
 import com.etl.core.schema.EtlSchema;
 import com.google.auto.service.AutoService;

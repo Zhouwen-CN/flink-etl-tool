@@ -167,7 +167,7 @@ package com.etl.source.mysql;
 import com.etl.core.localFileSourceConfig.SourceConfig;
 import com.etl.core.spi.SourcePlugin;
 import com.etl.core.spi.SplitStrategy;
-import com.etl.source.jdbc.JdbcSource;
+import source.com.etl.connector.jdbc.JdbcSource;
 import com.etl.source.jdbc.dialect.MySQLDialect;
 import com.google.auto.service.AutoService;  // 新增
 import lombok.extern.slf4j.Slf4j;

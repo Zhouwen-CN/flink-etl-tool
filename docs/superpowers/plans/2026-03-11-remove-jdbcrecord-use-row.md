@@ -37,7 +37,7 @@
 ```java
 package com.etl.source.jdbc;
 
-import com.etl.source.jdbc.RangeSplitState;
+import source.com.etl.connector.jdbc.RangeSplitState;
 import org.apache.flink.api.connector.source.SourceOutput;
 import org.apache.flink.connector.base.source.reader.RecordEmitter;
 import org.apache.flink.types.Row;
@@ -89,7 +89,7 @@ rm flink-etl-source/flink-etl-source-jdbc/src/main/java/com/etl/source/jdbc/Jdbc
 ```java
 package com.etl.source.jdbc;
 
-import com.etl.source.jdbc.RangeSplit;
+import source.com.etl.connector.jdbc.RangeSplit;
 import com.etl.core.source.BaseSplitReader;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
 import org.apache.flink.connector.base.source.reader.RecordsWithSplitIds;
@@ -205,8 +205,8 @@ private RecordsWithSplitIds<Row> fetchDataForSplit(RangeSplit split) throws SQLE
 ```java
 package com.etl.source.jdbc;
 
-import com.etl.source.jdbc.RangeSplit;
-import com.etl.source.jdbc.RangeSplitState;
+import source.com.etl.connector.jdbc.RangeSplit;
+import source.com.etl.connector.jdbc.RangeSplitState;
 import com.etl.core.source.BaseSourceReader;
 import com.etl.core.source.BaseSplitReader;
 import org.apache.flink.api.connector.source.SourceReaderContext;
@@ -284,8 +284,8 @@ package com.etl.source.jdbc;
 
 import com.etl.core.localFileSourceConfig.SourceConfig;
 import com.etl.source.jdbc.AbstractRangeSplitSource;
-import com.etl.source.jdbc.RangeEnumCheckpoint;
-import com.etl.source.jdbc.RangeSplit;
+import source.com.etl.connector.jdbc.RangeEnumCheckpoint;
+import source.com.etl.connector.jdbc.RangeSplit;
 import serde.com.etl.core.source.DefaultCheckpointSerializer;
 import serde.com.etl.core.source.DefaultSplitSerializer;
 import org.apache.commons.lang3.Range;

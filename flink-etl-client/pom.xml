@@ -16,13 +16,6 @@
     <description>客户端启动器，打包所有插件</description>
 
     <dependencies>
-        <!-- 核心框架 -->
-        <dependency>
-            <groupId>com.etl</groupId>
-            <artifactId>flink-etl-core</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
         <!-- 连接器插件 -->
         <dependency>
             <groupId>com.etl</groupId>
@@ -34,16 +27,7 @@
             <artifactId>connector-kafka</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.etl</groupId>
-            <artifactId>connector-localfile</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.etl</groupId>
-            <artifactId>connector-console</artifactId>
-            <version>${project.version}</version>
-        </dependency>
+
         <dependency>
             <groupId>com.etl</groupId>
             <artifactId>connector-http</artifactId>
@@ -51,7 +35,18 @@
         </dependency>
         <dependency>
             <groupId>com.etl</groupId>
+            <artifactId>connector-localfile</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.etl</groupId>
             <artifactId>connector-mock</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.etl</groupId>
+            <artifactId>connector-console</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -60,70 +55,6 @@
             <groupId>com.etl</groupId>
             <artifactId>flink-etl-transform</artifactId>
             <version>${project.version}</version>
-        </dependency>
-
-        <!-- Flink 依赖（重新声明为 compile scope，用于独立运行） -->
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-streaming-java</artifactId>
-            <version>${flink.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-clients</artifactId>
-            <version>${flink.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-connector-base</artifactId>
-            <version>${flink.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-table-common</artifactId>
-            <version>${flink.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-table-runtime</artifactId>
-            <version>${flink.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-runtime-web</artifactId>
-            <version>${flink.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-table-api-java-bridge</artifactId>
-            <version>${flink.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-table-planner-loader</artifactId>
-            <version>${flink.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.flink</groupId>
-            <artifactId>flink-connector-kafka</artifactId>
-            <version>${kafka.connector.version}</version>
-        </dependency>
-
-        <!-- SLF4J + Log4j2（重新声明为 compile scope，用于独立运行） -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-            <version>${log4j2.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-slf4j-impl</artifactId>
-            <version>${log4j2.version}</version>
         </dependency>
     </dependencies>
 

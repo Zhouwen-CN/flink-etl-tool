@@ -25,7 +25,6 @@
         <log4j2.version>2.20.0</log4j2.version>
 
         <mysql.connector.version>8.0.33</mysql.connector.version>
-        <oceanbase-client.version>2.4.16</oceanbase-client.version>
         <h2.version>2.3.232</h2.version>
         <commons-csv.version>1.10.0</commons-csv.version>
         <json-path.version>2.9.0</json-path.version>
@@ -50,13 +49,6 @@
                 <groupId>com.mysql</groupId>
                 <artifactId>mysql-connector-j</artifactId>
                 <version>${mysql.connector.version}</version>
-            </dependency>
-
-            <!-- OceanBase 驱动 -->
-            <dependency>
-                <groupId>com.oceanbase</groupId>
-                <artifactId>oceanbase-client</artifactId>
-                <version>${oceanbase-client.version}</version>
             </dependency>
 
             <!-- csv -->

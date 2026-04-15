@@ -31,11 +31,11 @@
 - `com/etl/sink/jdbc/` (sink 类，包名 com.etl.sink.jdbc)
 - `com/etl/connector/jdbc/dialect/` (dialect 类，包名 com.etl.connector.jdbc.dialect，新增)
 - `com/etl/connector/jdbc/converter/` (converter 类，包名 com.etl.connector.jdbc.converter，新增)
-- `com/etl/source/jdbc/utils/` (utils 类，包名 com.etl.source.jdbc.utils)
+- `com/etl/source/jdbc/utils/` (utils 类，包名 com.etl.jdbc.source.utils)
 
 ### 包名调整文件（需要修改 package 声明）
 - `com.etl.core.dialect.*` → `com.etl.connector.jdbc.dialect.*` (物理路径：com/etl/core/dialect/ → com/etl/connector/jdbc/dialect/)
-- `com.etl.core.jdbc.TypeConverter` → `com.etl.connector.jdbc.converter.TypeConverter` (物理路径：com/etl/core/jdbc/ → com/etl/connector/jdbc/converter/)
+- `com.etl.core.jdbc.TypeConverter` → `com.etl.core.schema.TypeConverter` (物理路径：com/etl/core/jdbc/ → com/etl/connector/jdbc/converter/)
 
 ### 删除文件
 - `flink-etl-source/` (整个目录，已迁移)
@@ -346,17 +346,17 @@ Path: `flink-etl-connector/connector-jdbc/src/main/java`
 
 ```
 old_string: import com.etl.core.dialect.JdbcDialect;
-new_string: import com.etl.connector.jdbc.dialect.JdbcDialect;
+new_string: import dialect.com.etl.connector.jdbc.JdbcDialect;
 ```
 
 ```
 old_string: import com.etl.core.dialect.JdbcDialectLoader;
-new_string: import com.etl.connector.jdbc.dialect.JdbcDialectLoader;
+new_string: import dialect.com.etl.connector.jdbc.JdbcDialectLoader;
 ```
 
 ```
 old_string: import com.etl.core.jdbc.TypeConverter;
-new_string: import com.etl.connector.jdbc.converter.TypeConverter;
+new_string: import com.etl.core.schema.TypeConverter;
 ```
 
 - [ ] **Step 4: 更新 JdbcSink.java 的 import 语句**

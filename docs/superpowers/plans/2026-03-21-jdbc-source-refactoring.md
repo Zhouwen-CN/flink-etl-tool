@@ -164,7 +164,7 @@ git commit -m "feat: 创建 JdbcSplitHelper 分片工具类"
 - [ ] **Step 1: 移除 dialect 字段**
 
 ```java
-package com.etl.source.jdbc.config;
+package com.etl.jdbc.source.config;
 
 import lombok.Builder;
 import lombok.Getter;
@@ -230,7 +230,7 @@ import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseSplitReader;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
-import com.etl.source.jdbc.config.JdbcSourceConfig;
+import config.source.com.etl.connector.jdbc.JdbcSourceConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
@@ -396,7 +396,7 @@ git commit -m "refactor: JdbcSource 移除 dialect 参数，内联 inferType 逻
 package com.etl.source.jdbc;
 
 import com.etl.core.source.BaseSplitEnumerator;
-import com.etl.source.jdbc.config.JdbcSourceConfig;
+import config.source.com.etl.connector.jdbc.JdbcSourceConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.Range;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
@@ -511,7 +511,7 @@ git commit -m "refactor: JdbcSplitEnumerator 使用 JdbcSplitHelper"
 package com.etl.source.jdbc;
 
 import com.etl.core.source.BaseSplitReader;
-import com.etl.source.jdbc.config.JdbcSourceConfig;
+import config.source.com.etl.connector.jdbc.JdbcSourceConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
 import org.apache.flink.connector.base.source.reader.RecordsWithSplitIds;

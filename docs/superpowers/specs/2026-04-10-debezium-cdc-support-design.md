@@ -147,7 +147,7 @@ flink-etl-sink-jdbc/
 **位置**: `flink-etl-source-kafka/src/main/java/com/etl/source/kafka/format/KafkaFormatPlugin.java`
 
 ```java
-package com.etl.source.kafka.format;
+package com.etl.kafka.source.format;
 
 import com.etl.core.schema.EtlSchema;
 import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDeserializationSchema;
@@ -180,7 +180,7 @@ public interface KafkaFormatPlugin {
 **位置**: `flink-etl-source-kafka/src/main/java/com/etl/source/kafka/format/JsonFormatPlugin.java`
 
 ```java
-package com.etl.source.kafka.format;
+package com.etl.kafka.source.format;
 
 import com.etl.core.schema.EtlSchema;
 import com.google.auto.service.AutoService;
@@ -211,7 +211,7 @@ public class JsonFormatPlugin implements KafkaFormatPlugin {
 **位置**: `flink-etl-source-kafka/src/main/java/com/etl/source/kafka/format/DebeziumJsonFormatPlugin.java`
 
 ```java
-package com.etl.source.kafka.format;
+package com.etl.kafka.source.format;
 
 import com.etl.core.schema.EtlSchema;
 import com.google.auto.service.AutoService;
@@ -242,7 +242,7 @@ public class DebeziumJsonFormatPlugin implements KafkaFormatPlugin {
 **位置**: `flink-etl-source-kafka/src/main/java/com/etl/source/kafka/format/DebeziumJsonDeserializationSchema.java`
 
 ```java
-package com.etl.source.kafka.format;
+package com.etl.kafka.source.format;
 
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.JsonToRowConverter;
@@ -317,7 +317,7 @@ public class DebeziumJsonDeserializationSchema implements KafkaRecordDeserializa
                 return RowKind.DELETE;
             default:
                 throw new IllegalArgumentException(
-                    String.format("未知的 Debezium op 类型: '%s'，支持的操作: c, r, u, d", op)
+                        String.format("未知的 Debezium op 类型: '%s'，支持的操作: c, r, u, d", op)
                 );
         }
     }
@@ -335,12 +335,11 @@ public class DebeziumJsonDeserializationSchema implements KafkaRecordDeserializa
 **位置**: `flink-etl-source-kafka/src/main/java/com/etl/source/kafka/format/KafkaFormatLoader.java`
 
 ```java
-package com.etl.source.kafka.format;
+package com.etl.kafka.source.format;
 
 import java.util.ServiceLoader;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Arrays;
 
 /**
  * Kafka Format Plugin 加载器

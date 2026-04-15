@@ -1,0 +1,38 @@
+package com.etl.connector.jdbc.source.config;
+
+import com.etl.connector.jdbc.dialect.JdbcDialect;
+import com.etl.connector.jdbc.source.enums.SplitStrategy;
+import lombok.Builder;
+import lombok.Getter;
+
+import java.io.Serializable;
+
+/**
+ * JDBC Source 配置
+ */
+@Getter
+@Builder
+public class JdbcSourceConfig implements Serializable {
+    private static final long serialVersionUID = 1L;
+
+    /** 数据库连接 URL */
+    private final String url;
+    /** 用户名 */
+    private final String username;
+    /** 密码 */
+    private final String password;
+    /** 表名 */
+    private final String table;
+    /** 自定义 SQL */
+    private final String sql;
+    /** 分片列名（可选），不配置则自动从主键推断 */
+    private final String splitKey;
+    /** 分片策略，根据 splitColumn 是否配置决定 */
+    private final SplitStrategy splitStrategy;
+    /** 批大小，默认100 */
+    private final Integer batchSize;
+    /** 查询超时 */
+    private final Integer queryTimeout;
+    /** 数据库方言 */
+    private final JdbcDialect dialect;
+}
