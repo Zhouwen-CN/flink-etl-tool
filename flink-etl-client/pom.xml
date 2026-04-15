@@ -23,47 +23,35 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- Source 插件 -->
+        <!-- 连接器插件 -->
         <dependency>
             <groupId>com.etl</groupId>
-            <artifactId>flink-etl-source-jdbc</artifactId>
+            <artifactId>connector-jdbc</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.etl</groupId>
-            <artifactId>flink-etl-source-localfile</artifactId>
+            <artifactId>connector-kafka</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.etl</groupId>
-            <artifactId>flink-etl-source-http</artifactId>
+            <artifactId>connector-localfile</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.etl</groupId>
-            <artifactId>flink-etl-source-kafka</artifactId>
+            <artifactId>connector-console</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.etl</groupId>
-            <artifactId>flink-etl-source-mock</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <!-- Sink 插件 -->
-        <dependency>
-            <groupId>com.etl</groupId>
-            <artifactId>flink-etl-sink-console</artifactId>
+            <artifactId>connector-http</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.etl</groupId>
-            <artifactId>flink-etl-sink-jdbc</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.etl</groupId>
-            <artifactId>flink-etl-sink-kafka</artifactId>
+            <artifactId>connector-mock</artifactId>
             <version>${project.version}</version>
         </dependency>
 
