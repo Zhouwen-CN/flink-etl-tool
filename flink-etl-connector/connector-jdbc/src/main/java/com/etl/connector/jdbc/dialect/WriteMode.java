@@ -1,4 +1,4 @@
-package com.etl.core.dialect;
+package com.etl.connector.jdbc.dialect;
 
 /**
  * JDBC Sink 写入模式

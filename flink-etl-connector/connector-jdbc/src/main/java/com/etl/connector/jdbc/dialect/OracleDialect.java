@@ -1,4 +1,4 @@
-package com.etl.core.dialect;
+package com.etl.connector.jdbc.dialect;
 
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;

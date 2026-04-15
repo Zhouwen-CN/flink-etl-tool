@@ -1,4 +1,4 @@
-package com.etl.core.dialect;
+package com.etl.connector.jdbc.dialect;
 
 import java.io.Serializable;
 import java.util.Arrays;
