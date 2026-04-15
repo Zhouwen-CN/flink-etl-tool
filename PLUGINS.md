@@ -936,15 +936,21 @@ CDC 模式用于处理带有 RowKind 标记的数据（如 Debezium CDC 数据�
 
 **CDC 模式行为：**
 - 根据 Row 的 RowKind 执行对应操作：
-  - INSERT → 执行 `INSERT INTO ... VALUES ...`
-  - UPDATE_AFTER → 执行 `UPDATE ... SET ... WHERE ...`
-  - DELETE → 执行 `DELETE FROM ... WHERE ...`
-- `keyFields` 用于 UPDATE 和 DELETE 的 WHERE 条件
+  - INSERT 和 UPDATE_AFTER → 执行 UPSERT SQL（原子操作，存在则更新，不存在则插入）
+  - DELETE → 执行 DELETE SQL
+- `keyFields` 用于 UPSERT 的主键匹配和 DELETE 的 WHERE 条件
 - 适用于 Kafka Source 使用 `format: "debezium-json"` 的场景
 
+**使用 upsert SQL 的优势：**
+- 原子性：一条 SQL 完成插入或更新，避免并发问题
+- 简化逻辑：统一处理 INSERT 和 UPDATE，参数设置相同
+- 性能优化：数据库层面的原子操作更高效
+
 **支持的数据库：**
-- MySQL：完整支持 CDC 模式
-- PostgreSQL、Oracle、H2：暂不支持 CDC 模式（后续版本支持）
+- MySQL：使用 `INSERT ... ON DUPLICATE KEY UPDATE` 语法
+- PostgreSQL：使用 `INSERT ... ON CONFLICT DO UPDATE` 语法
+- Oracle：使用 `MERGE INTO` 语法
+- H2：完整支持
 
 ---
 
