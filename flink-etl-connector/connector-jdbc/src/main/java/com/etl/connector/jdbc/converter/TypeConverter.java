@@ -1,4 +1,4 @@
-package com.etl.core.schema;
+package com.etl.connector.jdbc.converter;
 
 import com.etl.core.exception.TypeConversionException;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
