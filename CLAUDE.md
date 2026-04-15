@@ -61,6 +61,7 @@ EtlClient.main()
        └─ ConfigParser.parse()        # 校验配置完整性（outputTable/inputTable 链路）
             └─ JobExecutor.execute()
                  ├─ 创建 StreamExecutionEnvironment（batch/streaming 模式）
+                 ├─ 加载所有 UDF（通过 ServiceLoader 自动扫描）
                  └─ JobBuilder.build()
                       ├─ 1. Source → DataStream<Row> → Table（注册为 outputTable）
                       ├─ 2. Transform 链（SQL 引用的表名就是上游的 outputTable）
@@ -101,7 +102,6 @@ EtlClient.main()
 
 使用 `AbstractSink` + `AbstractSinkWriter<ConfigT>` 基类，采用 at-least-once 语义：
 
-- 参数校验集中在 Sink 构造函数
 - `AbstractSinkWriter` 只提供 `context` 和 `config` 字段访问，子类自行实现 `write()`、`flush()`、`close()`
 - `context` 可获取 subtaskId、并行度、metricGroup
 - 异常时抛出 `IOException`，Flink 从 checkpoint 重试
@@ -122,20 +122,22 @@ EtlClient.main()
 ### 扩展新 Source
 
 1. 在 `flink-etl-connector/` 下创建新模块，依赖 `flink-etl-core`
-2. 实现 `SourcePlugin`，添加 `@AutoService(SourcePlugin.class)` 注解
-3. 继承 `AbstractSplitSource` 实现分片读取
+2. 包名规则：com.etl.connector.`模块名`.source
+3. 实现 `SourcePlugin`，添加 `@AutoService(SourcePlugin.class)` 注解
+4. 继承 `AbstractSplitSource` 实现分片读取
    - 关系型数据库：参考 `connector-jdbc` 模块的 `JdbcSource`，分片逻辑在 Enumerator 的 `start()` 中计算
    - 文件类：参考 `connector-localfile` 模块的 `LocalFileSource`
-4. 配置封装类实现 `Serializable`，参数校验集中在 Source 构造函数
-5. 在 `flink-etl-client/pom.xml` 添加模块依赖
+5. 配置封装类实现 `Serializable`，参数校验集中在 Source 构造函数
+6. 在 `flink-etl-client/pom.xml` 添加模块依赖
 
 ### 扩展新 Sink
 
 1. 在 `flink-etl-connector/` 下创建新模块，依赖 `flink-etl-core`
-2. 实现 `SinkPlugin`，添加 `@AutoService(SinkPlugin.class)` 注解
-3. 继承 `AbstractSink`，在构造函数中校验参数
-4. 继承 `AbstractSinkWriter<ConfigT>` 实现 `write()`、`flush()`、`close()`
-5. 在 `flink-etl-client/pom.xml` 添加模块依赖
+2. 包名规则：com.etl.connector.`模块名`.sink
+3. 实现 `SinkPlugin`，添加 `@AutoService(SinkPlugin.class)` 注解
+4. 继承 `AbstractSink`，在构造函数中校验参数
+5. 继承 `AbstractSinkWriter<ConfigT>` 实现 `write()`、`flush()`、`close()`
+6. 在 `flink-etl-client/pom.xml` 添加模块依赖
 
 ### 扩展新 UDF
 

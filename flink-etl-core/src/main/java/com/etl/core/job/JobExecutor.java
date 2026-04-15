@@ -1,9 +1,9 @@
 package com.etl.core.job;
 
-import com.etl.core.config.ExecutionMode;
 import com.etl.core.config.JobConfig;
 import com.etl.core.config.JobMeta;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.CoreOptions;
 import org.apache.flink.configuration.ExecutionOptions;
@@ -56,8 +56,8 @@ public class JobExecutor {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         Configuration configuration = new Configuration();
 
-        ExecutionMode mode = jobConfig.getMode();
-        configuration.set(ExecutionOptions.RUNTIME_MODE, mode.getRuntimeMode());
+        RuntimeExecutionMode runtimeMode = jobConfig.getMode().getRuntimeMode();
+        configuration.set(ExecutionOptions.RUNTIME_MODE, runtimeMode);
 
         Integer parallelism = jobConfig.getParallelism();
         if (parallelism != null) {
@@ -66,23 +66,25 @@ public class JobExecutor {
             configuration.set(TaskManagerOptions.NUM_TASK_SLOTS, parallelism);
             log.info("设置 Job 并行度：{}, TaskManager slots: {}", parallelism, parallelism);
         }
-        log.info("创建 Flink 执行环境：mode={}, parallelism={}", mode, parallelism);
+        log.info("创建 Flink 执行环境：mode={}, parallelism={}", runtimeMode, parallelism);
 
         env.configure(configuration);
 
-        // 开启检查点
-        env.enableCheckpointing(Duration.ofMinutes(3).toMillis(), CheckpointingMode.AT_LEAST_ONCE);
-        CheckpointConfig checkpointConfig = env.getCheckpointConfig();
-        // 检查点超时
-        checkpointConfig.setCheckpointTimeout(Duration.ofMinutes(3).toMillis());
-        // 上一个checkpoint结束之后,多久才能发出另一个checkpoint
-        checkpointConfig.setMinPauseBetweenCheckpoints(500L);
-        // 检查点最大并发数量
-        checkpointConfig.setMaxConcurrentCheckpoints(1);
-        // 可容忍检查点失败次数
-        checkpointConfig.setTolerableCheckpointFailureNumber(3);
-        // 取消作业时,是否保留checkpoint数据
-        checkpointConfig.setExternalizedCheckpointCleanup(CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
+        // steaming 模式下才开启检查点
+        if (runtimeMode == RuntimeExecutionMode.STREAMING) {
+            env.enableCheckpointing(Duration.ofMinutes(3).toMillis(), CheckpointingMode.AT_LEAST_ONCE);
+            CheckpointConfig checkpointConfig = env.getCheckpointConfig();
+            // 检查点超时
+            checkpointConfig.setCheckpointTimeout(Duration.ofMinutes(3).toMillis());
+            // 上一个checkpoint结束之后,多久才能发出另一个checkpoint
+            checkpointConfig.setMinPauseBetweenCheckpoints(500L);
+            // 检查点最大并发数量
+            checkpointConfig.setMaxConcurrentCheckpoints(1);
+            // 可容忍检查点失败次数
+            checkpointConfig.setTolerableCheckpointFailureNumber(3);
+            // 取消作业时,是否保留checkpoint数据
+            checkpointConfig.setExternalizedCheckpointCleanup(CheckpointConfig.ExternalizedCheckpointCleanup.RETAIN_ON_CANCELLATION);
+        }
 
         return env;
     }
