@@ -169,9 +169,9 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
 
         switch (kind) {
             case INSERT:
-                return config.getDialect().getInsertSql(table, columns);
             case UPDATE_AFTER:
-                return config.getDialect().getUpdateSql(table, columns, keyFields);
+                // INSERT 和 UPDATE_AFTER 都使用 upsert SQL（原子操作，存在则更新，不存在则插入）
+                return config.getDialect().getUpsertSql(table, columns, keyFields);
             case DELETE:
                 return config.getDialect().getDeleteSql(table, keyFields);
             default:
