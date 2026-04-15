@@ -185,32 +185,20 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
      * 设置 CDC 参数
      */
     private void setCdcParameters(PreparedStatement stmt, Row row, RowKind kind) throws SQLException {
-        List<String> keyFields = config.getKeyFields();
         int index = 1;
 
         switch (kind) {
             case INSERT:
-                // INSERT: 设置所有字段
+            case UPDATE_AFTER:
+                // INSERT 和 UPDATE_AFTER 都使用 upsert SQL，参数顺序：所有字段值
                 for (String col : columns) {
                     stmt.setObject(index++, row.getField(col));
                 }
                 break;
 
-            case UPDATE_AFTER:
-                // UPDATE: SET 部分用非主键字段，WHERE 用主键字段
-                for (String col : columns) {
-                    if (!keyFields.contains(col)) {
-                        stmt.setObject(index++, row.getField(col));
-                    }
-                }
-                for (String key : keyFields) {
-                    stmt.setObject(index++, row.getField(key));
-                }
-                break;
-
             case DELETE:
                 // DELETE: 只设置主键字段（WHERE 条件）
-                for (String key : keyFields) {
+                for (String key : config.getKeyFields()) {
                     stmt.setObject(index++, row.getField(key));
                 }
                 break;
