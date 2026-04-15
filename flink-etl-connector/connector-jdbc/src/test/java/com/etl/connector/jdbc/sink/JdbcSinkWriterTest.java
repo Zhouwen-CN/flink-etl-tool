@@ -18,6 +18,7 @@ import java.sql.PreparedStatement;
 import java.util.Arrays;
 
 import static org.mockito.Mockito.*;
+import static org.mockito.AdditionalMatchers.*;
 
 /**
  * JdbcSinkWriter 执行测试
@@ -307,8 +308,8 @@ public class JdbcSinkWriterTest {
     }
 
     /**
-     * 测试 CDC INSERT 模式当前行为
-     * 验证 CDC INSERT 模式生成 INSERT SQL
+     * 测试 CDC INSERT 模式使用 upsert SQL
+     * 验证 CDC INSERT 模式生成 UPSERT SQL（原子操作）
      */
     @Test
     public void testCdcInsertModeCurrentBehavior() throws Exception {
@@ -344,8 +345,12 @@ public class JdbcSinkWriterTest {
             row.setKind(RowKind.INSERT);
             writer.write(row, null);
 
-            // 验证 INSERT SQL
-            verify(mockConnection).prepareStatement(eq("INSERT INTO `test_table` (`name`, `id`) VALUES (?, ?)"));
+            // 验证 UPSERT SQL（包含 INSERT 和 ON DUPLICATE KEY UPDATE）
+            verify(mockConnection).prepareStatement(contains("INSERT INTO `test_table`"));
+            verify(mockConnection).prepareStatement(contains("ON DUPLICATE KEY UPDATE"));
+
+            // 参数设置：所有字段值（id 和 name）
+            verify(mockStatement, times(2)).setObject(anyInt(), any());
 
             when(mockStatement.executeBatch()).thenReturn(new int[]{1});
             writer.flush(false);
@@ -358,8 +363,8 @@ public class JdbcSinkWriterTest {
     }
 
     /**
-     * 测试 CDC UPDATE_AFTER 模式当前行为
-     * 验证 CDC UPDATE_AFTER 模式生成 UPDATE SQL
+     * 测试 CDC UPDATE_AFTER 模式使用 upsert SQL
+     * 验证 CDC UPDATE_AFTER 模式生成 UPSERT SQL（原子操作）
      */
     @Test
     public void testCdcUpdateAfterModeCurrentBehavior() throws Exception {
@@ -395,8 +400,12 @@ public class JdbcSinkWriterTest {
             row.setKind(RowKind.UPDATE_AFTER);
             writer.write(row, null);
 
-            // 验证 UPDATE SQL
-            verify(mockConnection).prepareStatement(eq("UPDATE `test_table` SET `name` = ? WHERE `id` = ?"));
+            // 验证 UPSERT SQL（包含 INSERT 和 ON DUPLICATE KEY UPDATE）
+            verify(mockConnection).prepareStatement(contains("INSERT INTO `test_table`"));
+            verify(mockConnection).prepareStatement(contains("ON DUPLICATE KEY UPDATE"));
+
+            // 参数设置：所有字段值（id 和 name）
+            verify(mockStatement, times(2)).setObject(anyInt(), any());
 
             when(mockStatement.executeBatch()).thenReturn(new int[]{1});
             writer.flush(false);
