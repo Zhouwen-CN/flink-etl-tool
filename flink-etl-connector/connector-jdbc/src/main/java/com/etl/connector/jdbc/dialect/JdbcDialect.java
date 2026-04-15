@@ -68,29 +68,6 @@ public interface JdbcDialect extends Serializable {
     }
 
     /**
-     * 生成 UPDATE SQL
-     * @param table 表名
-     * @param columns 所有列名数组
-     * @param keyFields 主键/唯一键字段列表（用于 WHERE 条件）
-     * @return UPDATE SQL
-     */
-    default String getUpdateSql(String table, String[] columns, List<String> keyFields){
-        // UPDATE table SET col1=?, col2=? WHERE key1=? AND key2=?
-
-        String setClause = Arrays.stream(columns)
-                .filter(col -> !keyFields.contains(col))
-                .map(col -> quoteIdentifier(col) + " = ?")
-                .collect(Collectors.joining(", "));
-
-        String whereClause = keyFields.stream()
-                .map(key -> quoteIdentifier(key) + " = ?")
-                .collect(Collectors.joining(" AND "));
-
-        return String.format("UPDATE %s SET %s WHERE %s",
-                quoteIdentifier(table), setClause, whereClause);
-    }
-
-    /**
      * 生成 DELETE SQL
      * @param table 表名
      * @param keyFields 主键/唯一键字段列表（用于 WHERE 条件）

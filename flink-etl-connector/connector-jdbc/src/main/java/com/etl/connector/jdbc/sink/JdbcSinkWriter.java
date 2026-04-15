@@ -34,8 +34,16 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
      */
     private transient PreparedStatement normalStatement;
 
+    /**
+     * CDC SQL 类型
+     */
+    private enum CdcSqlType {
+        UPSERT,  // INSERT 和 UPDATE_AFTER 共用
+        DELETE   // DELETE 专用
+    }
+
     /** CDC 模式专用字段 */
-    private transient Map<RowKind, PreparedStatement> cdcStatements;
+    private transient Map<CdcSqlType, PreparedStatement> cdcStatements;
 
     /** 批量大小 */
     private final int batchSize;
@@ -137,60 +145,72 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
      */
     private void writeCdcRow(Row row) throws SQLException {
         RowKind kind = row.getKind();
+        CdcSqlType sqlType = toCdcSqlType(kind);
 
         // 获取或创建 PreparedStatement
-        PreparedStatement stmt = getCdcStatement(kind);
+        PreparedStatement stmt = getCdcStatement(sqlType);
 
         // 设置参数并 addBatch
-        setCdcParameters(stmt, row, kind);
+        setCdcParameters(stmt, row, sqlType);
         stmt.addBatch();
     }
 
     /**
-     * 获取或创建 CDC Statement
+     * 将 RowKind 映射到 CdcSqlType
      */
-    private PreparedStatement getCdcStatement(RowKind kind) throws SQLException {
-        if (!cdcStatements.containsKey(kind)) {
-            String sql = buildCdcSql(kind);
-            PreparedStatement stmt = connection.prepareStatement(sql);
-            cdcStatements.put(kind, stmt);
-            log.info("CDC SQL 创建: kind={}, sql={}", kind, sql);
-        }
-
-        return cdcStatements.get(kind);
-    }
-
-    /**
-     * 构建 CDC SQL
-     */
-    private String buildCdcSql(RowKind kind) {
-        String table = config.getTable();
-        List<String> keyFields = config.getKeyFields();
-
+    private CdcSqlType toCdcSqlType(RowKind kind) {
         switch (kind) {
             case INSERT:
             case UPDATE_AFTER:
-                // INSERT 和 UPDATE_AFTER 都使用 upsert SQL（原子操作，存在则更新，不存在则插入）
-                return config.getDialect().getUpsertSql(table, columns, keyFields);
+                return CdcSqlType.UPSERT;
             case DELETE:
-                return config.getDialect().getDeleteSql(table, keyFields);
+                return CdcSqlType.DELETE;
             default:
                 throw new IllegalArgumentException(
-                    String.format("CDC 模式不支持 RowKind: %s，支持: INSERT, UPDATE_AFTER, DELETE", kind)
+                    String.format("CDC 模式不支持 RowKind: %s", kind)
                 );
         }
     }
 
     /**
+     * 获取或创建 CDC Statement
+     */
+    private PreparedStatement getCdcStatement(CdcSqlType sqlType) throws SQLException {
+        if (!cdcStatements.containsKey(sqlType)) {
+            String sql = buildCdcSql(sqlType);
+            PreparedStatement stmt = connection.prepareStatement(sql);
+            cdcStatements.put(sqlType, stmt);
+            log.info("CDC SQL 创建: type={}, sql={}", sqlType, sql);
+        }
+
+        return cdcStatements.get(sqlType);
+    }
+
+    /**
+     * 构建 CDC SQL
+     */
+    private String buildCdcSql(CdcSqlType sqlType) {
+        String table = config.getTable();
+        List<String> keyFields = config.getKeyFields();
+
+        switch (sqlType) {
+            case UPSERT:
+                return config.getDialect().getUpsertSql(table, columns, keyFields);
+            case DELETE:
+                return config.getDialect().getDeleteSql(table, keyFields);
+        }
+        throw new IllegalStateException("未知的 CdcSqlType: " + sqlType);
+    }
+
+    /**
      * 设置 CDC 参数
      */
-    private void setCdcParameters(PreparedStatement stmt, Row row, RowKind kind) throws SQLException {
+    private void setCdcParameters(PreparedStatement stmt, Row row, CdcSqlType sqlType) throws SQLException {
         int index = 1;
 
-        switch (kind) {
-            case INSERT:
-            case UPDATE_AFTER:
-                // INSERT 和 UPDATE_AFTER 都使用 upsert SQL，参数顺序：所有字段值
+        switch (sqlType) {
+            case UPSERT:
+                // UPSERT: 设置所有字段值
                 for (String col : columns) {
                     stmt.setObject(index++, row.getField(col));
                 }
@@ -202,9 +222,6 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
                     stmt.setObject(index++, row.getField(key));
                 }
                 break;
-
-            default:
-                throw new IllegalArgumentException("CDC 模式不支持 RowKind: " + kind);
         }
     }
 
