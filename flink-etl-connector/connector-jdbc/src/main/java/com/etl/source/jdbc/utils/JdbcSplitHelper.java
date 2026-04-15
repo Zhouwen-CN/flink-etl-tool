@@ -1,6 +1,6 @@
 package com.etl.source.jdbc.utils;
 
-import com.etl.core.dialect.JdbcDialect;
+import com.etl.connector.jdbc.dialect.JdbcDialect;
 import com.etl.source.jdbc.RangeSplit;
 import lombok.extern.slf4j.Slf4j;
 

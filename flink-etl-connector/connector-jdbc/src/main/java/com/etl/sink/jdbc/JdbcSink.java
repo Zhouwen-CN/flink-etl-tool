@@ -1,9 +1,9 @@
 package com.etl.sink.jdbc;
 
 import com.etl.core.config.SinkConfig;
-import com.etl.core.dialect.JdbcDialect;
-import com.etl.core.dialect.JdbcDialectLoader;
-import com.etl.core.dialect.WriteMode;
+import com.etl.connector.jdbc.dialect.JdbcDialect;
+import com.etl.connector.jdbc.dialect.JdbcDialectLoader;
+import com.etl.connector.jdbc.dialect.WriteMode;
 import com.etl.core.exception.NoPrimaryKeyException;
 import com.etl.core.sink.AbstractSink;
 import com.etl.core.utils.SqlUtils;

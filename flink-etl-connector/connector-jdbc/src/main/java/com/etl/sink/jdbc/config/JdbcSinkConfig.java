@@ -1,7 +1,7 @@
 package com.etl.sink.jdbc.config;
 
-import com.etl.core.dialect.JdbcDialect;
-import com.etl.core.dialect.WriteMode;
+import com.etl.connector.jdbc.dialect.JdbcDialect;
+import com.etl.connector.jdbc.dialect.WriteMode;
 import lombok.Builder;
 import lombok.Getter;
 

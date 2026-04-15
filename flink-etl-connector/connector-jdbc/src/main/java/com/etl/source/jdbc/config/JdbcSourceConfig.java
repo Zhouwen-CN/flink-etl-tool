@@ -1,6 +1,6 @@
 package com.etl.source.jdbc.config;
 
-import com.etl.core.dialect.JdbcDialect;
+import com.etl.connector.jdbc.dialect.JdbcDialect;
 import com.etl.source.jdbc.enums.SplitStrategy;
 import lombok.Builder;
 import lombok.Getter;

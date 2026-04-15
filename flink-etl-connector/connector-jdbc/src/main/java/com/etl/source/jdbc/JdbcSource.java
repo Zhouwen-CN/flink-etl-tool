@@ -1,8 +1,8 @@
 package com.etl.source.jdbc;
 
 import com.etl.core.config.SourceConfig;
-import com.etl.core.dialect.JdbcDialect;
-import com.etl.core.dialect.JdbcDialectLoader;
+import com.etl.connector.jdbc.dialect.JdbcDialect;
+import com.etl.connector.jdbc.dialect.JdbcDialectLoader;
 import com.etl.core.exception.NoPrimaryKeyException;
 import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseSplitReader;

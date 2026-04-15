@@ -1,6 +1,6 @@
 package com.etl.sink.jdbc;
 
-import com.etl.core.dialect.WriteMode;
+import com.etl.connector.jdbc.dialect.WriteMode;
 import com.etl.core.sink.AbstractSinkWriter;
 import com.etl.sink.jdbc.config.JdbcSinkConfig;
 import lombok.extern.slf4j.Slf4j;

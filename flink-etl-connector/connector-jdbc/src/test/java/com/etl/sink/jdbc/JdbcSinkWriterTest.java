@@ -1,7 +1,7 @@
 package com.etl.sink.jdbc;
 
-import com.etl.core.dialect.MySQLDialect;
-import com.etl.core.dialect.WriteMode;
+import com.etl.connector.jdbc.dialect.MySQLDialect;
+import com.etl.connector.jdbc.dialect.WriteMode;
 import com.etl.sink.jdbc.config.JdbcSinkConfig;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.metrics.groups.SinkWriterMetricGroup;

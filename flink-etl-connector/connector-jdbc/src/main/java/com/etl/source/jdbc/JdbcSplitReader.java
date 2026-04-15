@@ -1,7 +1,7 @@
 package com.etl.source.jdbc;
 
 import com.etl.core.schema.SqlTypeConverter;
-import com.etl.core.schema.TypeConverter;
+import com.etl.connector.jdbc.converter.TypeConverter;
 import com.etl.core.source.BaseSplitReader;
 import com.etl.source.jdbc.config.JdbcSourceConfig;
 import lombok.extern.slf4j.Slf4j;
