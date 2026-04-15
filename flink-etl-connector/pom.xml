@@ -25,4 +25,13 @@
         <module>connector-http</module>
         <module>connector-mock</module>
     </modules>
+
+    <dependencies>
+        <!-- 核心模块 -->
+        <dependency>
+            <groupId>com.etl</groupId>
+            <artifactId>flink-etl-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
 </project>
