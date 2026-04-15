@@ -43,16 +43,13 @@ mvn clean install -DskipTests
 flink-etl-tool/
 ├── flink-etl-core/               # 核心框架
 ├── flink-etl-client/             # 客户端启动器
-├── flink-etl-source/             # Source 插件
-│   ├── flink-etl-source-jdbc/    # JDBC Source
-│   ├── flink-etl-source-localfile/  # 本地文件 Source
-│   ├── flink-etl-source-http/    # HTTP Source
-│   ├── flink-etl-source-kafka/   # Kafka Source
-│   └── flink-etl-source-mock/    # Mock Source（测试/演示用）
-├── flink-etl-sink/               # Sink 插件
-│   ├── flink-etl-sink-console/   # Console Sink
-│   ├── flink-etl-sink-jdbc/      # JDBC Sink
-│   └── flink-etl-sink-kafka/     # Kafka Sink
+├── flink-etl-connector/          # 连接器插件
+│   ├── connector-jdbc/           # JDBC 连接器（Source + Sink + Dialect）
+│   ├── connector-kafka/          # Kafka 连接器（Source + Sink）
+│   ├── connector-localfile/      # 本地文件连接器（Source）
+│   ├── connector-console/        # Console 连接器（Sink）
+│   ├── connector-http/           # HTTP 连接器（Source）
+│   └── connector-mock/           # Mock 连接器（Source）
 └── flink-etl-transform/          # Transform 插件（SQL Transform）
 ```
 
@@ -111,7 +108,7 @@ EtlClient.main()
 
 ### 数据库方言抽象
 
-`flink-etl-core/dialect/` 下的 `JdbcDialect` 接口封装各数据库差异：
+`connector-jdbc` 模块中的 `JdbcDialect` 接口封装各数据库差异：
 
 - `MySQLDialect` — backtick 转义、`ON DUPLICATE KEY UPDATE` upsert
 - `PostgreSQLDialect` — 双引号转义、`ON CONFLICT` upsert
@@ -124,17 +121,17 @@ EtlClient.main()
 
 ### 扩展新 Source
 
-1. 在 `flink-etl-source/` 下创建新模块，依赖 `flink-etl-core`
+1. 在 `flink-etl-connector/` 下创建新模块，依赖 `flink-etl-core`
 2. 实现 `SourcePlugin`，添加 `@AutoService(SourcePlugin.class)` 注解
 3. 继承 `AbstractSplitSource` 实现分片读取
-   - 关系型数据库：参考 `JdbcSource`，分片逻辑在 Enumerator 的 `start()` 中计算
-   - 文件类：参考 `LocalFileSource`
+   - 关系型数据库：参考 `connector-jdbc` 模块的 `JdbcSource`，分片逻辑在 Enumerator 的 `start()` 中计算
+   - 文件类：参考 `connector-localfile` 模块的 `LocalFileSource`
 4. 配置封装类实现 `Serializable`，参数校验集中在 Source 构造函数
 5. 在 `flink-etl-client/pom.xml` 添加模块依赖
 
 ### 扩展新 Sink
 
-1. 在 `flink-etl-sink/` 下创建新模块，依赖 `flink-etl-core`
+1. 在 `flink-etl-connector/` 下创建新模块，依赖 `flink-etl-core`
 2. 实现 `SinkPlugin`，添加 `@AutoService(SinkPlugin.class)` 注解
 3. 继承 `AbstractSink`，在构造函数中校验参数
 4. 继承 `AbstractSinkWriter<ConfigT>` 实现 `write()`、`flush()`、`close()`
