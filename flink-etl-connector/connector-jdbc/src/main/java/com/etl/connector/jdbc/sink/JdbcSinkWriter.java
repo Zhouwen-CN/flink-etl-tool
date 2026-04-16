@@ -1,61 +1,34 @@
 package com.etl.connector.jdbc.sink;
 
-import com.etl.connector.jdbc.dialect.WriteMode;
 import com.etl.core.sink.AbstractSinkWriter;
 import com.etl.connector.jdbc.sink.config.JdbcSinkConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.types.Row;
-import org.apache.flink.types.RowKind;
 
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 /**
  * JDBC Sink Writer 实现
- * 管理数据库连接和批量写入
+ * 简化为调用 OutputFormat
  */
 @Slf4j
 public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
 
     private static final String FIELD_FILTER_PREFIX = "__";
     private final transient Connection connection;
+    private final JdbcOutputFormat<Row> outputFormat;
     private transient String[] columns;
-
-    /**
-     * INSERT/UPSERT 模式专用字段
-     */
-    private transient PreparedStatement normalStatement;
-
-    /**
-     * CDC SQL 类型
-     */
-    private enum CdcSqlType {
-        UPSERT,  // INSERT 和 UPDATE_AFTER 共用
-        DELETE   // DELETE 专用
-    }
-
-    /** CDC 模式专用字段 */
-    private transient Map<CdcSqlType, PreparedStatement> cdcStatements;
-
-    /** 批量大小 */
-    private final int batchSize;
-
-    /** 待写入数据计数 */
-    private int pendingCount = 0;
+    private transient JdbcOutputFormatBuilder builder;
 
     public JdbcSinkWriter(Sink.InitContext context, JdbcSinkConfig config) throws IOException {
         super(context, config);
-        this.batchSize = config.getBatchSize();
 
-        // 直接初始化数据库连接（不再延迟初始化）
+        // 初始化数据库连接
         try {
             connection = DriverManager.getConnection(
                 config.getUrl(),
@@ -64,12 +37,14 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
             );
             connection.setAutoCommit(false);
 
-            // CDC 模式：初始化 Statement 缓存
-            if (config.getMode() == WriteMode.CDC) {
-                cdcStatements = new HashMap<>();
-            }
+            // 创建 OutputFormat Builder
+            this.builder = new JdbcOutputFormatBuilder(config, connection);
 
-            log.info("JDBC Sink 已连接: url={}, mode={}, subtaskId={}",
+            // 创建 OutputFormat
+            this.outputFormat = builder.build();
+            this.outputFormat.open();
+
+            log.info("JDBC Sink Writer 已连接: url={}, mode={}, subtaskId={}",
                 config.getUrl(), config.getMode(), context.getSubtaskId());
         } catch (SQLException e) {
             throw new IOException("Failed to initialize JDBC connection", e);
@@ -85,214 +60,38 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
                         .filter(name -> !name.startsWith(FIELD_FILTER_PREFIX))
                     .toArray(String[]::new);
                 log.debug("JDBC Sink 写入字段（已过滤隐藏字段）: {}", Arrays.toString(columns));
+
+                // 更新 Builder 的列名（用于 Executor）
+                builder.updateColumns(columns);
             }
 
-            if (config.getMode() == WriteMode.CDC) {
-                writeCdcRow(row);
-            } else {
-                writeNormalRow(row);
-            }
-
-            pendingCount++;
-
-            // 达到批量大小时自动 flush
-            if (pendingCount >= batchSize) {
-                flush(false);
-            }
+            outputFormat.writeRecord(row);
         } catch (SQLException e) {
             throw new IOException("Failed to write row", e);
         }
     }
 
-    /**
-     * 写入普通行（INSERT/UPSERT 模式）
-     */
-    private void writeNormalRow(Row row) throws SQLException {
-        if (normalStatement == null) {
-            initStatement();
-        }
-
-        for (int i = 0; i < columns.length; i++) {
-            normalStatement.setObject(i + 1, row.getField(columns[i]));
-        }
-
-        normalStatement.addBatch();
-    }
-
-    private void initStatement() throws SQLException {
-        String sql;
-        if (config.getMode() == WriteMode.CUSTOM) {
-            // CUSTOM 模式：使用用户自定义 SQL
-            NamedParameterSqlParser.ParsedSql parsed = NamedParameterSqlParser.parse(config.getSql());
-            sql = parsed.getPreparedSql();
-            log.info("JDBC Sink CUSTOM 模式: {}", sql);
-        } else {
-            // INSERT/UPSERT 模式：基于 table 配置生成 SQL
-            if (config.getMode() == WriteMode.UPSERT) {
-                sql = config.getDialect().getUpsertSql(config.getTable(), columns, config.getKeyFields());
-                log.info("JDBC Sink UPSERT 模式: table={}, keyFields={}", config.getTable(), config.getKeyFields());
-            } else {
-                sql = config.getDialect().getInsertSql(config.getTable(), columns);
-                log.info("JDBC Sink INSERT 模式: table={}, columns={}", config.getTable(), Arrays.toString(columns));
-            }
-        }
-
-        this.normalStatement = connection.prepareStatement(sql);
-    }
-
-    /**
-     * 写入 CDC 行
-     */
-    private void writeCdcRow(Row row) throws SQLException {
-        RowKind kind = row.getKind();
-        CdcSqlType sqlType = toCdcSqlType(kind);
-
-        // 获取或创建 PreparedStatement
-        PreparedStatement stmt = getCdcStatement(sqlType);
-
-        // 设置参数并 addBatch
-        setCdcParameters(stmt, row, sqlType);
-        stmt.addBatch();
-    }
-
-    /**
-     * 将 RowKind 映射到 CdcSqlType
-     */
-    private CdcSqlType toCdcSqlType(RowKind kind) {
-        switch (kind) {
-            case INSERT:
-            case UPDATE_AFTER:
-                return CdcSqlType.UPSERT;
-            case DELETE:
-                return CdcSqlType.DELETE;
-            default:
-                throw new IllegalArgumentException(
-                    String.format("CDC 模式不支持 RowKind: %s", kind)
-                );
-        }
-    }
-
-    /**
-     * 获取或创建 CDC Statement
-     */
-    private PreparedStatement getCdcStatement(CdcSqlType sqlType) throws SQLException {
-        if (!cdcStatements.containsKey(sqlType)) {
-            String sql = buildCdcSql(sqlType);
-            PreparedStatement stmt = connection.prepareStatement(sql);
-            cdcStatements.put(sqlType, stmt);
-            log.info("CDC SQL 创建: type={}, sql={}", sqlType, sql);
-        }
-
-        return cdcStatements.get(sqlType);
-    }
-
-    /**
-     * 构建 CDC SQL
-     */
-    private String buildCdcSql(CdcSqlType sqlType) {
-        String table = config.getTable();
-        List<String> keyFields = config.getKeyFields();
-
-        switch (sqlType) {
-            case UPSERT:
-                return config.getDialect().getUpsertSql(table, columns, keyFields);
-            case DELETE:
-                return config.getDialect().getDeleteSql(table, keyFields);
-        }
-        throw new IllegalStateException("未知的 CdcSqlType: " + sqlType);
-    }
-
-    /**
-     * 设置 CDC 参数
-     */
-    private void setCdcParameters(PreparedStatement stmt, Row row, CdcSqlType sqlType) throws SQLException {
-        int index = 1;
-
-        switch (sqlType) {
-            case UPSERT:
-                // UPSERT: 设置所有字段值
-                for (String col : columns) {
-                    stmt.setObject(index++, row.getField(col));
-                }
-                break;
-
-            case DELETE:
-                // DELETE: 只设置主键字段（WHERE 条件）
-                for (String key : config.getKeyFields()) {
-                    stmt.setObject(index++, row.getField(key));
-                }
-                break;
-        }
-    }
-
     @Override
     public void flush(boolean endOfInput) throws IOException, InterruptedException {
-        if (pendingCount == 0) {
-            return;
-        }
-
-        try {
-            if (config.getMode() == WriteMode.CDC) {
-                // CDC 模式：遍历所有 Statement 执行 executeBatch
-                for (PreparedStatement stmt : cdcStatements.values()) {
-                    stmt.executeBatch();
-                }
-                connection.commit();
-                pendingCount = 0;
-            } else {
-                // INSERT/UPSERT 模式：flush 正常批次
-                int[] results = normalStatement.executeBatch();
-                connection.commit();
-                pendingCount = 0;
-
-                log.debug("已写入 {} 条记录, subtaskId={}", results.length, this.context.getSubtaskId());
-            }
-        } catch (SQLException e) {
-            // 回滚事务
-            try {
-                if (connection != null) {
-                    connection.rollback();
-                    log.warn("Flush 失败，已回滚事务");
-                }
-            } catch (SQLException rollbackEx) {
-                log.error("回滚失败", rollbackEx);
-            }
-            throw new IOException("Failed to flush batch", e);
-        }
+        outputFormat.flush();
     }
 
     @Override
     public void close() throws IOException {
         try {
-            // 提交剩余数据
-            flush(true);
+            // 提交剩余数据并关闭 OutputFormat
+            outputFormat.close();
+
+            // 关闭数据库连接
+            if (connection != null) {
+                connection.close();
+            }
+            log.info("JDBC Sink 资源清理完成, subtaskId={}", context.getSubtaskId());
+        } catch (SQLException e) {
+            throw new IOException("Failed to cleanup JDBC resources", e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IOException("Interrupted while flushing during close", e);
-        } finally {
-            // 清理资源
-            try {
-                if (config.getMode() == WriteMode.CDC) {
-                    // CDC 模式：关闭所有 Statement
-                    if (cdcStatements != null) {
-                        for (PreparedStatement stmt : cdcStatements.values()) {
-                            if (stmt != null) {
-                                stmt.close();
-                            }
-                        }
-                    }
-                } else {
-                    if (normalStatement != null) {
-                        normalStatement.close();
-                    }
-                }
-                if (connection != null) {
-                    connection.close();
-                }
-                log.info("JDBC Sink 资源清理完成, subtaskId={}", context.getSubtaskId());
-            } catch (SQLException e) {
-                throw new IOException("Failed to cleanup JDBC resources", e);
-            }
+            throw new IOException("Interrupted while closing", e);
         }
     }
 }
