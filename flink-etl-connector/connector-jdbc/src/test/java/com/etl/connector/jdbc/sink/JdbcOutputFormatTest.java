@@ -12,7 +12,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * JdbcOutputFormat 测试
@@ -20,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class JdbcOutputFormatTest {
 
     private Connection connection;
-    private JdbcOutputFormat<Row> outputFormat;
+    private JdbcOutputFormat outputFormat;
 
     @BeforeEach
     void setUp() throws SQLException {
@@ -52,7 +53,7 @@ class JdbcOutputFormatTest {
         executor.prepareStatements(connection);
 
         // batchSize=10, batchIntervalMs=0
-        outputFormat = new JdbcOutputFormat<>(executor, connection, 10, 0, 3);
+        outputFormat = new JdbcOutputFormat(executor, connection, 10, 0, 3);
         outputFormat.open();
 
         // 写入 10 条数据触发 batch_size 刷写
@@ -80,7 +81,7 @@ class JdbcOutputFormatTest {
         executor.prepareStatements(connection);
 
         // batchSize=100（远大于写入数量）, batchIntervalMs=0
-        outputFormat = new JdbcOutputFormat<>(executor, connection, 100, 0, 3);
+        outputFormat = new JdbcOutputFormat(executor, connection, 100, 0, 3);
         outputFormat.open();
 
         // 写入 5 条数据（未达到 batch_size）
@@ -112,7 +113,7 @@ class JdbcOutputFormatTest {
         SimpleBufferedExecutor executor = new SimpleBufferedExecutor(insertSql, new String[]{"id", "value"});
         executor.prepareStatements(connection);
 
-        outputFormat = new JdbcOutputFormat<>(executor, connection, 100, 100, 3);
+        outputFormat = new JdbcOutputFormat(executor, connection, 100, 100, 3);
         outputFormat.open();
 
         // 写入 1 条数据（未达到 batch_size）

@@ -13,7 +13,7 @@ import java.sql.SQLException;
  * 管理批量刷写逻辑，双重检查（batch_size + batch_interval_ms）
  */
 @Slf4j
-public class JdbcOutputFormat<I> {
+public class JdbcOutputFormat {
 
     private final JdbcBatchStatementExecutor executor;
     private final Connection connection;
@@ -48,8 +48,8 @@ public class JdbcOutputFormat<I> {
     /**
      * 写入记录
      */
-    public void writeRecord(I record) throws SQLException, IOException, InterruptedException {
-        executor.addToBatch((Row) record);
+    public void writeRecord(Row record) throws SQLException, IOException, InterruptedException {
+        executor.addToBatch(record);
         batchCount++;
 
         // 双重检查：数量 或 时间

@@ -1,7 +1,7 @@
 package com.etl.connector.jdbc.sink;
 
-import com.etl.core.sink.AbstractSinkWriter;
 import com.etl.connector.jdbc.sink.config.JdbcSinkConfig;
+import com.etl.core.sink.AbstractSinkWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.types.Row;
@@ -21,9 +21,7 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
 
     private static final String FIELD_FILTER_PREFIX = "__";
     private final transient Connection connection;
-    private final JdbcOutputFormat<Row> outputFormat;
-    private transient String[] columns;
-    private transient JdbcOutputFormatBuilder builder;
+    private transient JdbcOutputFormat outputFormat;
 
     public JdbcSinkWriter(Sink.InitContext context, JdbcSinkConfig config) throws IOException {
         super(context, config);
@@ -37,13 +35,6 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
             );
             connection.setAutoCommit(false);
 
-            // 创建 OutputFormat Builder
-            this.builder = new JdbcOutputFormatBuilder(config, connection);
-
-            // 创建 OutputFormat
-            this.outputFormat = builder.build();
-            this.outputFormat.open();
-
             log.info("JDBC Sink Writer 已连接: url={}, mode={}, subtaskId={}",
                 config.getUrl(), config.getMode(), context.getSubtaskId());
         } catch (SQLException e) {
@@ -55,14 +46,15 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
     public void write(Row row, Context context) throws IOException, InterruptedException {
         try {
             // 首次写入时缓存列名（过滤掉 __ 开头的隐藏字段）
-            if (columns == null) {
-                columns = row.getFieldNames(true).stream()
+            if (outputFormat == null) {
+                String[] columns = row.getFieldNames(true).stream()
                         .filter(name -> !name.startsWith(FIELD_FILTER_PREFIX))
-                    .toArray(String[]::new);
+                        .toArray(String[]::new);
                 log.debug("JDBC Sink 写入字段（已过滤隐藏字段）: {}", Arrays.toString(columns));
 
-                // 更新 Builder 的列名（用于 Executor）
-                builder.updateColumns(columns);
+                // 延迟创建 OutputFormat（等 columns 确定后再 build）
+                this.outputFormat = new JdbcOutputFormatBuilder(config, connection, columns).build();
+                this.outputFormat.open();
             }
 
             outputFormat.writeRecord(row);
@@ -73,14 +65,18 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
 
     @Override
     public void flush(boolean endOfInput) throws IOException, InterruptedException {
-        outputFormat.flush();
+        if (outputFormat != null) {
+            outputFormat.flush();
+        }
     }
 
     @Override
     public void close() throws IOException {
         try {
             // 提交剩余数据并关闭 OutputFormat
-            outputFormat.close();
+            if (outputFormat != null) {
+                outputFormat.close();
+            }
 
             // 关闭数据库连接
             if (connection != null) {

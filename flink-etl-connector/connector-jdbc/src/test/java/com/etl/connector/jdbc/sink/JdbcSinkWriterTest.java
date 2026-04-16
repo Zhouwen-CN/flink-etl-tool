@@ -1,5 +1,6 @@
 package com.etl.connector.jdbc.sink;
 
+import com.etl.connector.jdbc.dialect.H2Dialect;
 import com.etl.connector.jdbc.dialect.MySQLDialect;
 import com.etl.connector.jdbc.dialect.WriteMode;
 import com.etl.connector.jdbc.sink.config.JdbcSinkConfig;
@@ -15,10 +16,12 @@ import org.mockito.MockedStatic;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.Arrays;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static org.mockito.AdditionalMatchers.*;
 
 /**
  * JdbcSinkWriter 执行测试
@@ -184,66 +187,52 @@ public class JdbcSinkWriterTest {
      */
     @Test
     public void testUpsertModeIgnoresSqlConfig() throws Exception {
-        // Mock Connection 和 PreparedStatement
-        mockConnection = mock(Connection.class);
-        mockStatement = mock(PreparedStatement.class);
-        when(mockConnection.prepareStatement(anyString())).thenReturn(mockStatement);
-        when(mockConnection.getAutoCommit()).thenReturn(false);
-        doNothing().when(mockConnection).commit();
+        // 使用唯一数据库名避免测试间冲突
+        // H2 2.x 改变了默认认证：需要通过 INIT 参数显式创建用户
+        String dbName = "upsert_test_" + System.nanoTime();
+        // INIT=... 在首次连接时执行，提前创建 sa 用户
+        String jdbcUrl = "jdbc:h2:mem:" + dbName + ";MODE=MySQL;INIT=CREATE USER IF NOT EXISTS SA PASSWORD '' ADMIN";
 
-        // 准备配置：UPSERT 模式 + table + sql + keyFields（sql 应该被忽略）
+        // 测试代码通过 JdbcSinkWriter 使用的同一凭证连接（sa / 空密码）
         JdbcSinkConfig config = JdbcSinkConfig.builder()
-            .url("jdbc:mysql://localhost:3306/test")
-            .username("root")
-            .password("password")
+            .url(jdbcUrl)
+            .username("sa")
+            .password("")
             .mode(WriteMode.UPSERT)
             .table("test_table")
-            .sql("INSERT INTO ignored_table (id) VALUES (:id)")  // 这个应该被忽略
+            .sql("INSERT INTO ignored_table (id) VALUES (:id)")
             .keyFields(Arrays.asList("id"))
             .batchSize(100)
-            .dialect(new MySQLDialect())
+            .dialect(new H2Dialect())
             .build();
 
-        // Mock DriverManager
-        MockedStatic<DriverManager> mockedDriverManager = mockStatic(DriverManager.class);
-        mockedDriverManager.when(() ->
-            DriverManager.getConnection(config.getUrl(), config.getUsername(), config.getPassword())
-        ).thenReturn(mockConnection);
+        JdbcSinkWriter writer = new JdbcSinkWriter(mockContext, config);
 
-        JdbcSinkWriter writer = null;
-        try {
-            // 创建 Writer
-            writer = new JdbcSinkWriter(mockContext, config);
+        // JdbcSinkWriter 已创建了数据库连接，再建一个用于验证
+        Connection realConnection = DriverManager.getConnection(jdbcUrl, "sa", "");
+        realConnection.setAutoCommit(false);
 
-            // 写入一条数据触发 initStatement()
-            Row row = Row.withNames();
-            row.setField("id", "1");
-            row.setField("name", "Alice");
-            writer.write(row, null);
+        Statement stmt = realConnection.createStatement();
+        stmt.execute("CREATE TABLE \"test_table\" (\"id\" INT PRIMARY KEY, \"name\" VARCHAR(50))");
+        stmt.close();
+        realConnection.commit();
 
-            // 验证：应该使用 table 生成 UPSERT SQL，忽略 sql 配置
-            // MySQL UPSERT 格式：INSERT INTO ... ON DUPLICATE KEY UPDATE ...
-            // MySQLDialect 使用反引号包裹表名和字段名
-            verify(mockConnection).prepareStatement(contains("INSERT INTO `test_table`"));
-            verify(mockConnection).prepareStatement(contains("ON DUPLICATE KEY UPDATE"));
-            verify(mockStatement, atLeast(2)).setObject(anyInt(), any());  // 至少两个字段（id 和 name）
-            verify(mockStatement, times(1)).addBatch();
+        Row row = Row.withNames();
+        row.setField("id", 1);
+        row.setField("name", "Alice");
+        writer.write(row, null);
+        writer.flush(false);
+        realConnection.commit();
 
-            // 手动 flush，清空 pendingCount
-            when(mockStatement.executeBatch()).thenReturn(new int[]{1});
-            writer.flush(false);
+        Statement queryStmt = realConnection.createStatement();
+        ResultSet rs = queryStmt.executeQuery("SELECT * FROM \"test_table\" WHERE \"id\" = 1");
+        assertTrue(rs.next());
+        assertEquals("Alice", rs.getString("name"));
+        rs.close();
+        queryStmt.close();
 
-        } finally {
-            // 清理资源
-            if (writer != null) {
-                try {
-                    writer.close();
-                } catch (Exception e) {
-                    // 忽略 close 时的异常
-                }
-            }
-            mockedDriverManager.close();
-        }
+        writer.close();
+        realConnection.close();
     }
 
     /**
@@ -312,54 +301,53 @@ public class JdbcSinkWriterTest {
      * 验证 CDC INSERT 模式生成 UPSERT SQL（原子操作）
      */
     @Test
-    public void testCdcInsertModeCurrentBehavior() throws Exception {
-        mockConnection = mock(Connection.class);
-        mockStatement = mock(PreparedStatement.class);
-        when(mockConnection.prepareStatement(anyString())).thenReturn(mockStatement);
-        when(mockConnection.getAutoCommit()).thenReturn(false);
-        doNothing().when(mockConnection).commit();
+    public void testCdcInsertModeUsesUpsertSql() throws Exception {
+        // H2 2.x INIT 参数创建 sa 用户（空密码）
+        String dbName = "cdc_insert_test_" + System.nanoTime();
+        String jdbcUrl = "jdbc:h2:mem:" + dbName + ";MODE=MySQL;INIT=CREATE USER IF NOT EXISTS SA PASSWORD '' ADMIN";
 
         JdbcSinkConfig config = JdbcSinkConfig.builder()
-            .url("jdbc:mysql://localhost:3306/test")
-            .username("root")
-            .password("password")
+            .url(jdbcUrl)
+            .username("sa")
+            .password("")
             .mode(WriteMode.CDC)
             .table("test_table")
             .keyFields(Arrays.asList("id"))
             .batchSize(100)
-            .dialect(new MySQLDialect())
+            .dialect(new H2Dialect())
             .build();
 
-        MockedStatic<DriverManager> mockedDriverManager = mockStatic(DriverManager.class);
-        mockedDriverManager.when(() ->
-            DriverManager.getConnection(config.getUrl(), config.getUsername(), config.getPassword())
-        ).thenReturn(mockConnection);
+        JdbcSinkWriter writer = new JdbcSinkWriter(mockContext, config);
 
-        JdbcSinkWriter writer = null;
-        try {
-            writer = new JdbcSinkWriter(mockContext, config);
+        // JdbcSinkWriter 已创建连接，用相同凭证再创建一个用于建表和验证
+        Connection realConnection = DriverManager.getConnection(jdbcUrl, "sa", "");
+        realConnection.setAutoCommit(false);
 
-            Row row = Row.withNames();
-            row.setField("id", "1");
-            row.setField("name", "Alice");
-            row.setKind(RowKind.INSERT);
-            writer.write(row, null);
+        Statement stmt = realConnection.createStatement();
+        stmt.execute("CREATE TABLE \"test_table\" (\"id\" INT PRIMARY KEY, \"name\" VARCHAR(50))");
+        stmt.close();
+        realConnection.commit();
 
-            // 验证 UPSERT SQL（包含 INSERT 和 ON DUPLICATE KEY UPDATE）
-            verify(mockConnection).prepareStatement(contains("INSERT INTO `test_table`"));
-            verify(mockConnection).prepareStatement(contains("ON DUPLICATE KEY UPDATE"));
+        Row row = Row.withNames();
+        row.setField("id", 1);
+        row.setField("name", "Alice");
+        row.setKind(RowKind.INSERT);
+        writer.write(row, null);
 
-            // 参数设置：所有字段值（id 和 name）
-            verify(mockStatement, times(2)).setObject(anyInt(), any());
+        writer.flush(false);
+        realConnection.commit();
 
-            when(mockStatement.executeBatch()).thenReturn(new int[]{1});
-            writer.flush(false);
-        } finally {
-            if (writer != null) {
-                try { writer.close(); } catch (Exception e) {}
-            }
-            mockedDriverManager.close();
-        }
+        Statement queryStmt = realConnection.createStatement();
+        ResultSet rs = queryStmt.executeQuery("SELECT * FROM \"test_table\" WHERE \"id\" = 1");
+        assertTrue(rs.next());
+        assertEquals(1, rs.getInt("id"));
+        assertEquals("Alice", rs.getString("name"));
+        assertFalse(rs.next());
+        rs.close();
+        queryStmt.close();
+
+        writer.close();
+        realConnection.close();
     }
 
     /**
@@ -367,54 +355,60 @@ public class JdbcSinkWriterTest {
      * 验证 CDC UPDATE_AFTER 模式生成 UPSERT SQL（原子操作）
      */
     @Test
-    public void testCdcUpdateAfterModeCurrentBehavior() throws Exception {
-        mockConnection = mock(Connection.class);
-        mockStatement = mock(PreparedStatement.class);
-        when(mockConnection.prepareStatement(anyString())).thenReturn(mockStatement);
-        when(mockConnection.getAutoCommit()).thenReturn(false);
-        doNothing().when(mockConnection).commit();
+    public void testCdcUpdateAfterModeUsesUpsertSql() throws Exception {
+        // H2 2.x INIT 参数创建 sa 用户（空密码）
+        String dbName = "cdc_update_test_" + System.nanoTime();
+        String jdbcUrl = "jdbc:h2:mem:" + dbName + ";MODE=MySQL;INIT=CREATE USER IF NOT EXISTS SA PASSWORD '' ADMIN";
 
+        // 先由 JdbcSinkWriter 创建连接（会执行 INIT）
         JdbcSinkConfig config = JdbcSinkConfig.builder()
-            .url("jdbc:mysql://localhost:3306/test")
-            .username("root")
-            .password("password")
+            .url(jdbcUrl)
+            .username("sa")
+            .password("")
             .mode(WriteMode.CDC)
             .table("test_table")
             .keyFields(Arrays.asList("id"))
             .batchSize(100)
-            .dialect(new MySQLDialect())
+            .dialect(new H2Dialect())
             .build();
 
-        MockedStatic<DriverManager> mockedDriverManager = mockStatic(DriverManager.class);
-        mockedDriverManager.when(() ->
-            DriverManager.getConnection(config.getUrl(), config.getUsername(), config.getPassword())
-        ).thenReturn(mockConnection);
+        JdbcSinkWriter writer = new JdbcSinkWriter(mockContext, config);
 
-        JdbcSinkWriter writer = null;
-        try {
-            writer = new JdbcSinkWriter(mockContext, config);
+        // JdbcSinkWriter 已初始化连接，再用相同凭证创建一个用于建表和验证
+        Connection realConnection = DriverManager.getConnection(jdbcUrl, "sa", "");
+        realConnection.setAutoCommit(false);
 
-            Row row = Row.withNames();
-            row.setField("id", "1");
-            row.setField("name", "Alice-updated");
-            row.setKind(RowKind.UPDATE_AFTER);
-            writer.write(row, null);
+        Statement stmt = realConnection.createStatement();
+        stmt.execute("CREATE TABLE \"test_table\" (\"id\" INT PRIMARY KEY, \"name\" VARCHAR(50))");
+        stmt.close();
+        realConnection.commit();
 
-            // 验证 UPSERT SQL（包含 INSERT 和 ON DUPLICATE KEY UPDATE）
-            verify(mockConnection).prepareStatement(contains("INSERT INTO `test_table`"));
-            verify(mockConnection).prepareStatement(contains("ON DUPLICATE KEY UPDATE"));
+        // 先用 MERGE 插入一条初始数据
+        Statement insertStmt = realConnection.createStatement();
+        insertStmt.execute("MERGE INTO \"test_table\" (\"id\", \"name\") KEY(\"id\") VALUES (1, 'Bob')");
+        insertStmt.close();
+        realConnection.commit();
 
-            // 参数设置：所有字段值（id 和 name）
-            verify(mockStatement, times(2)).setObject(anyInt(), any());
+        Row row = Row.withNames();
+        row.setField("id", 1);
+        row.setField("name", "Alice-updated");
+        row.setKind(RowKind.UPDATE_AFTER);
+        writer.write(row, null);
 
-            when(mockStatement.executeBatch()).thenReturn(new int[]{1});
-            writer.flush(false);
-        } finally {
-            if (writer != null) {
-                try { writer.close(); } catch (Exception e) {}
-            }
-            mockedDriverManager.close();
-        }
+        writer.flush(false);
+        realConnection.commit();
+
+        Statement queryStmt = realConnection.createStatement();
+        ResultSet rs = queryStmt.executeQuery("SELECT * FROM \"test_table\" WHERE \"id\" = 1");
+        assertTrue(rs.next());
+        assertEquals(1, rs.getInt("id"));
+        assertEquals("Alice-updated", rs.getString("name"));
+        assertFalse(rs.next());
+        rs.close();
+        queryStmt.close();
+
+        writer.close();
+        realConnection.close();
     }
 
     /**

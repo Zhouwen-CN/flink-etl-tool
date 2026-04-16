@@ -44,8 +44,7 @@ class BufferReducedExecutorTest {
                 new H2Dialect(),
                 "users",
                 columns,
-                keyFields,
-                true  // CDC 模式
+                keyFields
         );
         executor.prepareStatements(connection);
     }

@@ -7,6 +7,7 @@ import org.apache.flink.types.Row;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.List;
 
 /**
  * 简单批量执行器
@@ -16,28 +17,26 @@ import java.sql.SQLException;
 public class SimpleBatchExecutor implements JdbcBatchStatementExecutor {
 
     private final String sql;
+    private final List<String> columns;
     private transient PreparedStatement statement;
 
     public SimpleBatchExecutor(String sql) {
-        this.sql = sql;
+        NamedParameterSqlParser.ParsedSql parsed = NamedParameterSqlParser.parse(sql);
+        this.sql = parsed.getPreparedSql();
+        this.columns = parsed.getParamNames();
+        log.info("SimpleBatchExecutor 初始化: sql={}", sql);
     }
 
     @Override
     public void prepareStatements(Connection connection) throws SQLException {
-        NamedParameterSqlParser.ParsedSql parsed = NamedParameterSqlParser.parse(sql);
-        String preparedSql = parsed.getPreparedSql();
-        this.statement = connection.prepareStatement(preparedSql);
-        log.info("SimpleBatchExecutor 初始化: sql={}", preparedSql);
+        this.statement = connection.prepareStatement(sql);
     }
 
     @Override
     public void addToBatch(Row record) throws SQLException {
-        String[] fieldNames = record.getFieldNames(true).stream()
-                .filter(name -> !name.startsWith("__"))
-                .toArray(String[]::new);
-
-        for (int i = 0; i < fieldNames.length; i++) {
-            statement.setObject(i + 1, record.getField(fieldNames[i]));
+        for (int i = 0; i < columns.size(); i++) {
+            String column = columns.get(i);
+            statement.setObject(i + 1, record.getField(column));
         }
         statement.addBatch();
     }

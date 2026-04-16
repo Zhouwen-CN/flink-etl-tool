@@ -4,7 +4,6 @@ import com.etl.connector.jdbc.dialect.JdbcDialect;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.types.Row;
 import org.apache.flink.types.RowKind;
-import org.apache.flink.util.Preconditions;
 
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -21,12 +20,6 @@ import java.util.function.Function;
 @Slf4j
 public class BufferReducedExecutor implements JdbcBatchStatementExecutor {
 
-    private final JdbcDialect dialect;
-    private final String table;
-    private final String[] columns;
-    private final List<String> keyFields;
-    private final boolean isCdcMode;
-
     private final JdbcBatchStatementExecutor upsertExecutor;
     private final JdbcBatchStatementExecutor deleteExecutor;
     private final Function<Row, Row> keyExtractor;
@@ -39,13 +32,7 @@ public class BufferReducedExecutor implements JdbcBatchStatementExecutor {
             JdbcDialect dialect,
             String table,
             String[] columns,
-            List<String> keyFields,
-            boolean isCdcMode) {
-        this.dialect = dialect;
-        this.table = table;
-        this.columns = columns;
-        this.keyFields = Preconditions.checkNotNull(keyFields, "keyFields 不能为 null");
-        this.isCdcMode = isCdcMode;
+            List<String> keyFields) {
 
         // 初始化内部 Executor
         String upsertSql = dialect.getUpsertSql(table, columns, keyFields);
@@ -63,8 +50,8 @@ public class BufferReducedExecutor implements JdbcBatchStatementExecutor {
             return Row.of(keyValues);
         };
 
-        log.info("BufferReducedExecutor 初始化: table={}, keyFields={}, isCdcMode={}, upsertSql={}, deleteSql={}",
-                table, keyFields, isCdcMode, upsertSql, deleteSql);
+        log.info("BufferReducedExecutor 初始化: table={}, keyFields={}, upsertSql={}, deleteSql={}",
+                table, keyFields, upsertSql, deleteSql);
     }
 
     @Override
@@ -79,7 +66,7 @@ public class BufferReducedExecutor implements JdbcBatchStatementExecutor {
         RowKind kind = record.getKind();
 
         // CDC 模式：UPDATE_BEFORE 直接跳过
-        if (isCdcMode && kind == RowKind.UPDATE_BEFORE) {
+        if (kind == RowKind.UPDATE_BEFORE) {
             log.debug("跳过 UPDATE_BEFORE: {}", record);
             return;
         }
