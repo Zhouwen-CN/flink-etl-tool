@@ -28,6 +28,8 @@ public class JdbcSinkConfig implements Serializable {
     private final String sql;
     /** 批量写入大小，默认 100 */
     private final Integer batchSize;
+    /** 批量刷写间隔（毫秒），默认 0 表示禁用 */
+    private final Long batchIntervalMs;
     /** 写入模式：INSERT 或 UPSERT */
     private final WriteMode mode;
     /** Upsert 模式下的主键/唯一键字段列表 */
