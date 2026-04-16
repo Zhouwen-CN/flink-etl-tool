@@ -70,6 +70,8 @@ public class JdbcSink extends AbstractSink {
         Integer batchSize = config.getInteger("batchSize", super.getDefaultBatchSize());
         Preconditions.checkArgument(batchSize != null && batchSize > 0, "batchSize must be greater than 0");
 
+        Long batchIntervalMs = config.getLong("batchIntervalMs", 0L);
+
         this.jdbcSinkConfig = JdbcSinkConfig.builder()
                 .url(dialect.wrapUrl(url))
                 .username(username)
@@ -80,6 +82,7 @@ public class JdbcSink extends AbstractSink {
                 .mode(mode)
                 .keyFields(keyFields)
                 .batchSize(batchSize)
+                .batchIntervalMs(batchIntervalMs)
                 .build();
 
         log.info("创建 JdbcSink: {}", this.jdbcSinkConfig);
