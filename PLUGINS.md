@@ -268,11 +268,10 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 | `splitKey` | 否 | 自动推断 | 分片列名，支持数值类型。不配置时自动从主键推断 |
 | `batchSize` | 否 | 100 | 批量读取大小 |
 | `queryTimeout` | 否 | 无限制 | 查询超时时间（秒） |
-| `schema` | 否 | 自动推断 | Schema 定义，不配置则从数据库元数据自动推断 |
 
 #### 配置示例
 
-**基础配置 - 读取整表：**
+**配置 table：**
 
 ```json
 {
@@ -305,44 +304,6 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
       "sql": "SELECT id, name, email FROM users WHERE status = 1",
       "splitKey": "id",
       "queryTimeout": 300
-    }
-  }
-}
-```
-
-**无分片列配置（单线程全表扫描）：**
-
-```json
-{
-  "source": {
-    "type": "jdbc",
-    "outputTable": "users",
-    "config": {
-      "url": "jdbc:mysql://localhost:3306/mydb",
-      "username": "root",
-      "password": "password",
-      "table": "users",
-      "batchSize": 1000
-    }
-  }
-}
-```
-
-**Oracle 数据库配置：**
-
-```json
-{
-  "source": {
-    "type": "jdbc",
-    "outputTable": "users",
-    "config": {
-      "url": "jdbc:oracle:thin:@localhost:1521:orcl",
-      "username": "system",
-      "password": "oracle",
-      "table": "USERS",
-      "dialect": "oracle",
-      "splitKey": "ID",
-      "batchSize": 1000
     }
   }
 }
@@ -570,8 +531,6 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 | `properties` | 否 | `{}` | 额外的 Kafka consumer 配置 |
 | `schema` | 是 | - | 消息体字段定义 |
 
-**隐藏字段**：输出 Row 自动包含 `__topic__` 字段（STRING 类型），记录消息来源 Topic。
-
 #### 配置示例
 
 **Topic 列表模式：**
@@ -660,7 +619,6 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 - 支持 JSON 对象和 JSON 数组两种消息格式
 - JSON 数组会展开为多条 Row 记录
 - Schema 始终描述单条记录的结构
-- 自动追加 `__topic__` 字段记录消息来源
 
 #### 运行模式
 
@@ -886,10 +844,6 @@ Writer 可以通过 `context` 字段访问：
 
 将数据写入 JDBC 兼容数据库，支持 table 和 sql 两种配置模式。
 
-**写入时自动忽略 `__` 开头的隐藏字段**
-
-当数据来源（如 Kafka Source）包含 `__topic__`、`__partition__` 等隐藏字段时，JDBC Sink 会自动过滤这些字段，只写入业务数据字段。
-
 #### 配置参数
 
 | 参数 | 必填 | 默认值 | 说明 |
@@ -912,7 +866,7 @@ CDC 模式用于处理带有 RowKind 标记的数据（如 Debezium CDC 数据�
 
 **配置要求：**
 - `mode: "cdc"` - 启用 CDC 模式
-- `keyFields` - **必须配置**，指定主键字段列表，用于 UPDATE 和 DELETE 的 WHERE 条件
+- `keyFields` - 指定主键字段列表，如未配置尝试从数据库获取
 
 **配置示例：**
 
@@ -927,7 +881,6 @@ CDC 模式用于处理带有 RowKind 标记的数据（如 Debezium CDC 数据�
       "password": "password",
       "table": "users",
       "mode": "cdc",
-      "keyFields": ["id"],
       "batchSize": 100
     }
   }
@@ -1015,7 +968,8 @@ CUSTOM 模式用于执行用户自定义 SQL，实现复杂写入逻辑（如多
 - **表必须有主键（自动获取时）**：无主键表需手动配置 keyFields
 
 **错误处理：**
-- 配置 sql 时抛异常：`"UPSERT 模式必须配置 table（不能使用 sql），因为需要主键信息"`
+
+- 配置 sql 时抛异常：`"UPSERT 模式必须配置 table，因为需要主键信息"`
 - 未配置 keyFields 且表无主键时抛异常：`"表 'xxx' 没有主键，无法使用 UPSERT 模式。请使用 INSERT 模式、手动配置 keyFields 或为表添加主键"`
 
 ---
@@ -1038,7 +992,7 @@ JDBC Sink 支持 4 种写入模式，每种模式有明确的配置要求：
 
 #### 配置示例
 
-**INSERT 模式 - 自动生成 INSERT：**
+**INSERT 模式（默认值） - 自动生成 INSERT：**
 
 ```json
 {
@@ -1064,6 +1018,7 @@ JDBC Sink 支持 4 种写入模式，每种模式有明确的配置要求：
     "type": "jdbc",
     "inputTable": "output_data",
     "config": {
+      "mode": "CUSTOM",
       "url": "jdbc:mysql://localhost:3306/mydb",
       "username": "root",
       "password": "password",
@@ -1082,11 +1037,11 @@ JDBC Sink 支持 4 种写入模式，每种模式有明确的配置要求：
     "type": "jdbc",
     "inputTable": "output_data",
     "config": {
+      "mode": "UPSERT",
       "url": "jdbc:mysql://localhost:3306/mydb",
       "username": "root",
       "password": "password",
       "table": "target_table",
-      "mode": "UPSERT",
       "batchSize": 100
     }
   }
@@ -1117,53 +1072,7 @@ JDBC Sink 支持 4 种写入模式，每种模式有明确的配置要求：
 }
 ```
 
-> **说明：** 该配置使用 `email` 字段作为 UPSERT 的匹配条件，即使表有其他主键也不会使用。
-
----
-
-**Oracle 数据库 Upsert 配置：**
-
-```json
-{
-  "sink": {
-    "type": "jdbc",
-    "inputTable": "output_data",
-    "config": {
-      "url": "jdbc:oracle:thin:@localhost:1521:orcl",
-      "username": "system",
-      "password": "oracle",
-      "table": "TARGET_TABLE",
-      "dialect": "oracle",
-      "mode": "upsert",
-      "batchSize": 100
-    }
-  }
-}
-```
-
-**OceanBase Oracle 模式配置：**
-
-```json
-{
-  "sink": {
-    "type": "jdbc",
-    "inputTable": "output_data",
-    "config": {
-      "url": "jdbc:oceanbase://localhost:2883/test",
-      "username": "admin",
-      "password": "password",
-      "table": "TARGET_TABLE",
-      "dialect": "oracle",
-      "mode": "upsert",
-      "batchSize": 100
-    }
-  }
-}
-```
-
-> **说明：** Oracle 和 OceanBase Oracle 模式使用 `MERGE INTO` 语法实现 upsert
-
-> **注意：**
+> - **说明：** 该配置使用 `email` 字段作为 UPSERT 的匹配条件，即使表有其他主键也不会使用。
 > - `dialect` 参数用于显式指定数据库类型，适用于 URL 无法正确识别数据库类型的场景（如 OceanBase）
 > - 不同数据库的 upsert 语法不同：MySQL 使用 `ON DUPLICATE KEY UPDATE`，PostgreSQL 使用 `ON CONFLICT`，Oracle 使用 `MERGE INTO`
 

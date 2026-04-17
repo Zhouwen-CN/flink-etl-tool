@@ -19,7 +19,6 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableException;
-import org.apache.flink.table.api.ValidationException;
 import org.apache.flink.table.api.bridge.java.StreamTableEnvironment;
 import org.apache.flink.table.functions.UserDefinedFunction;
 import org.apache.flink.types.Row;
@@ -43,9 +42,9 @@ public class JobBuilder {
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
     public static void build(StreamExecutionEnvironment env, JobConfig config) {
-        JobMeta job = config.getJob();
-        RuntimeExecutionMode runtimeMode = job.getMode().getRuntimeMode();
-        log.info("开始构建 Flink Job: {}", job.getName());
+        JobMeta jobConfig = config.getJob();
+        RuntimeExecutionMode runtimeMode = jobConfig.getMode().getRuntimeMode();
+        log.info("开始构建 Flink Job: {}", jobConfig.getName());
         // 创建 Table 环境
         StreamTableEnvironment stEnv = StreamTableEnvironment.create(env);
 
@@ -85,16 +84,10 @@ public class JobBuilder {
         // 3. 处理所有 Sink
         for (SinkConfig sinkConfig : config.getSinks()) {
             String sinkInputTable = sinkConfig.getInputTable();
-            DataStream<Row> resultStream;
-            try {
-                Table sinkTable = stEnv.from(sinkInputTable);
-                resultStream = toDataStream(stEnv, sinkTable, runtimeMode);
-                log.info("Table 转换为 DataStream");
-            } catch (ValidationException | TableException e) {
-                throw e;
-            } catch (Exception e) {
-                throw new IllegalArgumentException("无法从表 '" + sinkInputTable + "' 读取数据，请检查 inputTable 配置是否正确，或上游 source.outputTable / transform.outputTable 是否已正确配置", e);
-            }
+            // 这里有异常直接抛出比较合适
+            Table sinkTable = stEnv.from(sinkInputTable);
+            DataStream<Row> resultStream = toDataStream(stEnv, sinkTable, runtimeMode);
+            log.info("Table 转换为 DataStream");
 
             // Sink 消费 DataStream
             String sinkType = sinkConfig.getType();

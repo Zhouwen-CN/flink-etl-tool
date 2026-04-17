@@ -19,7 +19,6 @@ import java.util.Arrays;
 @Slf4j
 public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
 
-    private static final String FIELD_FILTER_PREFIX = "__";
     private final transient Connection connection;
     private transient JdbcOutputFormat outputFormat;
 
@@ -29,14 +28,14 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
         // 初始化数据库连接
         try {
             connection = DriverManager.getConnection(
-                config.getUrl(),
-                config.getUsername(),
-                config.getPassword()
+                    config.getUrl(),
+                    config.getUsername(),
+                    config.getPassword()
             );
             connection.setAutoCommit(false);
 
             log.info("JDBC Sink Writer 已连接: url={}, mode={}, subtaskId={}",
-                config.getUrl(), config.getMode(), context.getSubtaskId());
+                    config.getUrl(), config.getMode(), context.getSubtaskId());
         } catch (SQLException e) {
             throw new IOException("Failed to initialize JDBC connection", e);
         }
@@ -45,11 +44,10 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
     @Override
     public void write(Row row, Context context) throws IOException, InterruptedException {
         try {
-            // 首次写入时缓存列名（过滤掉 __ 开头的隐藏字段）
+            // 首次写入时缓存列名
             if (outputFormat == null) {
-                String[] columns = row.getFieldNames(true).stream()
-                        .filter(name -> !name.startsWith(FIELD_FILTER_PREFIX))
-                        .toArray(String[]::new);
+                String[] columns = row.getFieldNames(true).toArray(new String[0]);
+
                 log.debug("JDBC Sink 写入字段（已过滤隐藏字段）: {}", Arrays.toString(columns));
 
                 // 延迟创建 OutputFormat（等 columns 确定后再 build）

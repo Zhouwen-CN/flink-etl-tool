@@ -28,7 +28,8 @@ public class JobExecutor {
      */
     public void execute(JobConfig config) {
         JobMeta jobConfig = config.getJob();
-        log.info("开始执行 Job: {}", jobConfig.getName());
+        String jobName = jobConfig.getName();
+        log.info("开始执行 Job: {}", jobName);
 
         try {
             StreamExecutionEnvironment env = createExecutionEnvironment(jobConfig);
@@ -36,7 +37,7 @@ public class JobExecutor {
             JobBuilder.build(env, config);
 
             log.info("提交 Job 到 Flink 执行引擎");
-            env.execute(jobConfig.getName());
+            env.execute(jobName);
 
             log.info("Job 执行成功");
         } catch (Exception e) {
@@ -72,10 +73,11 @@ public class JobExecutor {
 
         // steaming 模式下才开启检查点
         if (runtimeMode == RuntimeExecutionMode.STREAMING) {
-            env.enableCheckpointing(Duration.ofMinutes(3).toMillis(), CheckpointingMode.AT_LEAST_ONCE);
+            // 检查点间隔（默认1分钟）
+            env.enableCheckpointing(Duration.ofMinutes(1).toMillis(), CheckpointingMode.AT_LEAST_ONCE);
             CheckpointConfig checkpointConfig = env.getCheckpointConfig();
-            // 检查点超时
-            checkpointConfig.setCheckpointTimeout(Duration.ofMinutes(3).toMillis());
+            // 检查点超时（默认1分钟）
+            checkpointConfig.setCheckpointTimeout(Duration.ofMinutes(1).toMillis());
             // 上一个checkpoint结束之后,多久才能发出另一个checkpoint
             checkpointConfig.setMinPauseBetweenCheckpoints(500L);
             // 检查点最大并发数量
