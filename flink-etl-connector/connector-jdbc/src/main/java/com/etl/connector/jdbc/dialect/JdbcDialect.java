@@ -83,4 +83,25 @@ public interface JdbcDialect extends Serializable {
         return String.format("DELETE FROM %s WHERE %s",
                 quoteIdentifier(table), whereClause);
     }
+
+    /**
+     * 生成字符串列的 hash mod 表达式
+     *
+     * @param columnName 列名（已转义）
+     * @param modulus 模数（分片数量）
+     * @return hash mod 表达式（如 "MD5(column) % 4"）
+     */
+    String hashModExpression(String columnName, int modulus);
+
+    /**
+     * 构建日期范围查询 SQL（开区间）
+     *
+     * @param baseQuery 基础查询（SELECT * FROM table）
+     * @param columnName 列名（已转义）
+     * @param startDate 起始日期（null 表示第一个分片）
+     * @param endDate 结束日期（null 表示最后一个分片）
+     * @return 完整查询 SQL（使用 >= AND < 开区间）
+     */
+    String buildDateRangeQuery(String baseQuery, String columnName,
+                                String startDate, String endDate);
 }
