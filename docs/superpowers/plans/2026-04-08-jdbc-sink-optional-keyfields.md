@@ -374,7 +374,7 @@ mvn test -pl flink-etl-sink/flink-etl-sink-jdbc
 ```bash
 mvn clean package -DskipTests
 java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar \
-  --file docs/examples/mysql-to-console.json
+  --file docs/examples/batch-mysql2console.json
 ```
 
 预期结果：任务正常运行，验证未配置 keyFields 的现有配置文件无需修改。

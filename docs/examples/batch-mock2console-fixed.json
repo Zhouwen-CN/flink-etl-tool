@@ -1,13 +1,13 @@
 {
   "job": {
-    "name": "mock-batch-fixed",
+    "name": "batch-mock2console-fixed",
     "mode": "batch",
     "parallelism": 1
   },
   "sources": [
     {
       "type": "mock",
-      "outputTable": "users",
+      "outputTable": "source_table",
       "config": {
         "schema": {
           "id": "LONG",
@@ -41,7 +41,7 @@
   "sinks": [
     {
       "type": "console",
-      "inputTable": "users"
+      "inputTable": "source_table"
     }
   ]
 }

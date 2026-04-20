@@ -1,0 +1,34 @@
+{
+  "job": {
+    "name": "stream-kafka2console-debezium-json",
+    "mode": "streaming",
+    "parallelism": 1
+  },
+  "sources": [
+    {
+      "type": "kafka",
+      "outputTable": "source_table",
+      "config": {
+        "format": "debezium-json",
+        "bootstrapServers": "127.0.0.1:9092",
+        "groupId": "flink-etl-tool",
+        "topics": [
+          "test-cdc"
+        ],
+        "startupMode": "earliest",
+        "schema": {
+          "id": "INT",
+          "name": "STRING",
+          "age": "INT",
+          "email": "STRING"
+        }
+      }
+    }
+  ],
+  "sinks": [
+    {
+      "type": "console",
+      "inputTable": "source_table"
+    }
+  ]
+}

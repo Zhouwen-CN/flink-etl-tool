@@ -1,0 +1,27 @@
+{
+  "job": {
+    "name": "stream-mock2console-random-interval",
+    "mode": "streaming",
+    "parallelism": 1
+  },
+  "sources": [
+    {
+      "type": "mock",
+      "outputTable": "source_table",
+      "config": {
+        "schema": {
+          "eventId": "LONG",
+          "eventType": "STRING",
+          "timestamp": "TIMESTAMP"
+        },
+        "intervalMs": 500
+      }
+    }
+  ],
+  "sinks": [
+    {
+      "type": "console",
+      "inputTable": "source_table"
+    }
+  ]
+}

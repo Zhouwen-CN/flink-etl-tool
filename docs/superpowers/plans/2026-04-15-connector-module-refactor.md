@@ -818,7 +818,7 @@ Expected: 打包成功，生成 JAR 文件
 - [ ] **Step 2: 运行示例任务**
 
 ```bash
-java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar --file docs/examples/mysql-to-console.json
+java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar --file docs/examples/batch-mysql2console.json
 ```
 
 Expected: 任务运行成功，输出正常

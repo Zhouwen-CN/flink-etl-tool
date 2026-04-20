@@ -16,11 +16,11 @@ mvn clean compile
 mvn clean package
 
 # 运行 ETL 任务
-java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar --file docs/examples/mysql-to-console.json
+java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar --file docs/examples/batch-mysql2console.json
 
 # 运行带变量替换的 ETL 任务
 java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar \
-  --file docs/examples/mysql-to-console.json \
+  --file docs/examples/batch-mysql2console.json \
   --db_url jdbc:mysql://localhost:3306/test \
   --db_user root \
   --db_password secret

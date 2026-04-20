@@ -1,31 +1,31 @@
 {
   "job": {
-    "name": "mysql-to-mysql",
+    "name": "batch-mysql2mysql-custom-mode",
     "mode": "batch",
     "parallelism": 1
   },
   "sources": [
     {
       "type": "jdbc",
-      "outputTable": "source_data",
+      "outputTable": "source_table",
       "config": {
         "url": "jdbc:mysql://127.0.0.1:3306/test_db",
         "table": "user_table",
         "username": "root",
-        "password": "123456",
-        "splitKey": "id"
+        "password": "123456"
       }
     }
   ],
   "sinks": [
     {
       "type": "jdbc",
-      "inputTable": "source_data",
+      "inputTable": "source_table",
       "config": {
         "url": "jdbc:mysql://127.0.0.1:3306/test_db",
-        "sql": "INSERT INTO user_table_2 (id,name,age,email) VALUES(:id,:name,:age,:email) ON DUPLICATE KEY UPDATE name=VALUES(name),age=VALUES(age),email=VALUES(email)",
         "username": "root",
-        "password": "123456"
+        "password": "123456",
+        "mode": "custom",
+        "sql": "INSERT INTO user_table_2(id, name, age, email) VALUES(:id, :name, :age, :email) ON DUPLICATE KEY UPDATE name=VALUES(name), age=VALUES(age), email=VALUES(email)"
       }
     }
   ]

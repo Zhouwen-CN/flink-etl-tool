@@ -853,7 +853,7 @@ Expected: BUILD SUCCESS
 ```bash
 # 测试自动推断 splitKey
 java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar \
-  --file docs/examples/mysql-to-console.json
+  --file docs/examples/batch-mysql2console.json
 ```
 
 Expected: 任务成功执行，日志显示自动推断的 splitKey

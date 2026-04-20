@@ -1310,7 +1310,7 @@ Expected: BUILD SUCCESS，生成 JAR 文件
 - [ ] **Step 2: Commit**
 
 ```bash
-git add docs/examples/http-to-console.json
+git add docs/examples/batch-http2console.json
 git commit -m "docs: 添加 HTTP Source 示例配置"
 ```
 

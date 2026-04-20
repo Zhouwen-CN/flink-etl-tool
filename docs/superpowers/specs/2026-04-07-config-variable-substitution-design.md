@@ -291,7 +291,7 @@ public static JobConfig parse(String[] args) {
 **传递必需参数**：
 ```bash
 java -jar flink-etl-client.jar \
-  --file config/mysql-to-console.json \
+  --file config/batch-mysql2console.json \
   --db_url "jdbc:mysql://localhost:3306/test" \
   --db_password "secret123"
 ```
@@ -302,7 +302,7 @@ java -jar flink-etl-client.jar \
 **覆盖默认值**：
 ```bash
 java -jar flink-etl-client.jar \
-  --file config/mysql-to-console.json \
+  --file config/batch-mysql2console.json \
   --db_url "jdbc:mysql://prod-server:3306/prod_db" \
   --db_user "prod_user" \
   --db_password "prod_secret"
@@ -366,7 +366,7 @@ java -jar flink-etl-client.jar \
 ```bash
 # 运行带变量替换的 ETL 任务
 java -jar flink-etl-client.jar \
-  --file config/mysql-to-console.json \
+  --file config/batch-mysql2console.json \
   --db_url jdbc:mysql://localhost:3306/test \
   --db_user root \
   --db_password secret

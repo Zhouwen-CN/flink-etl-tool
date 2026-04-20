@@ -1442,7 +1442,7 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 ```bash
 cd flink-etl-client
 mvn clean package
-java -jar target/flink-etl-client-1.0.0-SNAPSHOT.jar --file ../docs/examples/mysql-to-console.json
+java -jar target/flink-etl-client-1.0.0-SNAPSHOT.jar --file ../docs/examples/batch-mysql2console.json
 ```
 
 Expected: 任务成功运行，控制台输出数据
@@ -1453,7 +1453,7 @@ Expected: 任务成功运行，控制台输出数据
 
 ```bash
 # 创建测试配置
-cat > docs/examples/mysql-to-mysql.json << 'EOF'
+cat > docs/examples/batch-mysql2mysql-upsert-mode.json << 'EOF'
 {
   "job": {
     "name": "mysql-to-mysql-test",
@@ -1485,7 +1485,7 @@ cat > docs/examples/mysql-to-mysql.json << 'EOF'
 EOF
 
 # 运行测试
-java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar --file docs/examples/mysql-to-mysql.json
+java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar --file docs/examples/batch-mysql2mysql-upsert-mode.json
 ```
 
 Expected: 任务成功运行，数据从源表写入目标表
@@ -1493,7 +1493,7 @@ Expected: 任务成功运行，数据从源表写入目标表
 - [ ] **Step 3: 提交测试配置**
 
 ```bash
-git add docs/examples/mysql-to-mysql.json
+git add docs/examples/batch-mysql2mysql-upsert-mode.json
 git commit -m "test: 新增 JDBC Sink 集成测试配置
 
 - 测试 MySQL 到 MySQL 的数据同步

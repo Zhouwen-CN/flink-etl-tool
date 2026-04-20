@@ -392,7 +392,7 @@ git commit -m "docs: 更新 Kafka Source 配置文档，startingOffsets 改为 s
 - [ ] **Step 3: 提交**
 
 ```bash
-git add docs/examples/kafka-to-console.json docs/examples/kafka-regex-to-console.json
+git add docs/examples/stream-kafka2console.json docs/examples/stream-kafka2console-topic-pattern.json
 git commit -m "docs: 更新 Kafka Source 示例配置，使用 startupMode"
 ```
 

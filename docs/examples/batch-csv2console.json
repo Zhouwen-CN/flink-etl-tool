@@ -1,13 +1,13 @@
 {
   "job": {
-    "name": "csv-to-console",
+    "name": "batch-csv2console",
     "mode": "batch",
     "parallelism": 1
   },
   "sources": [
     {
       "type": "localfile",
-      "outputTable": "csv_source",
+      "outputTable": "source_table",
       "config": {
         "path": "docs/examples/data/*.csv",
         "format": "csv",
@@ -26,16 +26,16 @@
   "transforms": [
     {
       "type": "sql",
-      "outputTable": "csv_source_transformed",
+      "outputTable": "transform_table",
       "config": {
-        "sql": "SELECT *,hash_code(email) as hash_code FROM csv_source"
+        "sql": "SELECT *,hash_code(email) as hash_code FROM source_table"
       }
     }
   ],
   "sinks": [
     {
       "type": "console",
-      "inputTable": "csv_source_transformed"
+      "inputTable": "transform_table"
     }
   ]
 }

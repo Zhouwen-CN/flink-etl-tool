@@ -1,0 +1,32 @@
+{
+  "job": {
+    "name": "batch-mysql2mysql-upsert-mode",
+    "mode": "batch",
+    "parallelism": 1
+  },
+  "sources": [
+    {
+      "type": "jdbc",
+      "outputTable": "source_table",
+      "config": {
+        "url": "jdbc:mysql://127.0.0.1:3306/test_db",
+        "table": "user_table",
+        "username": "root",
+        "password": "123456"
+      }
+    }
+  ],
+  "sinks": [
+    {
+      "type": "jdbc",
+      "inputTable": "source_table",
+      "config": {
+        "url": "jdbc:mysql://127.0.0.1:3306/test_db",
+        "mode": "upsert",
+        "table": "user_table_2",
+        "username": "root",
+        "password": "123456"
+      }
+    }
+  ]
+}

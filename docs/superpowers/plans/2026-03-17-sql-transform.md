@@ -1049,7 +1049,7 @@ git commit -m "refactor: 删除 FieldMappingTransformPlugin，被 SQL Transform 
 - [ ] **Step 1: 更新示例配置**
 
 ```json
-// 文件: docs/examples/mysql-to-console.json
+// 文件: docs/examples/batch-mysql2console.json
 // 完整替换
 
 {
@@ -1096,7 +1096,7 @@ git commit -m "refactor: 删除 FieldMappingTransformPlugin，被 SQL Transform 
 - [ ] **Step 2: 提交**
 
 ```bash
-git add docs/examples/mysql-to-console.json
+git add docs/examples/batch-mysql2console.json
 git commit -m "docs: 更新示例配置，使用 SQL Transform"
 ```
 

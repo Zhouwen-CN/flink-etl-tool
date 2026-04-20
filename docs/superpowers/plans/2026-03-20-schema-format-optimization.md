@@ -1014,7 +1014,7 @@ Expected: JSON valid
 - [ ] **Step 6: Commit**
 
 ```bash
-git add docs/schema/job-config.schema.json docs/examples/csv-to-console.json
+git add docs/schema/job-config.schema.json docs/examples/batch-csv2console.json
 git commit -m "docs: 更新 JSON Schema 和示例配置使用对象格式 schema"
 ```
 

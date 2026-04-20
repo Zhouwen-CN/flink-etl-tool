@@ -1216,7 +1216,7 @@ public class EtlApplication {
     public static void main(String[] args) {
         if (args.length < 1) {
             System.err.println("用法: java -jar etl-tool.jar <localFileSourceConfig.json>");
-            System.err.println("示例: java -jar etl-tool.jar localFileSourceConfig/mysql-to-console.json");
+            System.err.println("示例: java -jar etl-tool.jar localFileSourceConfig/batch-mysql2console.json");
             System.exit(1);
         }
 
@@ -1613,7 +1613,7 @@ mvn test -pl flink-etl-core
 mvn clean package
 
 # 运行（需要先实现 Source 插件）
-java -cp flink-etl-core/target/flink-etl-core-1.0.0-SNAPSHOT.jar:flink-etl-sink/flink-etl-sink-console/target/flink-etl-sink-console-1.0.0-SNAPSHOT.jar:flink-etl-transform/target/flink-etl-transform-1.0.0-SNAPSHOT.jar com.etl.core.EtlApplication docs/examples/mysql-to-console.json
+java -cp flink-etl-core/target/flink-etl-core-1.0.0-SNAPSHOT.jar:flink-etl-sink/flink-etl-sink-console/target/flink-etl-sink-console-1.0.0-SNAPSHOT.jar:flink-etl-transform/target/flink-etl-transform-1.0.0-SNAPSHOT.jar com.etl.core.EtlApplication docs/examples/batch-mysql2console.json
 ```
 
 ---

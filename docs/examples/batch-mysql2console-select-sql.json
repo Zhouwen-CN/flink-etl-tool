@@ -1,18 +1,19 @@
 {
   "job": {
-    "name": "mysql-custom-sql-to-console",
+    "name": "batch-mysql2console-select-sql",
     "mode": "batch",
-    "parallelism": 2
+    "parallelism": 1
   },
   "sources": [
     {
       "type": "jdbc",
-      "outputTable": "source_data",
+      "outputTable": "source_table",
       "config": {
         "url": "jdbc:mysql://127.0.0.1:3306/test_db",
-        "sql": "SELECT id, name, email FROM user_table WHERE age > 11",
+        "table": "user_table",
         "username": "root",
         "password": "123456",
+        "sql": "SELECT id, name, email FROM user_table WHERE age > 11",
         "splitKey": "id"
       }
     }
@@ -20,8 +21,7 @@
   "sinks": [
     {
       "type": "console",
-      "inputTable": "source_data",
-      "config": {}
+      "inputTable": "source_table"
     }
   ]
 }

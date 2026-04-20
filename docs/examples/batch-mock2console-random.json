@@ -1,0 +1,28 @@
+{
+  "job": {
+    "name": "batch-mock2console-random",
+    "mode": "batch",
+    "parallelism": 1
+  },
+  "sources": [
+    {
+      "type": "mock",
+      "outputTable": "source_table",
+      "config": {
+        "schema": {
+          "orderId": "LONG",
+          "amount": "DOUBLE",
+          "status": "STRING",
+          "created_at": "TIMESTAMP"
+        },
+        "numRows": 50
+      }
+    }
+  ],
+  "sinks": [
+    {
+      "type": "console",
+      "inputTable": "source_table"
+    }
+  ]
+}

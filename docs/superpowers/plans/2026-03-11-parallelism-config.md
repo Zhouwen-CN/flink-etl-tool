@@ -337,7 +337,7 @@ git commit -m "test: 添加 JobExecutor 并行度配置集成测试"
 - [ ] **Step 2: 提交示例配置更新**
 
 ```bash
-git add docs/examples/mysql-to-console.json
+git add docs/examples/batch-mysql2console.json
 git commit -m "docs: 示例配置添加 parallelism 并行度配置"
 ```
 

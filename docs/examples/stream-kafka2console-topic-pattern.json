@@ -1,0 +1,47 @@
+{
+  "job": {
+    "name": "stream-kafka2console-topic-pattern",
+    "mode": "streaming",
+    "parallelism": 1
+  },
+  "sources": [
+    {
+      "type": "kafka",
+      "outputTable": "source_table",
+      "config": {
+        "bootstrapServers": "127.0.0.1:9092",
+        "groupId": "flink-etl-tool",
+        "topicPattern": "test-.*",
+        "startingOffsets": "earliest",
+        "schema": {
+          "id": "LONG",
+          "name": "STRING",
+          "hobby": [
+            "STRING"
+          ],
+          "address": {
+            "city": "STRING",
+            "zipcodes": [
+              "INT"
+            ]
+          },
+          "friends": [
+            {
+              "name": "STRING",
+              "age": "INT",
+              "tags": [
+                "STRING"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "sinks": [
+    {
+      "type": "console",
+      "inputTable": "source_table"
+    }
+  ]
+}

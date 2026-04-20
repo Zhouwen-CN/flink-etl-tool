@@ -1977,7 +1977,7 @@ git commit -m "docs: PLUGINS.md 新增 Mock Source 说明"
 
 ```bash
 java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar \
-  --file docs/examples/mock-batch-fixed.json
+  --file docs/examples/batch-mock2console-fixed.json
 ```
 
 Expected: Console outputs 3 rows with correct RowKind markers.
@@ -1986,7 +1986,7 @@ Expected: Console outputs 3 rows with correct RowKind markers.
 
 ```bash
 java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar \
-  --file docs/examples/mock-batch-random.json
+  --file docs/examples/batch-mock2console-random.json
 ```
 
 Expected: Console outputs 50 randomly generated rows.
@@ -1995,7 +1995,7 @@ Expected: Console outputs 50 randomly generated rows.
 
 ```bash
 java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar \
-  --file docs/examples/mock-streaming.json
+  --file docs/examples/stream-mock2console-random-interval.json
 ```
 
 Expected: Console continuously outputs rows every 500ms. Manually stop after observing several rows.

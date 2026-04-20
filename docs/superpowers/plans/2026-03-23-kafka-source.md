@@ -589,7 +589,7 @@ git commit -m "feat: 添加 Kafka Source 到客户端依赖"
 - [ ] **Step 3: Commit**
 
 ```bash
-git add docs/examples/kafka-to-console.json docs/examples/kafka-regex-to-console.json
+git add docs/examples/stream-kafka2console.json docs/examples/stream-kafka2console-topic-pattern.json
 git commit -m "docs: 新增 Kafka Source 配置示例"
 ```
 

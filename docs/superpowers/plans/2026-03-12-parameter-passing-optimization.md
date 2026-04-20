@@ -475,7 +475,7 @@ public class EtlClient {
         System.err.println("  --localFileSourceConfig <json>    从 JSON 字符串加载配置");
         System.err.println();
         System.err.println("示例:");
-        System.err.println("  java -jar flink-etl-tool.jar --file localFileSourceConfig/mysql-to-console.json");
+        System.err.println("  java -jar flink-etl-tool.jar --file localFileSourceConfig/batch-mysql2console.json");
         System.err.println("  java -jar flink-etl-tool.jar --localFileSourceConfig '{\"job\":{\"name\":\"test\",\"mode\":\"batch\"},...}'");
         System.err.println();
         System.err.println("注意:");
@@ -616,7 +616,7 @@ java -jar flink-etl-client-1.0.0-SNAPSHOT.jar --localFileSourceConfig '{"job":{"
 旧版本参数格式仍然支持（已弃用）：
 
 ```bash
-java -jar flink-etl-tool.jar localFileSourceConfig/mysql-to-console.json
+java -jar flink-etl-tool.jar localFileSourceConfig/batch-mysql2console.json
 ```
 
 建议尽快迁移到新参数格式。
