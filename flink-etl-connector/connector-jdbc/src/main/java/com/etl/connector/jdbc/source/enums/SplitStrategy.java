@@ -38,6 +38,27 @@ public enum SplitStrategy {
     }),
 
     /**
+     * 字符串 Hash Mod 分片
+     * 支持字符串类型：CHAR, VARCHAR, LONGVARCHAR, NCHAR, NVARCHAR
+     */
+    STRING_HASH("字符串 Hash Mod 分片", new int[]{
+            Types.CHAR,
+            Types.VARCHAR,
+            Types.LONGVARCHAR,
+            Types.NCHAR,
+            Types.NVARCHAR
+    }),
+
+    /**
+     * 日期动态粒度分片
+     * 支持日期类型：DATE, TIMESTAMP
+     */
+    DATE_RANGE("日期动态粒度分片", new int[]{
+            Types.DATE,
+            Types.TIMESTAMP
+    }),
+
+    /**
      * 全表扫描（无分片）
      * 当 splitColumn 未配置时使用
      */
@@ -56,6 +77,7 @@ public enum SplitStrategy {
 
     private static Map<Integer, String> createJdbcTypeNames() {
         Map<Integer, String> map = new HashMap<>();
+        // 数值类型
         map.put(Types.TINYINT, "TINYINT");
         map.put(Types.SMALLINT, "SMALLINT");
         map.put(Types.INTEGER, "INTEGER");
@@ -65,6 +87,15 @@ public enum SplitStrategy {
         map.put(Types.DOUBLE, "DOUBLE");
         map.put(Types.NUMERIC, "NUMERIC");
         map.put(Types.DECIMAL, "DECIMAL");
+        // 字符串类型
+        map.put(Types.CHAR, "CHAR");
+        map.put(Types.VARCHAR, "VARCHAR");
+        map.put(Types.LONGVARCHAR, "LONGVARCHAR");
+        map.put(Types.NCHAR, "NCHAR");
+        map.put(Types.NVARCHAR, "NVARCHAR");
+        // 日期类型
+        map.put(Types.DATE, "DATE");
+        map.put(Types.TIMESTAMP, "TIMESTAMP");
         return map;
     }
 
