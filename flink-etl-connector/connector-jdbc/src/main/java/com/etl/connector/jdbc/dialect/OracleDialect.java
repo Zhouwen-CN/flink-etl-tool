@@ -74,4 +74,27 @@ public class OracleDialect implements JdbcDialect {
                 updateClause, colList, insertValues
         );
     }
+
+    @Override
+    public String hashModExpression(String columnName, int modulus) {
+        // Oracle 使用 ORA_HASH 函数，第二个参数是 max_bucket（所以是 modulus-1）
+        return String.format("ORA_HASH(%s, %d)", columnName, modulus - 1);
+    }
+
+    @Override
+    public String buildDateRangeQuery(String baseQuery, String columnName,
+                                       String startDate, String endDate) {
+        if (startDate == null && endDate == null) {
+            return baseQuery;
+        } else if (startDate == null) {
+            return String.format("%s WHERE %s < TO_DATE('%s', 'YYYY-MM-DD')",
+                baseQuery, columnName, endDate);
+        } else if (endDate == null) {
+            return String.format("%s WHERE %s >= TO_DATE('%s', 'YYYY-MM-DD')",
+                baseQuery, columnName, startDate);
+        } else {
+            return String.format("%s WHERE %s >= TO_DATE('%s', 'YYYY-MM-DD') AND %s < TO_DATE('%s', 'YYYY-MM-DD')",
+                baseQuery, columnName, startDate, columnName, endDate);
+        }
+    }
 }

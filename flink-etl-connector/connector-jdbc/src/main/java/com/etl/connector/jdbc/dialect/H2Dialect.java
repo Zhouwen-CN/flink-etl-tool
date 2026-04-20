@@ -51,4 +51,25 @@ public class H2Dialect implements JdbcDialect {
         return String.format("MERGE INTO %s (%s) KEY(%s) VALUES (%s)",
                 quoteIdentifier(table), colList, keyColumns, placeholders);
     }
+
+    @Override
+    public String hashModExpression(String columnName, int modulus) {
+        // H2 使用 HASH 函数（需要转为整数）
+        return String.format("MOD(HASH(%s), %d)", columnName, modulus);
+    }
+
+    @Override
+    public String buildDateRangeQuery(String baseQuery, String columnName,
+                                       String startDate, String endDate) {
+        if (startDate == null && endDate == null) {
+            return baseQuery;
+        } else if (startDate == null) {
+            return String.format("%s WHERE %s < '%s'", baseQuery, columnName, endDate);
+        } else if (endDate == null) {
+            return String.format("%s WHERE %s >= '%s'", baseQuery, columnName, startDate);
+        } else {
+            return String.format("%s WHERE %s >= '%s' AND %s < '%s'",
+                baseQuery, columnName, startDate, columnName, endDate);
+        }
+    }
 }
