@@ -3,7 +3,11 @@ package com.etl.connector.jdbc.source;
 import com.etl.core.source.BaseSplitEnumerator;
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import com.etl.connector.jdbc.source.enums.SplitStrategy;
-import com.etl.connector.jdbc.source.utils.JdbcSplitHelper;
+import com.etl.connector.jdbc.source.splitter.ChunkSplitter;
+import com.etl.connector.jdbc.source.splitter.DateSplitter;
+import com.etl.connector.jdbc.source.splitter.FullTableScanSplitter;
+import com.etl.connector.jdbc.source.splitter.NumericSplitter;
+import com.etl.connector.jdbc.source.splitter.StringHashSplitter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 
@@ -39,33 +43,39 @@ public class JdbcSplitEnumerator extends BaseSplitEnumerator<RangeSplit, RangeEn
 
     @Override
     public void start() {
-        log.info("JDBC SplitEnumerator 启动，开始计算分片");
+        log.info("启动 SplitEnumerator，并行度: {}", context.currentParallelism());
 
-        List<RangeSplit> splits;
+        JdbcSourceConfig config = this.jdbcSourceConfig;
+        int parallelism = context.currentParallelism();
+        SplitStrategy strategy = config.getSplitStrategy();
 
-        // 根据分片策略决定分片方式
-        if (jdbcSourceConfig.getSplitStrategy() == SplitStrategy.FULL_TABLE_SCAN) {
-            // 全表扫描模式，生成单个分片
-            log.warn("使用单分片全表扫描模式");
-            splits = JdbcSplitHelper.createFullTableScanSplits(
-                    jdbcSourceConfig.getDialect(),
-                    jdbcSourceConfig.getTable(),
-                    jdbcSourceConfig.getSql());
-        } else {
-            // 数值范围分片模式
-            splits = JdbcSplitHelper.calculateNumericSplits(
-                    jdbcSourceConfig.getDialect(),
-                    jdbcSourceConfig.getUrl(),
-                    jdbcSourceConfig.getUsername(),
-                    jdbcSourceConfig.getPassword(),
-                    jdbcSourceConfig.getTable(),
-                    jdbcSourceConfig.getSql(),
-                    jdbcSourceConfig.getSplitKey(),
-                    context.currentParallelism());
-        }
+        // 1. 创建对应的 Splitter
+        ChunkSplitter splitter = createSplitter(strategy, config, parallelism);
 
+        // 2. 生成分片
+        List<RangeSplit> splits = splitter.generateSplits();
+        log.info("共生成 {} 个分片", splits.size());
+
+        // 3. 添加到待分配列表（由父类处理分配逻辑）
         addPendingSplits(splits);
-        log.info("JDBC SplitEnumerator 启动完成，分片数: {}", splits.size());
+        log.info("JDBC SplitEnumerator 启动完成");
+    }
+
+    private ChunkSplitter createSplitter(SplitStrategy strategy,
+                                         JdbcSourceConfig config,
+                                         int parallelism) {
+        switch (strategy) {
+            case NUMERIC:
+                return new NumericSplitter(config, parallelism);
+            case STRING_HASH:
+                return new StringHashSplitter(config, parallelism);
+            case DATE_RANGE:
+                return new DateSplitter(config, parallelism);
+            case FULL_TABLE_SCAN:
+                return new FullTableScanSplitter(config, parallelism);
+            default:
+                throw new IllegalArgumentException("未知的分片策略: " + strategy);
+        }
     }
 
     @Override
