@@ -1,17 +1,17 @@
 package com.etl.connector.jdbc.source;
 
-import com.etl.core.config.SourceConfig;
 import com.etl.connector.jdbc.dialect.JdbcDialect;
 import com.etl.connector.jdbc.dialect.JdbcDialectLoader;
+import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
+import com.etl.connector.jdbc.source.enums.SplitStrategy;
+import com.etl.connector.jdbc.utils.JdbcSplitHelper;
+import com.etl.core.config.SourceConfig;
 import com.etl.core.exception.NoPrimaryKeyException;
 import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseSplitReader;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
 import com.etl.core.utils.SqlUtils;
-import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
-import com.etl.connector.jdbc.source.enums.SplitStrategy;
-import com.etl.connector.jdbc.source.utils.JdbcSplitHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -161,8 +161,8 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
             SplitStrategy strategy = SplitStrategy.fromJdbcType(jdbcType);
             if (strategy == null) {
                 throw new IllegalArgumentException(
-                        String.format("分片列 '%s' 的 JDBC 类型(%d)不支持分片。支持的类型: %s",
-                                userSplitKey, jdbcType, SplitStrategy.NUMERIC.getSupportedTypeNames()));
+                        String.format("分片列 '%s' 的 JDBC 类型(%s)不支持分片。", userSplitKey, JdbcSplitHelper.getJdbcTypeName(jdbcType))
+                );
             }
             log.info("分片列 '{}' 使用策略: {}", userSplitKey, strategy.getDescription());
             return Pair.of(userSplitKey, strategy);
@@ -178,17 +178,16 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
                 }
 
                 // 从主键中选择最优的 splitKey
-                String optimalKey = JdbcSplitHelper.selectOptimalSplitKey(primaryKeys);
-                if (optimalKey != null) {
-                    int jdbcType = primaryKeys.get(optimalKey);
-                    SplitStrategy strategy = SplitStrategy.fromJdbcType(jdbcType);
+                Pair<String, SplitStrategy> pair = SplitStrategy.fromPrimaryKeys(primaryKeys);
+                if (pair != null) {
+                    String optimalKey = pair.getKey();
+                    SplitStrategy strategy = pair.getValue();
                     log.info("自动推断分片列 '{}' (类型: {}), 使用策略: {}",
-                            optimalKey, JdbcSplitHelper.getJdbcTypeName(jdbcType), strategy.getDescription());
+                            optimalKey, JdbcSplitHelper.getJdbcTypeName(primaryKeys.get(optimalKey)), strategy.getDescription());
                     return Pair.of(optimalKey, strategy);
                 } else {
                     // 主键列类型都不支持，降级为单分片模式
-                    log.warn("表 '{}' 的主键列类型都不支持分片，将使用单分片全表扫描模式。支持的类型: {}",
-                            table, SplitStrategy.NUMERIC.getSupportedTypeNames());
+                    log.warn("表 '{}' 的主键列类型都不支持分片，将使用单分片全表扫描模式。", table);
                     return Pair.of(null, SplitStrategy.FULL_TABLE_SCAN);
                 }
             } catch (NoPrimaryKeyException e) {

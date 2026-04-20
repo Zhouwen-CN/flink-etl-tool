@@ -54,7 +54,7 @@ public class PostgreSQLDialect implements JdbcDialect {
     @Override
     public String hashModExpression(String columnName, int modulus) {
         // PostgreSQL 有内置的 hashtext 函数
-        return String.format("hashtext(%s) %% %d", columnName, modulus);
+        return String.format("ABS(hashtext(%s) %% %d)", columnName, modulus);
     }
 
     @Override

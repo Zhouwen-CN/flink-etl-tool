@@ -72,7 +72,7 @@ public class MySQLDialect implements JdbcDialect {
     @Override
     public String hashModExpression(String columnName, int modulus) {
         // MySQL 使用 MD5 函数 + CAST 转为数值
-        return String.format("CAST(MD5(%s) AS UNSIGNED) %% %d", columnName, modulus);
+        return String.format("ABS(CRC32(%s) %% %d)", columnName, modulus);
     }
 
     @Override

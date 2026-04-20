@@ -277,13 +277,6 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 - 示例：`WHERE id >= 0 AND id < 100`
 - 适用场景：数值主键、数值索引列
 
-**STRING_HASH（字符串 Hash Mod 分片）**
-- 支持类型：VARCHAR、CHAR、NVARCHAR 等
-- 分片方式：使用数据库 hash 函数（MD5、hashtext、ORA_HASH）→ 按 hash 值分片
-- 示例（MySQL）：`WHERE CAST(MD5(username) AS UNSIGNED) % 10 = 0`
-- 适用场景：字符串主键、字符串索引列
-- 注意：各数据库使用不同的 hash 函数
-
 **DATE_RANGE（日期动态粒度分片）**
 - 支持类型：DATE、TIMESTAMP
 - 分片方式：查询 MIN/MAX 日期 → 计算总天数 → 动态决定每个分片天数
@@ -296,11 +289,19 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 - 无法并行读取
 - 适用场景：小表、无主键表
 
+**STRING_HASH（字符串 Hash Mod 分片）**
+
+- 支持类型：VARCHAR、CHAR、NVARCHAR 等
+- 分片方式：使用数据库 hash 函数（MD5、hashtext、ORA_HASH）→ 按 hash 值分片
+- 示例（MySQL）：`WHERE ABS(CRC32(column) % 10) = 0`
+- 适用场景：字符串主键、字符串索引列
+- 注意：各数据库使用不同的 hash 函数
+
 #### 自动推断逻辑
 
 - 配置了 `splitKey` → 验证类型 → 选择对应策略
-- 配置了 `table` → 自动从主键推断 → 选择最优类型
-- 配置了 `sql`（无 table）→ 单分片全表扫描
+- 配置了 `table`，未配置 `splitKey` → 自动从主键推断 → 选择最优类型
+- 配置了 `sql`，未配置 `splitKey` 和 `table` → 单分片全表扫描
 
 #### 配置示例
 

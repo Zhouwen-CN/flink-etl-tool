@@ -1,4 +1,4 @@
-package com.etl.connector.jdbc.source.utils;
+package com.etl.connector.jdbc.utils;
 
 import com.etl.connector.jdbc.dialect.JdbcDialect;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Types;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -21,6 +22,30 @@ public final class JdbcSplitHelper {
 
     private JdbcSplitHelper() {
         // 工具类不允许实例化
+    }
+
+    private static final Map<Integer, String> JDBC_TYPE_NAMES = new HashMap<>();
+
+    static {
+        // 数值类型
+        JDBC_TYPE_NAMES.put(Types.TINYINT, "TINYINT");
+        JDBC_TYPE_NAMES.put(Types.SMALLINT, "SMALLINT");
+        JDBC_TYPE_NAMES.put(Types.INTEGER, "INTEGER");
+        JDBC_TYPE_NAMES.put(Types.BIGINT, "BIGINT");
+        JDBC_TYPE_NAMES.put(Types.FLOAT, "FLOAT");
+        JDBC_TYPE_NAMES.put(Types.REAL, "REAL");
+        JDBC_TYPE_NAMES.put(Types.DOUBLE, "DOUBLE");
+        JDBC_TYPE_NAMES.put(Types.NUMERIC, "NUMERIC");
+        JDBC_TYPE_NAMES.put(Types.DECIMAL, "DECIMAL");
+        // 字符串类型
+        JDBC_TYPE_NAMES.put(Types.CHAR, "CHAR");
+        JDBC_TYPE_NAMES.put(Types.VARCHAR, "VARCHAR");
+        JDBC_TYPE_NAMES.put(Types.LONGVARCHAR, "LONGVARCHAR");
+        JDBC_TYPE_NAMES.put(Types.NCHAR, "NCHAR");
+        JDBC_TYPE_NAMES.put(Types.NVARCHAR, "NVARCHAR");
+        // 日期类型
+        JDBC_TYPE_NAMES.put(Types.DATE, "DATE");
+        JDBC_TYPE_NAMES.put(Types.TIMESTAMP, "TIMESTAMP");
     }
 
 
@@ -61,39 +86,6 @@ public final class JdbcSplitHelper {
         }
     }
 
-    /**
-     * 从主键列中选择最优的可用分片列
-     * 优先级：BIGINT > INTEGER > SMALLINT > TINYINT > DECIMAL/NUMERIC > FLOAT/REAL/DOUBLE
-     *
-     * @param primaryKeys 主键 Map<列名, JDBC类型>
-     * @return 最优的 splitKey 列名，null 表示无可用类型
-     */
-    public static String selectOptimalSplitKey(Map<String, Integer> primaryKeys) {
-        // 定义类型优先级（数值越大优先级越高）
-        Map<Integer, Integer> typePriority = new HashMap<>();
-        typePriority.put(java.sql.Types.BIGINT, 6);
-        typePriority.put(java.sql.Types.INTEGER, 5);
-        typePriority.put(java.sql.Types.SMALLINT, 4);
-        typePriority.put(java.sql.Types.TINYINT, 3);
-        typePriority.put(java.sql.Types.DECIMAL, 2);
-        typePriority.put(java.sql.Types.NUMERIC, 2);
-        typePriority.put(java.sql.Types.FLOAT, 1);
-        typePriority.put(java.sql.Types.REAL, 1);
-        typePriority.put(java.sql.Types.DOUBLE, 1);
-
-        String selectedKey = null;
-        int selectedPriority = 0;
-
-        for (Map.Entry<String, Integer> entry : primaryKeys.entrySet()) {
-            Integer priority = typePriority.get(entry.getValue());
-            if (priority != null && priority > selectedPriority) {
-                selectedKey = entry.getKey();
-                selectedPriority = priority;
-            }
-        }
-
-        return selectedKey;
-    }
 
     /**
      * 获取 JDBC 类型名称（用于日志输出）
@@ -102,19 +94,6 @@ public final class JdbcSplitHelper {
      * @return 类型名称
      */
     public static String getJdbcTypeName(int jdbcType) {
-        switch (jdbcType) {
-            case java.sql.Types.BIGINT: return "BIGINT";
-            case java.sql.Types.INTEGER: return "INTEGER";
-            case java.sql.Types.SMALLINT: return "SMALLINT";
-            case java.sql.Types.TINYINT: return "TINYINT";
-            case java.sql.Types.DECIMAL: return "DECIMAL";
-            case java.sql.Types.NUMERIC: return "NUMERIC";
-            case java.sql.Types.FLOAT: return "FLOAT";
-            case java.sql.Types.REAL: return "REAL";
-            case java.sql.Types.DOUBLE: return "DOUBLE";
-            default: return String.valueOf(jdbcType);
-        }
+        return JDBC_TYPE_NAMES.getOrDefault(jdbcType, "未知类型(" + jdbcType + ")");
     }
-
-
 }

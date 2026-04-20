@@ -1,6 +1,5 @@
 package com.etl.core.schema;
 
-import com.etl.core.exception.SchemaConfigException;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;
