@@ -1,7 +1,9 @@
 package com.etl.connector.jdbc.source.splitter;
 
+import com.etl.connector.jdbc.dialect.JdbcDialect;
 import com.etl.connector.jdbc.source.RangeSplit;
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
+import com.etl.connector.jdbc.source.enums.SplitStrategy;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.List;
@@ -13,12 +15,44 @@ import java.util.List;
 @Slf4j
 public abstract class ChunkSplitter {
 
+    protected final JdbcDialect dialect;
+    protected final String url;
+    protected final String username;
+    protected final String password;
+    protected final String table;
+    protected final String sql;
+    protected final String splitKey;
     protected final JdbcSourceConfig config;
     protected final int parallelism;
 
+
     public ChunkSplitter(JdbcSourceConfig config, int parallelism) {
+        this.dialect = config.getDialect();
+        this.url = config.getUrl();
+        this.username = config.getUsername();
+        this.password = config.getPassword();
+        this.table = config.getTable();
+        this.sql = config.getSql();
+        this.splitKey = config.getSplitKey();
         this.config = config;
         this.parallelism = parallelism;
+    }
+
+    public static ChunkSplitter create(SplitStrategy strategy,
+                                       JdbcSourceConfig config,
+                                       int parallelism) {
+        switch (strategy) {
+            case NUMERIC:
+                return new NumericSplitter(config, parallelism);
+            case STRING_HASH:
+                return new StringHashSplitter(config, parallelism);
+            case DATE_RANGE:
+                return new DateSplitter(config, parallelism);
+            case FULL_TABLE_SCAN:
+                return new FullTableScanSplitter(config, parallelism);
+            default:
+                throw new IllegalArgumentException("未知的分片策略: " + strategy);
+        }
     }
 
     /**
@@ -34,10 +68,6 @@ public abstract class ChunkSplitter {
      * @return 基础查询 SQL
      */
     protected String buildBaseQuery() {
-        String table = config.getTable();
-        String sql = config.getSql();
-        com.etl.connector.jdbc.dialect.JdbcDialect dialect = config.getDialect();
-
         if (table != null) {
             return "SELECT * FROM " + dialect.quoteIdentifier(table);
         } else {

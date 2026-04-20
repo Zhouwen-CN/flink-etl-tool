@@ -1,13 +1,9 @@
 package com.etl.connector.jdbc.source;
 
-import com.etl.core.source.BaseSplitEnumerator;
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import com.etl.connector.jdbc.source.enums.SplitStrategy;
 import com.etl.connector.jdbc.source.splitter.ChunkSplitter;
-import com.etl.connector.jdbc.source.splitter.DateSplitter;
-import com.etl.connector.jdbc.source.splitter.FullTableScanSplitter;
-import com.etl.connector.jdbc.source.splitter.NumericSplitter;
-import com.etl.connector.jdbc.source.splitter.StringHashSplitter;
+import com.etl.core.source.BaseSplitEnumerator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 
@@ -50,7 +46,7 @@ public class JdbcSplitEnumerator extends BaseSplitEnumerator<RangeSplit, RangeEn
         SplitStrategy strategy = config.getSplitStrategy();
 
         // 1. 创建对应的 Splitter
-        ChunkSplitter splitter = createSplitter(strategy, config, parallelism);
+        ChunkSplitter splitter = ChunkSplitter.create(strategy, config, parallelism);
 
         // 2. 生成分片
         List<RangeSplit> splits = splitter.generateSplits();
@@ -59,23 +55,6 @@ public class JdbcSplitEnumerator extends BaseSplitEnumerator<RangeSplit, RangeEn
         // 3. 添加到待分配列表（由父类处理分配逻辑）
         addPendingSplits(splits);
         log.info("JDBC SplitEnumerator 启动完成");
-    }
-
-    private ChunkSplitter createSplitter(SplitStrategy strategy,
-                                         JdbcSourceConfig config,
-                                         int parallelism) {
-        switch (strategy) {
-            case NUMERIC:
-                return new NumericSplitter(config, parallelism);
-            case STRING_HASH:
-                return new StringHashSplitter(config, parallelism);
-            case DATE_RANGE:
-                return new DateSplitter(config, parallelism);
-            case FULL_TABLE_SCAN:
-                return new FullTableScanSplitter(config, parallelism);
-            default:
-                throw new IllegalArgumentException("未知的分片策略: " + strategy);
-        }
     }
 
     @Override

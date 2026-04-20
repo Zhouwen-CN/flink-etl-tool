@@ -1,12 +1,15 @@
 package com.etl.connector.jdbc.source.splitter;
 
-import com.etl.connector.jdbc.dialect.JdbcDialect;
 import com.etl.connector.jdbc.source.RangeSplit;
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
-import com.etl.connector.jdbc.source.utils.JdbcSplitHelper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -27,15 +30,7 @@ public class NumericSplitter extends ChunkSplitter {
         log.info("使用数值分片模式，并行度: {}", parallelism);
 
         // 1. 查询 MIN/MAX 数值范围
-        Pair<Long, Long> range = JdbcSplitHelper.queryNumericMinMax(
-            config.getDialect(),
-            config.getUrl(),
-            config.getUsername(),
-            config.getPassword(),
-            config.getTable(),
-            config.getSql(),
-            config.getSplitKey()
-        );
+        Pair<Long, Long> range = this.queryNumericMinMax();
 
         // 空表检查
         if (range.getLeft() == null) {
@@ -66,8 +61,7 @@ public class NumericSplitter extends ChunkSplitter {
 
         // 3. 生成分片（使用开区间）
         List<RangeSplit> splits = new ArrayList<>();
-        JdbcDialect dialect = config.getDialect();
-        String column = dialect.quoteIdentifier(config.getSplitKey());
+        String column = dialect.quoteIdentifier(splitKey);
         String baseQuery = buildBaseQuery();
 
         long currentStart = min;
@@ -78,7 +72,7 @@ public class NumericSplitter extends ChunkSplitter {
             String querySql = String.format("%s WHERE %s >= %d AND %s < %d",
                 baseQuery, column, currentStart, column, currentEnd + 1);
 
-            String splitId = config.getSplitKey() + "_" + currentStart + "_" + currentEnd;
+            String splitId = splitKey + "_" + currentStart + "_" + currentEnd;
             splits.add(new RangeSplit(splitId, querySql));
 
             log.debug("分片 {}: {} 到 {}", i, currentStart, currentEnd);
@@ -88,5 +82,45 @@ public class NumericSplitter extends ChunkSplitter {
 
         log.info("生成 {} 个分片（数值开区间）", splits.size());
         return splits;
+    }
+
+    /**
+     * 查询数值列的 MIN/MAX 范围
+     *
+     * @return Pair<min, max>，如果为空表则返回 Pair.of(null, null)
+     */
+    public Pair<Long, Long> queryNumericMinMax() {
+
+        String column = dialect.quoteIdentifier(splitKey);
+        String rangeQuery;
+
+        if (table != null) {
+            String quotedTable = dialect.quoteIdentifier(table);
+            rangeQuery = String.format("SELECT MIN(%s), MAX(%s) FROM %s",
+                    column, column, quotedTable);
+        } else {
+            rangeQuery = String.format("SELECT MIN(%s), MAX(%s) FROM (%s) AS t",
+                    column, column, sql);
+        }
+
+        try (Connection conn = DriverManager.getConnection(url, username, password);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(rangeQuery)) {
+
+            if (rs.next()) {
+                // 检查是否为 NULL（空表时 MIN/MAX 返回 NULL）
+                if (rs.getObject(1) == null) {
+                    return Pair.of(null, null);
+                }
+                long min = rs.getLong(1);
+                long max = rs.getLong(2);
+                return Pair.of(min, max);
+            }
+
+            return Pair.of(null, null);
+
+        } catch (SQLException e) {
+            throw new RuntimeException("获取数值范围失败: " + e.getMessage(), e);
+        }
     }
 }
