@@ -3,8 +3,10 @@ package com.etl.connector.jdbc.source.utils;
 import com.etl.connector.jdbc.dialect.JdbcDialect;
 import com.etl.connector.jdbc.source.RangeSplit;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -262,6 +264,100 @@ public final class JdbcSplitHelper {
             case java.sql.Types.REAL: return "REAL";
             case java.sql.Types.DOUBLE: return "DOUBLE";
             default: return String.valueOf(jdbcType);
+        }
+    }
+
+    /**
+     * 查询数值列的 MIN/MAX 范围
+     *
+     * @param dialect     数据库方言
+     * @param url         数据库连接 URL
+     * @param username    用户名
+     * @param password    密码
+     * @param table       表名（可能为 null）
+     * @param sql         自定义 SQL（可能为 null）
+     * @param splitColumn 分片列名
+     * @return Pair<min, max>，如果为空表则返回 Pair.of(null, null)
+     */
+    public static Pair<Long, Long> queryNumericMinMax(
+            JdbcDialect dialect, String url, String username, String password,
+            String table, String sql, String splitColumn) {
+
+        String column = dialect.quoteIdentifier(splitColumn);
+        String rangeQuery;
+
+        if (table != null) {
+            String quotedTable = dialect.quoteIdentifier(table);
+            rangeQuery = String.format("SELECT MIN(%s), MAX(%s) FROM %s",
+                column, column, quotedTable);
+        } else {
+            rangeQuery = String.format("SELECT MIN(%s), MAX(%s) FROM (%s) AS t",
+                column, column, sql);
+        }
+
+        try (Connection conn = DriverManager.getConnection(url, username, password);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(rangeQuery)) {
+
+            if (rs.next()) {
+                // 检查是否为 NULL（空表时 MIN/MAX 返回 NULL）
+                if (rs.getObject(1) == null) {
+                    return Pair.of(null, null);
+                }
+                long min = rs.getLong(1);
+                long max = rs.getLong(2);
+                return Pair.of(min, max);
+            }
+
+            return Pair.of(null, null);
+
+        } catch (SQLException e) {
+            throw new RuntimeException("获取数值范围失败: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * 查询日期列的 MIN/MAX 范围（支持 DATE 和 TIMESTAMP）
+     *
+     * @param dialect     数据库方言
+     * @param url         数据库连接 URL
+     * @param username    用户名
+     * @param password    密码
+     * @param table       表名（可能为 null）
+     * @param sql         自定义 SQL（可能为 null）
+     * @param splitColumn 分片列名
+     * @return Pair<minDate, maxDate>，如果为空表则返回 Pair.of(null, null)
+     */
+    public static Pair<Date, Date> queryDateMinMax(
+            JdbcDialect dialect, String url, String username, String password,
+            String table, String sql, String splitColumn) {
+
+        String column = dialect.quoteIdentifier(splitColumn);
+        String rangeQuery;
+
+        if (table != null) {
+            String quotedTable = dialect.quoteIdentifier(table);
+            rangeQuery = String.format("SELECT MIN(%s), MAX(%s) FROM %s",
+                column, column, quotedTable);
+        } else {
+            rangeQuery = String.format("SELECT MIN(%s), MAX(%s) FROM (%s) AS t",
+                column, column, sql);
+        }
+
+        try (Connection conn = DriverManager.getConnection(url, username, password);
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(rangeQuery)) {
+
+            if (rs.next()) {
+                Date min = rs.getDate(1);
+                Date max = rs.getDate(2);
+                return Pair.of(min, max);
+            }
+
+            return Pair.of(null, null); // 空表
+
+        } catch (SQLException e) {
+            throw new RuntimeException("查询日期范围失败: " + e.getMessage(), e);
         }
     }
 }
