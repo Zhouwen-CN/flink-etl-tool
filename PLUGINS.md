@@ -265,9 +265,42 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 | `dialect` | 否 | 自动识别 | 数据库方言，可选值：`mysql`、`postgresql`、`oracle`。不配置则根据 URL 自动识别 |
 | `table` | 条件必填 | - | 表名。与 `sql` 二选一，优先 |
 | `sql` | 条件必填 | - | 自定义查询 SQL。与 `table` 二选一 |
-| `splitKey` | 否 | 自动推断 | 分片列名，支持数值类型。不配置时自动从主键推断 |
+| `splitKey` | 否 | 自动推断 | 分片列名，支持数值、字符串、日期类型。不配置时自动从主键推断 |
 | `batchSize` | 否 | 100 | 批量读取大小 |
 | `queryTimeout` | 否 | 无限制 | 查询超时时间（秒） |
+
+#### 支持的分片策略
+
+**NUMERIC（数值范围分片）**
+- 支持类型：INT、BIGINT、DECIMAL、FLOAT 等
+- 分片方式：查询 MIN/MAX → 均匀分割 → 开区间边界（`>= start AND < end`）
+- 示例：`WHERE id >= 0 AND id < 100`
+- 适用场景：数值主键、数值索引列
+
+**STRING_HASH（字符串 Hash Mod 分片）**
+- 支持类型：VARCHAR、CHAR、NVARCHAR 等
+- 分片方式：使用数据库 hash 函数（MD5、hashtext、ORA_HASH）→ 按 hash 值分片
+- 示例（MySQL）：`WHERE CAST(MD5(username) AS UNSIGNED) % 10 = 0`
+- 适用场景：字符串主键、字符串索引列
+- 注意：各数据库使用不同的 hash 函数
+
+**DATE_RANGE（日期动态粒度分片）**
+- 支持类型：DATE、TIMESTAMP
+- 分片方式：查询 MIN/MAX 日期 → 计算总天数 → 动态决定每个分片天数
+- 示例：`WHERE order_date >= '2020-01-01' AND order_date < '2020-02-01'`
+- 适用场景：日期列、时间戳列
+- 特点：自动根据数据天数调整分片粒度
+
+**FULL_TABLE_SCAN（全表扫描）**
+- 无主键或类型不支持时使用
+- 无法并行读取
+- 适用场景：小表、无主键表
+
+#### 自动推断逻辑
+
+- 配置了 `splitKey` → 验证类型 → 选择对应策略
+- 配置了 `table` → 自动从主键推断 → 选择最优类型
+- 配置了 `sql`（无 table）→ 单分片全表扫描
 
 #### 配置示例
 
