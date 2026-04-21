@@ -1,7 +1,11 @@
 package com.etl.connector.kafka.source.format;
 
 import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 class KafkaFormatLoaderTest {
 
@@ -13,7 +17,7 @@ class KafkaFormatLoaderTest {
 
     @Test
     void testSupportedFormatsIncludesJson() {
-        String[] formats = KafkaFormatLoader.supportedFormats();
-        assertTrue(formats.length > 0, "应至少支持一种格式");
+        List<String> formats = KafkaFormatLoader.supportedFormats();
+        assertFalse(formats.isEmpty(), "应至少支持一种格式");
     }
 }

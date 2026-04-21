@@ -5,6 +5,7 @@ import com.etl.core.spi.SinkPlugin;
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.sink2.Sink;
+import org.apache.flink.connector.base.DeliveryGuarantee;
 import org.apache.flink.connector.kafka.sink.KafkaSink;
 import org.apache.flink.connector.kafka.sink.KafkaSinkBuilder;
 import org.apache.flink.types.Row;
@@ -33,6 +34,8 @@ public class KafkaSinkPlugin implements SinkPlugin {
 
         // 构建 KafkaSink
         KafkaSinkBuilder<Row> builder = KafkaSink.<Row>builder()
+                // 最少一次
+                .setDeliverGuarantee(DeliveryGuarantee.AT_LEAST_ONCE)
                 .setBootstrapServers(kafkaConfig.getBootstrapServers())
                 .setRecordSerializer(new RowToJsonSerializationSchema(kafkaConfig));
 

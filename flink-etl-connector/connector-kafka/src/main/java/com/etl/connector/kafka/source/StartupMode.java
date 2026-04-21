@@ -1,13 +1,11 @@
 package com.etl.connector.kafka.source;
 
-import lombok.Getter;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 import org.apache.kafka.clients.consumer.OffsetResetStrategy;
 
 /**
  * Kafka Source 启动模式枚举
  */
-@Getter
 public enum StartupMode {
     /** 从最早位点开始消费 */
     EARLIEST("earliest") {
@@ -31,10 +29,6 @@ public enum StartupMode {
         }
     };
 
-    /**
-     * -- GETTER --
-     *  获取配置值
-     */
     private final String configValue;
 
     StartupMode(String configValue) {
@@ -58,21 +52,7 @@ public enum StartupMode {
                 return mode;
             }
         }
-        return EARLIEST;
-    }
-
-    /**
-     * 校验配置值是否有效
-     *
-     * @param value 配置值
-     * @return 是否有效
-     */
-    public static boolean isValid(String value) {
-        for (StartupMode mode : values()) {
-            if (mode.configValue.equalsIgnoreCase(value)) {
-                return true;
-            }
-        }
-        return false;
+        throw new IllegalArgumentException(
+                "startupMode 必须是 earliest、latest 或 committed，当前值: " + value);
     }
 }

@@ -1,6 +1,8 @@
 package com.etl.connector.kafka.source.format;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 
@@ -42,7 +44,7 @@ public class KafkaFormatLoader {
      *
      * @return 支持的格式名称列表
      */
-    public static String[] supportedFormats() {
-        return formatPlugins.keySet().toArray(new String[0]);
+    public static List<String> supportedFormats() {
+        return new ArrayList<>(formatPlugins.keySet());
     }
 }

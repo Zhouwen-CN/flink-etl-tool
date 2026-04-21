@@ -122,7 +122,7 @@ EtlClient.main()
 ### 扩展新 Source
 
 1. 在 `flink-etl-connector/` 下创建新模块，依赖 `flink-etl-core`
-2. 包名规则：com.etl.connector.`业务名`.source，比如 `com.etl.connector.jdbc.source`
+2. 包名规范：com.etl.connector.`连接器名称`.source，比如 `com.etl.connector.jdbc.source`
 3. 实现 `SourcePlugin`，添加 `@AutoService(SourcePlugin.class)` 注解
 4. 继承 `AbstractSplitSource` 实现分片读取
    - 关系型数据库：参考 `connector-jdbc` 模块的 `JdbcSource`，分片逻辑在 Enumerator 的 `start()` 中计算
@@ -133,7 +133,7 @@ EtlClient.main()
 ### 扩展新 Sink
 
 1. 在 `flink-etl-connector/` 下创建新模块，依赖 `flink-etl-core`
-2. 包名规则：com.etl.connector.`业务名`.sink，比如 `com.etl.connector.jdbc.sink`
+2. 包名规范：com.etl.connector.`连接器名称`.sink，比如 `com.etl.connector.jdbc.sink`
 3. 实现 `SinkPlugin`，添加 `@AutoService(SinkPlugin.class)` 注解
 4. 继承 `AbstractSink`，在构造函数中校验参数
 5. 继承 `AbstractSinkWriter<ConfigT>` 实现 `write()`、`flush()`、`close()`

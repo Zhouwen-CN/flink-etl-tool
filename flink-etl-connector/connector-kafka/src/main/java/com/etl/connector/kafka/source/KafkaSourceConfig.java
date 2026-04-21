@@ -1,16 +1,15 @@
 package com.etl.connector.kafka.source;
 
-import com.etl.core.config.SourceConfig;
-import com.etl.core.schema.EtlSchema;
 import com.etl.connector.kafka.source.format.KafkaFormatLoader;
 import com.etl.connector.kafka.source.format.KafkaFormatPlugin;
+import com.etl.core.config.SourceConfig;
+import com.etl.core.schema.EtlSchema;
 import lombok.Builder;
 import lombok.Getter;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -62,8 +61,9 @@ public class KafkaSourceConfig implements Serializable {
             throw new IllegalArgumentException("topics 和 topicPattern 至少需要配置一个");
         }
 
-        // 解析 startupMode（支持新旧配置名）
-        StartupMode startupMode = parseStartupMode(config);
+        // 解析 startupMode
+        String startupModeValue = config.getString("startupMode", "earliest");
+        StartupMode startupMode = StartupMode.fromConfigValue(startupModeValue);
 
         // 校验 schema
         EtlSchema schema = config.getSchema();
@@ -80,10 +80,10 @@ public class KafkaSourceConfig implements Serializable {
         // 校验 format 是否支持
         KafkaFormatPlugin formatPlugin = KafkaFormatLoader.getFormatPlugin(format);
         if (formatPlugin == null) {
-            String[] supported = KafkaFormatLoader.supportedFormats();
+            List<String> supported = KafkaFormatLoader.supportedFormats();
             throw new IllegalArgumentException(
                 String.format("不支持的 Kafka format: '%s'，支持的格式: %s",
-                    format, Arrays.toString(supported))
+                        format, supported)
             );
         }
 
@@ -97,25 +97,6 @@ public class KafkaSourceConfig implements Serializable {
                 .schema(schema)
                 .formatPlugin(formatPlugin)
                 .build();
-    }
-
-    /**
-     * 解析启动模式配置
-     * 优先使用 startupMode
-     */
-    private static StartupMode parseStartupMode(SourceConfig config) {
-        // 优先读取新配置名
-        String startupModeValue = config.getString("startupMode");
-        if (startupModeValue != null) {
-            if (!StartupMode.isValid(startupModeValue)) {
-                throw new IllegalArgumentException(
-                        "startupMode 必须是 earliest、latest 或 committed，当前值: " + startupModeValue);
-            }
-            return StartupMode.fromConfigValue(startupModeValue);
-        }
-
-        // 默认值
-        return StartupMode.EARLIEST;
     }
 
     /**
