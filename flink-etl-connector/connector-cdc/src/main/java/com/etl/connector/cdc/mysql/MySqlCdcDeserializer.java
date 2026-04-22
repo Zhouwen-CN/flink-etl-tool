@@ -2,12 +2,14 @@ package com.etl.connector.cdc.mysql;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ververica.cdc.debezium.DebeziumDeserializationSchema;
 import lombok.Getter;
-import org.apache.flink.api.common.serialization.DeserializationSchema;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.table.types.logical.*;
 import org.apache.flink.types.Row;
 import org.apache.flink.types.RowKind;
+import org.apache.flink.util.Collector;
+import org.apache.kafka.connect.source.SourceRecord;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -20,7 +22,7 @@ import java.util.List;
  * 将 Debezium JSON 转换为带 RowKind 的 Row
  * 动态从数据库获取表 Schema
  */
-public class MySqlCdcDeserializer implements DeserializationSchema<Row> {
+public class MySqlCdcDeserializer implements DebeziumDeserializationSchema<Row> {
 
     private final String hostname;
     private final int port;
@@ -30,9 +32,11 @@ public class MySqlCdcDeserializer implements DeserializationSchema<Row> {
     private final String table;
 
     @Getter
-    private RowType rowType;  // Schema 信息（open() 方法初始化）
+    private RowType rowType;  // Schema 信息（延迟初始化）
 
-    private ObjectMapper objectMapper;  // 在 open() 方法中初始化（不可序列化）
+    private ObjectMapper objectMapper;  // 延迟初始化（不可序列化）
+
+    private boolean initialized = false;  // 标记是否已初始化
 
     /**
      * 构造函数：接收数据库连接参数
@@ -49,11 +53,14 @@ public class MySqlCdcDeserializer implements DeserializationSchema<Row> {
     }
 
     /**
-     * 初始化时从数据库获取表 Schema
+     * 延迟初始化：第一次调用时从数据库获取表 Schema
      */
-    @Override
-    public void open(InitializationContext context) throws Exception {
-        // 初始化 ObjectMapper（不可序列化，必须在 open() 中初始化）
+    private void initialize() throws Exception {
+        if (initialized) {
+            return;
+        }
+
+        // 初始化 ObjectMapper（不可序列化）
         objectMapper = new ObjectMapper();
 
         // 构建 JDBC URL（处理 H2 内存数据库特殊情况）
@@ -101,11 +108,18 @@ public class MySqlCdcDeserializer implements DeserializationSchema<Row> {
         if (rowType.getFieldCount() == 0) {
             throw new IllegalStateException("表 '" + table + "' 不存在或没有字段");
         }
+
+        initialized = true;
     }
 
     @Override
-    public Row deserialize(byte[] message) throws IOException {
-        JsonNode jsonNode = objectMapper.readTree(message);
+    public void deserialize(SourceRecord record, Collector<Row> out) throws Exception {
+        // 延迟初始化（第一次调用时执行）
+        initialize();
+
+        // 从 SourceRecord 中提取 value（Debezium JSON）
+        byte[] valueBytes = (byte[]) record.value();
+        JsonNode jsonNode = objectMapper.readTree(valueBytes);
 
         // 验证必需字段 'op'
         if (!jsonNode.has("op")) {
@@ -135,7 +149,8 @@ public class MySqlCdcDeserializer implements DeserializationSchema<Row> {
         // 构建 Row（带 RowKind）
         Row row = extractRow(dataNode, rowKind);
 
-        return row;
+        // 发送到下游
+        out.collect(row);
     }
 
     private RowKind parseRowKind(String op) {
@@ -238,10 +253,5 @@ public class MySqlCdcDeserializer implements DeserializationSchema<Row> {
     @Override
     public TypeInformation<Row> getProducedType() {
         return TypeInformation.of(Row.class);
-    }
-
-    @Override
-    public boolean isEndOfStream(Row nextElement) {
-        return false;
     }
 }
