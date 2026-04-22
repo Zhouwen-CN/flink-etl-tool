@@ -209,7 +209,7 @@ import com.etl.core.config.SourceConfig;
 import com.etl.core.dialect.JdbcDialect;
 import com.etl.core.dialect.JdbcDialectLoader;
 import com.etl.core.exception.NoPrimaryKeyException;
-import com.etl.connector.jdbc.utils.SqlUtils;
+import com.etl.core.utils.SqlUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.MockedStatic;

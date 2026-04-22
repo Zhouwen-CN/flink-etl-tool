@@ -157,7 +157,8 @@ class MySqlCdcConfigTest {
         SourceConfig sourceConfig = new SourceConfig();
         sourceConfig.setConfig(configMap);
 
-        assertThrows(IllegalArgumentException.class, () -> {
+        // 新实现使用 Preconditions.checkNotNull，抛出 NullPointerException
+        assertThrows(NullPointerException.class, () -> {
             MySqlCdcConfig.fromSourceConfig(sourceConfig);
         }, "startupMode=timestamp 时必须配置 startupTimestamp");
     }
@@ -186,14 +187,16 @@ class MySqlCdcConfigTest {
         configMap.put("username", "root");
         configMap.put("password", "password");
         configMap.put("table", "users");
-        // 不配置 serverId，验证为 null
+        // 不配置 serverId，验证自动生成
 
         SourceConfig sourceConfig = new SourceConfig();
         sourceConfig.setConfig(configMap);
 
         MySqlCdcConfig config = MySqlCdcConfig.fromSourceConfig(sourceConfig);
 
-        assertNull(config.getServerId());
+        // 新实现：自动生成 serverId（范围：5400-15400）
+        assertNotNull(config.getServerId());
+        assertTrue(config.getServerId() >= 5400 && config.getServerId() <= 15400);
     }
 
     @Test
@@ -225,7 +228,8 @@ class MySqlCdcConfigTest {
         SourceConfig sourceConfig = new SourceConfig();
         sourceConfig.setConfig(configMap);
 
-        assertThrows(IllegalArgumentException.class, () -> {
+        // 新实现使用 Preconditions.checkNotNull，抛出 NullPointerException
+        assertThrows(NullPointerException.class, () -> {
             MySqlCdcConfig.fromSourceConfig(sourceConfig);
         }, "username 参数不能为空");
     }
@@ -241,7 +245,8 @@ class MySqlCdcConfigTest {
         SourceConfig sourceConfig = new SourceConfig();
         sourceConfig.setConfig(configMap);
 
-        assertThrows(IllegalArgumentException.class, () -> {
+        // 新实现使用 Preconditions.checkNotNull，抛出 NullPointerException
+        assertThrows(NullPointerException.class, () -> {
             MySqlCdcConfig.fromSourceConfig(sourceConfig);
         }, "password 参数不能为空");
     }
@@ -257,7 +262,8 @@ class MySqlCdcConfigTest {
         SourceConfig sourceConfig = new SourceConfig();
         sourceConfig.setConfig(configMap);
 
-        assertThrows(IllegalArgumentException.class, () -> {
+        // 新实现使用 Preconditions.checkNotNull，抛出 NullPointerException
+        assertThrows(NullPointerException.class, () -> {
             MySqlCdcConfig.fromSourceConfig(sourceConfig);
         }, "table 参数不能为空");
     }

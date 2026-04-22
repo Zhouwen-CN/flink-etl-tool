@@ -17,13 +17,6 @@
     <description>CDC 连接器（MySQL CDC Source）</description>
 
     <dependencies>
-        <!-- flink-connector-mysql-cdc -->
-        <dependency>
-            <groupId>com.ververica</groupId>
-            <artifactId>flink-connector-mysql-cdc</artifactId>
-            <version>2.3.0</version>
-        </dependency>
-
         <!-- MySQL 驱动（用于 Schema 自动获取） -->
         <dependency>
             <groupId>com.mysql</groupId>

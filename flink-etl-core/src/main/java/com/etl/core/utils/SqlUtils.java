@@ -1,4 +1,4 @@
-package com.etl.connector.jdbc.utils;
+package com.etl.core.utils;
 
 import com.etl.core.exception.NoPrimaryKeyException;
 import com.etl.core.schema.SqlTypeConverter;

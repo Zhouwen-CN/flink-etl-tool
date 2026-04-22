@@ -19,7 +19,8 @@
         <maven.compiler.target>1.8</maven.compiler.target>
 
         <flink.version>1.15.2</flink.version>
-        <kafka.connector.version>1.15.2</kafka.connector.version>
+        <flink-connector-kafka.version>1.15.2</flink-connector-kafka.version>
+        <flink-connector-mysql-cdc.version>2.3.0</flink-connector-mysql-cdc.version>
 
         <slf4j.version>1.7.36</slf4j.version>
         <log4j2.version>2.20.0</log4j2.version>
@@ -124,11 +125,17 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Flink Kafka Connector -->
+        <!-- Flink Connector -->
         <dependency>
             <groupId>org.apache.flink</groupId>
             <artifactId>flink-connector-kafka</artifactId>
-            <version>${kafka.connector.version}</version>
+            <version>${flink-connector-kafka.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.ververica</groupId>
+            <artifactId>flink-connector-mysql-cdc</artifactId>
+            <version>${flink-connector-mysql-cdc.version}</version>
             <scope>provided</scope>
         </dependency>
 

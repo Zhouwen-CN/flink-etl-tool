@@ -6,7 +6,7 @@ import com.etl.connector.jdbc.dialect.JdbcDialectLoader;
 import com.etl.connector.jdbc.dialect.WriteMode;
 import com.etl.core.exception.NoPrimaryKeyException;
 import com.etl.core.sink.AbstractSink;
-import com.etl.connector.jdbc.utils.SqlUtils;
+import com.etl.core.utils.SqlUtils;
 import com.etl.connector.jdbc.sink.config.JdbcSinkConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;

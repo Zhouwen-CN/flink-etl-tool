@@ -31,33 +31,25 @@ public class MySqlCdcSourcePlugin implements SourcePlugin {
 
         // 生成 serverId（如果用户未配置）
         int serverId = cdcConfig.getServerId() != null ?
-            cdcConfig.getServerId() : generateAutoServerId();
+                cdcConfig.getServerId() : generateAutoServerId();
 
         log.info("MySQL CDC 配置: hostname={}, port={}, database={}, table={}, startupMode={}, serverId={}",
-            cdcConfig.getHostname(), cdcConfig.getPort(), cdcConfig.getDatabase(),
-            cdcConfig.getTable(), cdcConfig.getStartupMode(), serverId);
+                cdcConfig.getHostname(), cdcConfig.getPort(), cdcConfig.getDatabase(),
+                cdcConfig.getTable(), cdcConfig.getStartupMode(), serverId);
 
         // 构建 MySqlSource
-        MySqlSource<Row> source = MySqlSource.<Row>builder()
-            .hostname(cdcConfig.getHostname())
-            .port(cdcConfig.getPort())
-            .databaseList(cdcConfig.getDatabase())
-            .tableList(cdcConfig.getDatabase() + "." + cdcConfig.getTable())
-            .username(cdcConfig.getUsername())
-            .password(cdcConfig.getPassword())
-            .deserializer(new MySqlCdcDeserializer(
-                cdcConfig.getHostname(),
-                cdcConfig.getPort(),
-                cdcConfig.getDatabase(),
-                cdcConfig.getUsername(),
-                cdcConfig.getPassword(),
-                cdcConfig.getTable()
-            ))
-            .startupOptions(cdcConfig.getStartupOptions())
-            .serverId(String.valueOf(serverId))
-            .build();
-
-        return source;
+        return MySqlSource.<Row>builder()
+                .hostname(cdcConfig.getHostname())
+                .port(cdcConfig.getPort())
+                .databaseList(cdcConfig.getDatabase())
+                .tableList(cdcConfig.getDatabase() + "." + cdcConfig.getTable())
+                .username(cdcConfig.getUsername())
+                .password(cdcConfig.getPassword())
+                .deserializer(new MySqlCdcDeserializer(cdcConfig))
+                .startupOptions(cdcConfig.getStartupOptions())
+                .serverId(String.valueOf(serverId))
+                .serverTimeZone("UTC")
+                .build();
     }
 
     /**

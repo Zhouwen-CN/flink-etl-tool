@@ -111,20 +111,14 @@ public abstract class BaseConfig implements Serializable {
         return Boolean.parseBoolean(String.valueOf(value));
     }
 
-    /**
-     * 获取长整数类型的配置值，支持默认值
-     *
-     * @param key 配置键
-     * @param defaultValue 默认值
-     * @return 配置值
-     */
-    public Long getLong(String key, Long defaultValue) {
+
+    public Long getLong(String key){
         if (config == null) {
-            return defaultValue;
+            return null;
         }
         Object value = config.get(key);
         if (value == null) {
-            return defaultValue;
+            return null;
         }
         if (value instanceof Long) {
             return (Long) value;
@@ -137,6 +131,18 @@ public abstract class BaseConfig implements Serializable {
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("配置项 '" + key + "' 的值 '" + value + "' 无法转换为长整数", e);
         }
+    }
+
+    /**
+     * 获取长整数类型的配置值，支持默认值
+     *
+     * @param key 配置键
+     * @param defaultValue 默认值
+     * @return 配置值
+     */
+    public Long getLong(String key, Long defaultValue) {
+        Long value = getLong(key);
+        return value != null ? value : defaultValue;
     }
 
     /**

@@ -22,5 +22,15 @@ public enum StartupMode {
     /**
      * 先读取全量快照，再捕获增量变更
      */
-    SNAPSHOT_FIRST
+    SNAPSHOT_FIRST;
+
+    static StartupMode of(String value){
+        for (StartupMode startupMode : values()) {
+            if (startupMode.name().equalsIgnoreCase(value)) {
+                return startupMode;
+            }
+        }
+
+        throw new IllegalArgumentException("不支持的类型: " + value);
+    }
 }

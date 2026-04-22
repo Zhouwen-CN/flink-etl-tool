@@ -5,7 +5,7 @@ import com.etl.connector.jdbc.dialect.JdbcDialectLoader;
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import com.etl.connector.jdbc.source.enums.SplitStrategy;
 import com.etl.connector.jdbc.utils.JdbcSplitHelper;
-import com.etl.connector.jdbc.utils.SqlUtils;
+import com.etl.core.utils.SqlUtils;
 import com.etl.core.config.SourceConfig;
 import com.etl.core.exception.NoPrimaryKeyException;
 import com.etl.core.source.AbstractSplitSource;

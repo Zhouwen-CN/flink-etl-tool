@@ -4,9 +4,9 @@ import com.etl.core.config.SourceConfig;
 import com.ververica.cdc.connectors.mysql.table.StartupOptions;
 import lombok.Builder;
 import lombok.Getter;
+import org.apache.flink.util.Preconditions;
 
 import java.io.Serializable;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 @Getter
 @Builder
 public class MySqlCdcConfig implements Serializable {
+    private final String url;
     private final String hostname;
     private final int port;
     private final String database;
@@ -30,60 +31,47 @@ public class MySqlCdcConfig implements Serializable {
      * 从 SourceConfig 解析配置参数
      */
     public static MySqlCdcConfig fromSourceConfig(SourceConfig config) {
-        Map<String, Object> configMap = config.getConfig();
 
         // 解析 URL
-        String url = (String) configMap.get("url");
+        String url = config.getString("url");
         UrlParseResult urlResult = parseUrl(url);
 
         // 解析其他参数
-        String username = (String) configMap.get("username");
-        if (username == null) {
-            throw new IllegalArgumentException("username 参数不能为空");
-        }
+        String username = config.getString("username");
+        Preconditions.checkNotNull(username, "username 参数不能为空");
 
-        String password = (String) configMap.get("password");
-        if (password == null) {
-            throw new IllegalArgumentException("password 参数不能为空");
-        }
+        String password = config.getString("password");
+        Preconditions.checkNotNull(password, "password 参数不能为空");
 
-        String table = (String) configMap.get("table");
-        if (table == null) {
-            throw new IllegalArgumentException("table 参数不能为空");
-        }
+        String table = config.getString("table");
+        Preconditions.checkNotNull(table, "table 参数不能为空");
 
         // 解析启动模式
-        String startupModeStr = (String) configMap.getOrDefault("startupMode", "latest");
-        StartupMode startupMode = StartupMode.valueOf(startupModeStr.toUpperCase());
+        String startupModeStr = config.getString("startupMode", "latest");
+        StartupMode startupMode = StartupMode.of(startupModeStr.toUpperCase());
 
         // timestamp 模式校验
         Long startupTimestamp = null;
         if (startupMode == StartupMode.TIMESTAMP) {
-            Object timestampObj = configMap.get("startupTimestamp");
-            if (timestampObj == null) {
-                throw new IllegalArgumentException("startupMode=timestamp 时必须配置 startupTimestamp");
-            }
-            startupTimestamp = ((Number) timestampObj).longValue();
+            startupTimestamp = config.getLong("startupTimestamp");
+            Preconditions.checkNotNull(startupTimestamp, "startupMode=timestamp 时必须配置 startupTimestamp");
         }
 
         // serverId（可选）
-        Integer serverId = null;
-        Object serverIdObj = configMap.get("serverId");
-        if (serverIdObj != null) {
-            serverId = ((Number) serverIdObj).intValue();
-        }
+        Integer serverId = config.getInteger("serverId", generateAutoServerId());
 
         return MySqlCdcConfig.builder()
-            .hostname(urlResult.hostname)
-            .port(urlResult.port)
-            .database(urlResult.database)
-            .username(username)
-            .password(password)
-            .table(table)
-            .startupMode(startupMode)
-            .startupTimestamp(startupTimestamp)
-            .serverId(serverId)
-            .build();
+                .url(url)
+                .hostname(urlResult.hostname)
+                .port(urlResult.port)
+                .database(urlResult.database)
+                .username(username)
+                .password(password)
+                .table(table)
+                .startupMode(startupMode)
+                .startupTimestamp(startupTimestamp)
+                .serverId(serverId)
+                .build();
     }
 
     /**
@@ -108,6 +96,14 @@ public class MySqlCdcConfig implements Serializable {
         String database = matcher.group(3);
 
         return new UrlParseResult(hostname, port, database);
+    }
+
+    /**
+     * 自动生成 serverId（范围：5400-15400）
+     * 用于避免多任务冲突
+     */
+    private static int generateAutoServerId() {
+        return (int) (System.currentTimeMillis() % 10000) + 5400;
     }
 
     /**
