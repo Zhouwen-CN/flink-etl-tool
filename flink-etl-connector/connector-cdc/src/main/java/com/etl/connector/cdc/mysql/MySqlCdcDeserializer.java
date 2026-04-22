@@ -11,10 +11,16 @@ import org.apache.flink.table.types.logical.*;
 import org.apache.flink.types.Row;
 import org.apache.flink.types.RowKind;
 import org.apache.flink.util.Collector;
+import org.apache.kafka.connect.json.JsonConverter;
+import org.apache.kafka.connect.json.JsonConverterConfig;
 import org.apache.kafka.connect.source.SourceRecord;
+import org.apache.kafka.connect.storage.ConverterConfig;
+import org.apache.kafka.connect.storage.ConverterType;
 
 import java.io.IOException;
 import java.sql.*;
+import java.util.HashMap;
+import java.util.Map;
 import com.etl.core.utils.SqlUtils;
 
 /**
@@ -26,6 +32,7 @@ public class MySqlCdcDeserializer implements DebeziumDeserializationSchema<Row> 
 
     private final RowTypeInfo rowTypeInfo;
     private final EtlSchema etlSchema;
+    private transient JsonConverter jsonConverter;
 
     public MySqlCdcDeserializer(MySqlCdcConfig cdcConfig) {
         String username = cdcConfig.getUsername();
@@ -45,9 +52,21 @@ public class MySqlCdcDeserializer implements DebeziumDeserializationSchema<Row> 
 
     @Override
     public void deserialize(SourceRecord record, Collector<Row> out) throws Exception {
-        // 从 SourceRecord 中提取 value（Debezium JSON）
-        byte[] valueBytes = (byte[]) record.value();
-        JsonNode jsonNode = JsonUtils.readTree(valueBytes);
+        // 延迟初始化
+        if (jsonConverter == null) {
+            initializeJsonConverter();
+        }
+
+        // 从 SourceRecord 中提取 JSON 字节流
+        byte[] valueBytes = jsonConverter.fromConnectData(
+                record.topic(),
+                record.valueSchema(),
+                record.value()
+        );
+
+        // 解析 JSON 字符串
+        String jsonString = new String(valueBytes);
+        JsonNode jsonNode = JsonUtils.readTree(jsonString);
 
         // 验证必需字段 'op'
         if (!jsonNode.has("op")) {
@@ -94,6 +113,18 @@ public class MySqlCdcDeserializer implements DebeziumDeserializationSchema<Row> 
             default:
                 throw new IllegalArgumentException("不支持的 op 类型: " + op);
         }
+    }
+
+    /**
+     * 初始化 JsonConverter
+     * 用于将 Kafka Connect Struct 转换为 JSON
+     */
+    private void initializeJsonConverter() {
+        jsonConverter = new JsonConverter();
+        Map<String, Object> configs = new HashMap<>(2);
+        configs.put(ConverterConfig.TYPE_CONFIG, ConverterType.VALUE.getName());
+        configs.put(JsonConverterConfig.SCHEMAS_ENABLE_CONFIG, false);  // 不包含 schema
+        jsonConverter.configure(configs);
     }
 
     @Override

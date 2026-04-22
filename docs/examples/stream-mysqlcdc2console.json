@@ -1,0 +1,26 @@
+{
+  "job": {
+    "name": "stream-kafka2console",
+    "mode": "streaming",
+    "parallelism": 1
+  },
+  "sources": [
+    {
+      "type": "mysql-cdc",
+      "outputTable": "source_table",
+      "config": {
+        "startupMode": "EARLIEST",
+        "url": "jdbc:mysql://127.0.0.1:3306/test_db",
+        "table": "user_table",
+        "username": "root",
+        "password": "123456"
+      }
+    }
+  ],
+  "sinks": [
+    {
+      "type": "console",
+      "inputTable": "source_table"
+    }
+  ]
+}

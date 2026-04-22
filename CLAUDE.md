@@ -46,6 +46,7 @@ flink-etl-tool/
 ├── flink-etl-connector/          # 连接器插件
 │   ├── connector-jdbc/           # JDBC 连接器（Source + Sink + Dialect）
 │   ├── connector-kafka/          # Kafka 连接器（Source + Sink）
+│   ├── connector-cdc/            # CDC 连接器（MySQL CDC Source）
 │   ├── connector-localfile/      # 本地文件连接器（Source）
 │   ├── connector-console/        # Console 连接器（Sink）
 │   ├── connector-http/           # HTTP 连接器（Source）
@@ -177,7 +178,8 @@ EtlClient.main()
 
 **设计文档：** 重要架构决策位于 `docs/superpowers/specs/`，开发计划位于 `docs/superpowers/plans/`。
 
-**示例配置：** 在 `docs/examples/` 目录中，包含 mysql-to-console、kafka-to-console、mock-* 等 14 个场景。
+**示例配置：** 在 `docs/examples/` 目录中，包含 batch 和 streaming 模式的 13 个示例场景，覆盖 JDBC、Kafka、CDC、HTTP、Mock
+等连接器。
 
 ## 技术栈
 

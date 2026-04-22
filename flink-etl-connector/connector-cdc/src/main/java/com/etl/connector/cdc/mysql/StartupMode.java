@@ -31,6 +31,9 @@ public enum StartupMode {
             }
         }
 
-        throw new IllegalArgumentException("不支持的类型: " + value);
+        throw new IllegalArgumentException(
+            String.format("不支持的启动模式: '%s'。支持的模式: EARLIEST（最早位置）、LATEST（最新位置）、TIMESTAMP（指定时间戳）、SNAPSHOT_FIRST（先全量后增量）",
+                value)
+        );
     }
 }
