@@ -676,6 +676,8 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 | `startupMode` | 否 | `latest` | 启动模式:`earliest`(从头开始)、`latest`(从最新位置)、`timestamp`(指定时间戳)、`snapshot_first`(先快照再增量) |
 | `startupTimestamp` | 条件必填 | - | 启动时间戳(毫秒),`startupMode=timestamp` 时必填 |
 | `serverId` | 否 | 自动生成 | MySQL binlog client ID,范围 5400-15400。多任务需配置不同值避免冲突 |
+| `serverTimeZone` | 否 | - | 数据库服务器时区,如 `Asia/Shanghai`、`UTC`。不配置时使用 connector 默认值 |
+| `splitKey` | 否 | 自动获取 | 并行读取分片键,用于快照阶段并行读取。不配置时自动从数据库获取主键第一列 |
 
 #### 配置示例
 
@@ -746,11 +748,60 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
       "password": "password",
       "table": "inventory",
       "startupMode": "snapshot_first",
-      "serverId": 5401
+      "serverId": 5401,
+      "serverTimeZone": "Asia/Shanghai",
+      "splitKey": "id"
     }
   }
 }
 ```
+
+#### 参数详解
+
+**serverTimeZone 配置:**
+
+数据库服务器时区设置,影响时间类型字段(TIMESTAMP、DATETIME)的解析。
+
+- **何时需要配置**:
+  - 数据库服务器时区与应用时区不一致时
+  - 时间字段解析报错或出现时区偏移时
+  - MySQL 服务器配置了非标准时区时
+
+- **常见时区值**:
+  - `Asia/Shanghai` - 中国标准时间(UTC+8)
+  - `UTC` - 协调世界时
+  - `America/New_York` - 美国东部时间
+  - `Europe/London` - 英国时间
+
+- **不配置时行为**:
+  - 使用 Ververica CDC Connector 默认时区设置
+  - 可能导致时间字段解析异常
+
+**splitKey 配置:**
+
+快照阶段的并行分片键,用于提升全量读取性能。
+
+- **工作机制**:
+  - 仅在快照阶段(snapshot_first/earliest 模式)生效
+  - 根据 splitKey 列值范围将表数据划分为多个分片
+  - 每个分片由独立的 Reader 并行读取
+  - 增量阶段(binlog 读取)不受 splitKey 影响
+
+- **自动获取逻辑**:
+  - 未配置时自动从数据库获取主键信息
+  - 使用主键第一列作为 splitKey
+  - 表无主键时 splitKey 为 null,使用单分片模式
+
+- **手动配置场景**:
+  - 表无主键但有唯一索引,手动指定唯一键列
+  - 主键列不适合分片(如 UUID、随机字符串)
+  - 需使用其他列作为分片键优化读取性能
+
+- **分片键要求**:
+  - 列值分布均匀,避免数据倾斜
+  - 数值型列(推荐):INT、BIGINT、DECIMAL
+  - 时间型列:DATE、DATETIME、TIMESTAMP
+  - 字符串列:VARCHAR、CHAR(会使用 hash 分片)
 
 #### CDC 数据说明
 
