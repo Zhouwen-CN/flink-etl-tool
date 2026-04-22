@@ -1,10 +1,12 @@
-package com.etl.core.utils;
+package com.etl.connector.jdbc.utils;
 
 import com.etl.core.exception.NoPrimaryKeyException;
 import com.etl.core.schema.SqlTypeConverter;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.types.Row;
+import org.apache.flink.util.Preconditions;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -13,7 +15,9 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -21,7 +25,8 @@ import java.util.Map;
  * 提供标识符转义、Schema 推断等通用功能
  */
 public final class SqlUtils {
-    private SqlUtils() {}
+    private SqlUtils() {
+    }
 
     /**
      * 根据 metadata 构建 flink type
@@ -69,11 +74,11 @@ public final class SqlUtils {
      * @param table    表名
      * @param username 用户名（可为 null）
      * @param password 密码（可为 null）
-     * @return LinkedHashMap<列名, JDBC类型>，使用 LinkedHashMap 保证复合主键按 KEY_SEQ 顺序排列
+     * @return List<Pair<String, Integer>>，使用 List 保证复合主键按 KEY_SEQ 顺序排列
      * @throws NoPrimaryKeyException 如果表没有主键
-     * @throws RuntimeException 如果获取主键失败
+     * @throws RuntimeException      如果获取主键失败
      */
-    public static Map<String, Integer> getPrimaryKey(
+    public static List<Pair<String, Integer>> getPrimaryKey(
             String url, String table, String username, String password) {
 
         try (Connection conn = DriverManager.getConnection(url, username, password)) {
@@ -82,34 +87,41 @@ public final class SqlUtils {
             String schema = conn.getSchema();
 
             DatabaseMetaData metaData = conn.getMetaData();
-            ResultSet rs = metaData.getPrimaryKeys(catalog, schema, table);
 
             // 按 KEY_SEQ 收集主键列名
-            Map<String, Integer> result = new LinkedHashMap<>();
-            try {
+            Map<Integer, String> keySeqColumnName = new HashMap<>();
+            try(ResultSet rs = metaData.getPrimaryKeys(catalog, schema, table);) {
                 while (rs.next()) {
                     String columnName = rs.getString("COLUMN_NAME");
-
-                    // 使用 DatabaseMetaData.getColumns() 获取列类型
-                    try (ResultSet colRs = metaData.getColumns(catalog, schema, table, columnName)) {
-                        if (colRs.next()) {
-                            int jdbcType = colRs.getInt("DATA_TYPE");
-                            result.put(columnName, jdbcType);
-                        } else {
-                            throw new RuntimeException(
-                                    String.format("无法获取表 '%s' 列 '%s' 的类型信息", table, columnName));
-                        }
-                    }
+                    int keySeq = rs.getInt("KEY_SEQ");
+                    Preconditions.checkState(!keySeqColumnName.containsKey(keySeq - 1), "The field(s) of primary key must be from the same table.");
+                    keySeqColumnName.put(keySeq - 1, columnName);
                 }
-            } finally {
-                rs.close();
             }
 
-            if (result.isEmpty()) {
+            if (keySeqColumnName.isEmpty()) {
                 throw new NoPrimaryKeyException(table);
             }
 
-            return result;
+            List<Pair<String, Integer>> primaryKeyList = new ArrayList<>();
+
+            for (Map.Entry<Integer, String> entry : keySeqColumnName.entrySet()) {
+                Integer index = entry.getKey();
+                String columnName = entry.getValue();
+
+                // 使用 DatabaseMetaData.getColumns() 获取列类型
+                try (ResultSet colRs = metaData.getColumns(catalog, schema, table, columnName)) {
+                    if (colRs.next()) {
+                        int jdbcType = colRs.getInt("DATA_TYPE");
+                        primaryKeyList.set(index, Pair.of(columnName, jdbcType));
+                    } else {
+                        throw new RuntimeException(
+                                String.format("无法获取表 '%s' 列 '%s' 的类型信息", table, columnName));
+                    }
+                }
+            }
+
+            return primaryKeyList;
         } catch (SQLException e) {
             throw new RuntimeException("从数据库获取主键失败: " + e.getMessage(), e);
         }

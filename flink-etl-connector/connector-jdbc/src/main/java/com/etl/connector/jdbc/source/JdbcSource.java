@@ -5,13 +5,13 @@ import com.etl.connector.jdbc.dialect.JdbcDialectLoader;
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import com.etl.connector.jdbc.source.enums.SplitStrategy;
 import com.etl.connector.jdbc.utils.JdbcSplitHelper;
+import com.etl.connector.jdbc.utils.SqlUtils;
 import com.etl.core.config.SourceConfig;
 import com.etl.core.exception.NoPrimaryKeyException;
 import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseSplitReader;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
-import com.etl.core.utils.SqlUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -24,7 +24,7 @@ import org.apache.flink.core.io.SimpleVersionedSerializer;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Preconditions;
 
-import java.util.Map;
+import java.util.List;
 import java.util.function.Supplier;
 
 /**
@@ -171,23 +171,21 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
         // 2. 配置了 table → 自动从主键推断
         if (table != null) {
             try {
-                Map<String, Integer> primaryKeys = SqlUtils.getPrimaryKey(url, table, username, password);
+                List<Pair<String, Integer>> primaryKeys = SqlUtils.getPrimaryKey(url, table, username, password);
 
-                if (primaryKeys.isEmpty()) {
-                    throw new NoPrimaryKeyException(table);
-                }
+                // 最左前缀原则
+                Pair<String, Integer> pair = primaryKeys.get(0);
+                String firstPrimaryKey = pair.getKey();
+                Integer jdbcType = pair.getValue();
+                SplitStrategy strategy = SplitStrategy.fromJdbcType(jdbcType);
 
-                // 从主键中选择最优的 splitKey
-                Pair<String, SplitStrategy> pair = SplitStrategy.fromPrimaryKeys(primaryKeys);
-                if (pair != null) {
-                    String optimalKey = pair.getKey();
-                    SplitStrategy strategy = pair.getValue();
+                if (strategy != null) {
                     log.info("自动推断分片列 '{}' (类型: {}), 使用策略: {}",
-                            optimalKey, JdbcSplitHelper.getJdbcTypeName(primaryKeys.get(optimalKey)), strategy.getDescription());
-                    return Pair.of(optimalKey, strategy);
+                            firstPrimaryKey, JdbcSplitHelper.getJdbcTypeName(jdbcType), strategy.getDescription());
+                    return Pair.of(firstPrimaryKey, strategy);
                 } else {
                     // 主键列类型都不支持，降级为单分片模式
-                    log.warn("表 '{}' 的主键列类型都不支持分片，将使用单分片全表扫描模式。", table);
+                    log.warn("表 '{}' 的主键列类型不支持分片，将使用单分片全表扫描模式。", table);
                     return Pair.of(null, SplitStrategy.FULL_TABLE_SCAN);
                 }
             } catch (NoPrimaryKeyException e) {

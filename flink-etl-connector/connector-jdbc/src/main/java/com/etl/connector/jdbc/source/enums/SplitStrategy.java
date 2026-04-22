@@ -1,12 +1,9 @@
 package com.etl.connector.jdbc.source.enums;
 
 import lombok.Getter;
-import org.apache.commons.lang3.tuple.Pair;
 
 import javax.annotation.Nullable;
 import java.sql.Types;
-import java.util.Comparator;
-import java.util.Map;
 
 /**
  * 分片策略枚举
@@ -90,25 +87,5 @@ public enum SplitStrategy {
             }
         }
         return null;
-    }
-
-    /**
-     * 根据主键map查找分片策略，并按照order排序
-     *
-     * @param primaryKeys: key=columnName, value=jdbcType
-     * @return 匹配的分片策略，如果没有匹配则返回 null
-     */
-    public static @Nullable Pair<String, SplitStrategy> fromPrimaryKeys(Map<String, Integer> primaryKeys) {
-        return primaryKeys.entrySet().stream()
-                .map(entry -> {
-                    String columnName = entry.getKey();
-                    Integer jdbcType = entry.getValue();
-
-                    SplitStrategy splitStrategy = SplitStrategy.fromJdbcType(jdbcType);
-                    return Pair.of(columnName, splitStrategy);
-                })
-                .filter(item -> item.getValue() != null)
-                .min(Comparator.comparingInt(t -> t.getValue().getOrder()))
-                .orElse(null);
     }
 }

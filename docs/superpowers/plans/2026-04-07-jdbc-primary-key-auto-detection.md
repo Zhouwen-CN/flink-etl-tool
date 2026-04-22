@@ -121,7 +121,7 @@ mvn test -Dtest=SqlUtilsTest#testGetPrimaryKey_SinglePrimaryKey
 预期输出:
 ```
 [ERROR] testGetPrimaryKey_SinglePrimaryKey FAILED
-Caused by: java.lang.NoSuchMethodException: com.etl.core.utils.SqlUtils.getPrimaryKey(...)
+Caused by: java.lang.NoSuchMethodException: com.etl.connector.jdbc.utils.SqlUtils.getPrimaryKey(...)
 ```
 
 ---
@@ -479,7 +479,7 @@ if (mode == WriteMode.UPSERT) {
 
 需要添加导入:
 ```java
-import com.etl.core.utils.SqlUtils;
+import com.etl.connector.jdbc.utils.SqlUtils;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 ```

@@ -6,17 +6,17 @@ import com.etl.connector.jdbc.dialect.JdbcDialectLoader;
 import com.etl.connector.jdbc.dialect.WriteMode;
 import com.etl.core.exception.NoPrimaryKeyException;
 import com.etl.core.sink.AbstractSink;
-import com.etl.core.utils.SqlUtils;
+import com.etl.connector.jdbc.utils.SqlUtils;
 import com.etl.connector.jdbc.sink.config.JdbcSinkConfig;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.flink.api.connector.sink2.SinkWriter;
 import org.apache.flink.types.Row;
 import org.apache.flink.util.Preconditions;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * JDBC Sink 实现
@@ -55,7 +55,7 @@ public class JdbcSink extends AbstractSink {
                     String.format("%s 模式必须配置 table，因为需要主键信息", mode));
 
             // 自动获取主键
-            Map<String, Integer> pkInfo;
+            List<Pair<String, Integer>> pkInfo;
             try {
                 pkInfo = SqlUtils.getPrimaryKey(url, table, username, password);
             } catch (NoPrimaryKeyException e) {
@@ -63,7 +63,7 @@ public class JdbcSink extends AbstractSink {
                         String.format("表 '%s' 没有主键，无法使用 %s 模式。请使用 INSERT 模式、手动配置 keyFields 或为表添加主键",
                                 e.getTableName(), mode));
             }
-            keyFields = new ArrayList<>(pkInfo.keySet());
+            keyFields = pkInfo.stream().map(Pair::getKey).collect(Collectors.toList());
             log.info("JDBC Sink {} 模式自动获取主键: table={}, keyFields={}", mode, table, keyFields);
         }
 
