@@ -57,8 +57,7 @@ java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar --file you
   "sinks": [
     {
       "type": "console",
-      "inputTable": "users",
-      "config": {}
+      "inputTable": "users"
     }
   ]
 }

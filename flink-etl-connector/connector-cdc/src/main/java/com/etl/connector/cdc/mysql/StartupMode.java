@@ -5,24 +5,19 @@ package com.etl.connector.cdc.mysql;
  */
 public enum StartupMode {
     /**
-     * 从最早可用位置开始（读取历史变更）
+     * 不进行快照，从 binlog 最早的位置开始
      */
     EARLIEST,
 
     /**
-     * 从最新位置开始（只捕获新变更）
+     * 不进行快照，从 binlog 最新位置开始
      */
     LATEST,
 
     /**
-     * 从指定时间戳开始
+     * 先读取全量快照，再从 binlog 最新的位置开始
      */
-    TIMESTAMP,
-
-    /**
-     * 先读取全量快照，再捕获增量变更
-     */
-    SNAPSHOT_FIRST;
+    INITIAL;
 
     static StartupMode of(String value){
         for (StartupMode startupMode : values()) {
@@ -32,7 +27,7 @@ public enum StartupMode {
         }
 
         throw new IllegalArgumentException(
-            String.format("不支持的启动模式: '%s'。支持的模式: EARLIEST（最早位置）、LATEST（最新位置）、TIMESTAMP（指定时间戳）、SNAPSHOT_FIRST（先全量后增量）",
+            String.format("不支持的启动模式: '%s'。支持的模式: EARLIEST（binlog 最早位置）、LATEST（binlog 最新位置）、INITIAL（先全量后增量）",
                 value)
         );
     }

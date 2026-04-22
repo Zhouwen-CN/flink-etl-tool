@@ -6,6 +6,7 @@ import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.connector.source.Source;
+import org.apache.flink.types.Row;
 
 /**
  * 通用 JDBC Source 插件
@@ -21,7 +22,7 @@ public class JdbcSourcePlugin implements SourcePlugin {
     }
 
     @Override
-    public Source<?, ?, ?> createSource(SourceConfig config, RuntimeExecutionMode runtimeMode) {
+    public Source<Row, ?, ?> createSource(SourceConfig config, RuntimeExecutionMode runtimeMode) {
         log.info("创建 JDBC Source");
         return new JdbcSource(config);
     }

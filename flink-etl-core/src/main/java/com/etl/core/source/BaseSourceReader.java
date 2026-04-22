@@ -42,6 +42,20 @@ public abstract class BaseSourceReader<E, T, SplitT extends BaseSourceSplit, Sta
      *
      * @param splitReaderSupplier 分片读取器供应器
      * @param recordEmitter       记录发射器
+     * @param context             读取器上下文
+     */
+    public BaseSourceReader(
+            Supplier<BaseSplitReader<E, SplitT>> splitReaderSupplier,
+            RecordEmitter<E, T, StateT> recordEmitter,
+            SourceReaderContext context) {
+        super(splitReaderSupplier::get, recordEmitter, new Configuration(), context);
+    }
+
+    /**
+     * 构造函数
+     *
+     * @param splitReaderSupplier 分片读取器供应器
+     * @param recordEmitter       记录发射器
      * @param config              配置
      * @param context             读取器上下文
      */

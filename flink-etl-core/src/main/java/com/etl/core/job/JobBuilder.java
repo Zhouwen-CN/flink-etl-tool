@@ -40,7 +40,6 @@ public class JobBuilder {
      * @param env    Flink 执行环境
      * @param config Job 配置
      */
-    @SuppressWarnings({"unchecked", "rawtypes"})
     public static void build(StreamExecutionEnvironment env, JobConfig config) {
         JobMeta jobConfig = config.getJob();
         RuntimeExecutionMode runtimeMode = jobConfig.getMode().getRuntimeMode();
@@ -55,7 +54,7 @@ public class JobBuilder {
         for (SourceConfig sourceConfig : config.getSources()) {
             String sourceType = sourceConfig.getType();
             SourcePlugin sourcePlugin = PluginLoader.loadSourcePlugin(sourceType);
-            Source source = sourcePlugin.createSource(sourceConfig, runtimeMode);
+            Source<Row, ?, ?> source = sourcePlugin.createSource(sourceConfig, runtimeMode);
             DataStream<Row> sourceStream = env.fromSource(source, WatermarkStrategy.noWatermarks(), sourceType + " source");
 
             // DataStream<Row> -> Table

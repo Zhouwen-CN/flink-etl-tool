@@ -48,7 +48,7 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
             if (outputFormat == null) {
                 String[] columns = row.getFieldNames(true).toArray(new String[0]);
 
-                log.debug("JDBC Sink 写入字段（已过滤隐藏字段）: {}", Arrays.toString(columns));
+                log.debug("JDBC Sink 写入字段: {}", Arrays.toString(columns));
 
                 // 延迟创建 OutputFormat（等 columns 确定后再 build）
                 this.outputFormat = new JdbcOutputFormatBuilder(config, connection, columns).build();

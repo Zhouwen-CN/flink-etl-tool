@@ -1,12 +1,15 @@
 package com.etl.connector.cdc.mysql;
 
 import com.etl.core.config.SourceConfig;
+import com.etl.core.utils.SqlUtils;
 import com.ververica.cdc.connectors.mysql.table.StartupOptions;
 import lombok.Builder;
 import lombok.Getter;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.flink.util.Preconditions;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -24,8 +27,9 @@ public class MySqlCdcConfig implements Serializable {
     private final String password;
     private final String table;
     private final StartupMode startupMode;
-    private final Long startupTimestamp;
     private final Integer serverId;
+    private final String serverTimeZone;
+    private final String splitKey;
 
     /**
      * 从 SourceConfig 解析配置参数
@@ -50,15 +54,26 @@ public class MySqlCdcConfig implements Serializable {
         String startupModeStr = config.getString("startupMode", "latest");
         StartupMode startupMode = StartupMode.of(startupModeStr.toUpperCase());
 
-        // timestamp 模式校验
-        Long startupTimestamp = null;
-        if (startupMode == StartupMode.TIMESTAMP) {
-            startupTimestamp = config.getLong("startupTimestamp");
-            Preconditions.checkNotNull(startupTimestamp, "startupMode=timestamp 时必须配置 startupTimestamp");
-        }
-
         // serverId（可选）
         Integer serverId = config.getInteger("serverId", generateAutoServerId());
+
+        // serverTimeZone（可选，默认为空）
+        String serverTimeZone = config.getString("serverTimeZone");
+
+        // splitKey（可选，未配置时尝试从数据库获取主键）
+        String splitKey = config.getString("splitKey");
+        if (splitKey == null) {
+            try {
+                // 尝试从数据库获取主键
+                List<Pair<String, Integer>> primaryKeyList = SqlUtils.getPrimaryKey(url, table, username, password);
+                if (!primaryKeyList.isEmpty()) {
+                    // 使用第一个主键列作为 splitKey
+                    splitKey = primaryKeyList.get(0).getKey();
+                }
+            } catch (Exception e) {
+                // 获取主键失败时忽略，splitKey 保持为 null
+            }
+        }
 
         return MySqlCdcConfig.builder()
                 .url(url)
@@ -69,8 +84,9 @@ public class MySqlCdcConfig implements Serializable {
                 .password(password)
                 .table(table)
                 .startupMode(startupMode)
-                .startupTimestamp(startupTimestamp)
                 .serverId(serverId)
+                .serverTimeZone(serverTimeZone)
+                .splitKey(splitKey)
                 .build();
     }
 
@@ -115,9 +131,7 @@ public class MySqlCdcConfig implements Serializable {
                 return StartupOptions.earliest();
             case LATEST:
                 return StartupOptions.latest();
-            case TIMESTAMP:
-                return StartupOptions.timestamp(startupTimestamp);
-            case SNAPSHOT_FIRST:
+            case INITIAL:
                 return StartupOptions.initial();
             default:
                 throw new IllegalArgumentException("不支持的启动模式: " + startupMode);

@@ -3,11 +3,11 @@ package com.etl.connector.cdc.mysql;
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.JsonToRowConverter;
 import com.etl.core.utils.JsonUtils;
+import com.etl.core.utils.SqlUtils;
 import com.ververica.cdc.debezium.DebeziumDeserializationSchema;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
-import org.apache.flink.table.types.logical.*;
 import org.apache.flink.types.Row;
 import org.apache.flink.types.RowKind;
 import org.apache.flink.util.Collector;
@@ -18,10 +18,8 @@ import org.apache.kafka.connect.storage.ConverterConfig;
 import org.apache.kafka.connect.storage.ConverterType;
 
 import java.io.IOException;
-import java.sql.*;
 import java.util.HashMap;
 import java.util.Map;
-import com.etl.core.utils.SqlUtils;
 
 /**
  * MySQL CDC 序列化器
@@ -52,7 +50,7 @@ public class MySqlCdcDeserializer implements DebeziumDeserializationSchema<Row> 
 
     @Override
     public void deserialize(SourceRecord record, Collector<Row> out) throws Exception {
-        // 延迟初始化
+        // 延迟初始化，因为jsonConverter不能序列化
         if (jsonConverter == null) {
             initializeJsonConverter();
         }

@@ -18,7 +18,7 @@ public class JdbcOutputFormatBuilder {
 
     private final JdbcSinkConfig config;
     private final Connection connection;
-    private final transient String[] columns;
+    private final String[] columns;
 
     public JdbcOutputFormatBuilder(JdbcSinkConfig config, Connection connection, String[] columns) {
         this.config = config;

@@ -105,27 +105,6 @@ class MySqlCdcConfigTest {
     }
 
     @Test
-    void testStartupModeTimestamp() {
-        Map<String, Object> configMap = new HashMap<>();
-        configMap.put("url", "jdbc:mysql://localhost:3306/mydb");
-        configMap.put("username", "root");
-        configMap.put("password", "password");
-        configMap.put("table", "users");
-        configMap.put("startupMode", "timestamp");
-        configMap.put("startupTimestamp", 1234567890L);
-
-        SourceConfig sourceConfig = new SourceConfig();
-        sourceConfig.setConfig(configMap);
-
-        MySqlCdcConfig config = MySqlCdcConfig.fromSourceConfig(sourceConfig);
-
-        assertEquals(StartupMode.TIMESTAMP, config.getStartupMode());
-        assertEquals(1234567890L, config.getStartupTimestamp());
-        StartupOptions options = config.getStartupOptions();
-        assertNotNull(options);
-    }
-
-    @Test
     void testStartupModeSnapshotFirst() {
         Map<String, Object> configMap = new HashMap<>();
         configMap.put("url", "jdbc:mysql://localhost:3306/mydb");
@@ -139,7 +118,7 @@ class MySqlCdcConfigTest {
 
         MySqlCdcConfig config = MySqlCdcConfig.fromSourceConfig(sourceConfig);
 
-        assertEquals(StartupMode.SNAPSHOT_FIRST, config.getStartupMode());
+        assertEquals(StartupMode.INITIAL, config.getStartupMode());
         StartupOptions options = config.getStartupOptions();
         assertNotNull(options);
     }
