@@ -27,6 +27,11 @@
             <artifactId>connector-kafka</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.etl</groupId>
+            <artifactId>connector-cdc</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>com.etl</groupId>
