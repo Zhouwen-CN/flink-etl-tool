@@ -90,7 +90,7 @@ public final class SqlUtils {
 
             // 按 KEY_SEQ 收集主键列名
             Map<Integer, String> keySeqColumnName = new HashMap<>();
-            try(ResultSet rs = metaData.getPrimaryKeys(catalog, schema, table);) {
+            try (ResultSet rs = metaData.getPrimaryKeys(catalog, schema, table)) {
                 while (rs.next()) {
                     String columnName = rs.getString("COLUMN_NAME");
                     int keySeq = rs.getInt("KEY_SEQ");
@@ -103,17 +103,18 @@ public final class SqlUtils {
                 throw new NoPrimaryKeyException(table);
             }
 
+            // 主键名称排序
+            String[] pkFields = new String[keySeqColumnName.size()];
+            keySeqColumnName.forEach((index, columnName) -> pkFields[index] = columnName);
+
+            // 主键名 + jdbc类型列表
             List<Pair<String, Integer>> primaryKeyList = new ArrayList<>();
-
-            for (Map.Entry<Integer, String> entry : keySeqColumnName.entrySet()) {
-                Integer index = entry.getKey();
-                String columnName = entry.getValue();
-
+            for (String columnName : pkFields) {
                 // 使用 DatabaseMetaData.getColumns() 获取列类型
                 try (ResultSet colRs = metaData.getColumns(catalog, schema, table, columnName)) {
                     if (colRs.next()) {
                         int jdbcType = colRs.getInt("DATA_TYPE");
-                        primaryKeyList.set(index, Pair.of(columnName, jdbcType));
+                        primaryKeyList.add(Pair.of(columnName, jdbcType));
                     } else {
                         throw new RuntimeException(
                                 String.format("无法获取表 '%s' 列 '%s' 的类型信息", table, columnName));
