@@ -1066,7 +1066,8 @@ Writer 可以通过 `context` 字段访问：
 | `sql` | 条件必填 | - | 自定义 SQL，支持具名占位符 `:paramName`。CUSTOM 模式必填，其他模式忽略 |
 | `mode` | 否 | `upsert` | 写入模式：`insert`、`upsert`、`cdc`、`custom` |
 | `keyFields` | 条件必填 | 自动获取 | UPSERT/CDC 模式可选（自动获取主键），INSERT/CUSTOM 模式忽略 |
-| `batchSize` | 否 | `100` | 批量写入大小 |
+| `batchSize` | 否 | `100` | 批量写入大小，达到此数量触发刷写 |
+| `batchIntervalMs` | 否 | `0` | 批量刷写间隔（毫秒），`0` 表示禁用时间触发。与 `batchSize` 配合使用，任意条件满足即触发刷写 |
 
 #### CDC 模式说明
 
@@ -1091,7 +1092,8 @@ CDC 模式用于处理带有 RowKind 标记的数据（如 Debezium CDC 数据�
       "password": "password",
       "table": "users",
       "mode": "cdc",
-      "batchSize": 100
+      "batchSize": 100,
+      "batchIntervalMs": 1000
     }
   }
 }
@@ -1200,6 +1202,28 @@ JDBC Sink 支持 4 种写入模式，每种模式有明确的配置要求：
 - UPSERT/CDC 模式的 `keyFields` 不配置时自动从数据库获取主键
 - 不建议配置不符合模式的参数，虽然会被忽略但容易造成混淆
 
+---
+
+#### 批量写入控制
+
+JDBC Sink 支持两种批量刷写触发机制：
+
+**触发条件：**
+1. **数据量触发**：累计数据达到 `batchSize` 时触发刷写
+2. **时间触发**：距离上次刷写超过 `batchIntervalMs` 时触发刷写（仅当 `batchIntervalMs > 0`）
+
+**两种触发机制配合使用，任意条件满足即触发刷写：**
+
+| 配置组合 | 适用场景 | 行为说明 |
+|---------|---------|---------|
+| `batchSize=100, batchIntervalMs=0` | 高吞吐量场景 | 纯数据量触发，满 100 条刷写，数据不足时等待下一个 checkpoint |
+| `batchSize=100, batchIntervalMs=1000` | 流式实时场景 | 双重触发，满 100 条或间隔 1 秒都会刷写，平衡吞吐和延迟 |
+| `batchSize=1, batchIntervalMs=1000` | 低延迟场景 | 每条数据立即刷写或最多等待 1 秒，适合实时性要求高的场景 |
+
+**推荐配置：**
+- **批处理任务**：建议使用 `batchIntervalMs=0`，最大化吞吐量
+- **流处理任务**：建议配置 `batchIntervalMs=1000-5000`，避免长时间未刷写导致数据延迟
+
 #### 配置示例
 
 **UPSERT 模式（默认值） - 存在则更新，不存在则插入：**
@@ -1214,7 +1238,8 @@ JDBC Sink 支持 4 种写入模式，每种模式有明确的配置要求：
       "username": "root",
       "password": "password",
       "table": "target_table",
-      "batchSize": 100
+      "batchSize": 100,
+      "batchIntervalMs": 1000
     }
   }
 }
