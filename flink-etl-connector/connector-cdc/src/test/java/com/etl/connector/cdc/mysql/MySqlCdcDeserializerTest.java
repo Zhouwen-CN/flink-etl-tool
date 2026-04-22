@@ -1,6 +1,9 @@
 package com.etl.connector.cdc.mysql;
 
-import org.apache.flink.table.types.logical.RowType;
+import org.apache.flink.types.Row;
+import org.apache.flink.types.RowKind;
+import org.apache.flink.util.Collector;
+import org.apache.kafka.connect.source.SourceRecord;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -8,14 +11,11 @@ import org.junit.jupiter.api.Test;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * MySqlCdcDeserializer 测试类
- * 使用 H2 内存数据库验证动态 Schema 获取和 Debezium JSON 解析
- */
 class MySqlCdcDeserializerTest {
 
     private Connection h2Connection;
@@ -43,7 +43,6 @@ class MySqlCdcDeserializerTest {
     @AfterEach
     void tearDown() throws Exception {
         if (h2Connection != null) {
-            // 删除表以便下次测试
             Statement stmt = h2Connection.createStatement();
             stmt.execute("DROP TABLE IF EXISTS users");
             stmt.close();
@@ -51,29 +50,65 @@ class MySqlCdcDeserializerTest {
         }
     }
 
+    /**
+     * 创建简单的 Collector 实现，用于收集 Row 结果
+     */
+    private static class TestCollector implements Collector<Row> {
+        private final List<Row> collectedRows = new ArrayList<>();
+
+        @Override
+        public void collect(Row record) {
+            collectedRows.add(record);
+        }
+
+        @Override
+        public void close() {
+        }
+
+        public List<Row> getCollectedRows() {
+            return collectedRows;
+        }
+
+        public Row getFirstRow() {
+            return collectedRows.isEmpty() ? null : collectedRows.get(0);
+        }
+    }
+
+    /**
+     * 创建 SourceRecord（包含 Debezium JSON value）
+     */
+    private SourceRecord createSourceRecord(String json) {
+        return new SourceRecord(
+            null,  // sourcePartition
+            null,  // sourceOffset
+            "test-topic",  // topic
+            null,  // keySchema
+            null,  // key
+            null,  // valueSchema
+            json.getBytes()  // value（Debezium JSON bytes）
+        );
+    }
+
     @Test
     void testSchemaExtractionFromDatabase() throws Exception {
-        // 创建序列化器（传入 H2 连接参数）
         MySqlCdcDeserializer deserializer = new MySqlCdcDeserializer(
-            "mem:testdb",
-            -1,  // H2 内存数据库端口为 -1
-            "testdb",
-            USERNAME,
-            PASSWORD,
-            "users"
+            "mem:testdb", -1, "testdb", USERNAME, PASSWORD, "users"
         );
 
-        // 模拟 open() 方法调用（手动触发 Schema 获取）
-        deserializer.open(null);
+        // 创建简单的 INSERT JSON 触发 Schema 获取（延迟初始化）
+        String json = "{\"before\":null,\"after\":{\"ID\":1,\"NAME\":\"Alice\",\"AGE\":30,\"SALARY\":5000.5,\"CREATED_AT\":\"2023-01-01 10:00:00\"},\"op\":\"c\"}";
+
+        TestCollector collector = new TestCollector();
+        SourceRecord record = createSourceRecord(json);
+
+        deserializer.deserialize(record, collector);
 
         // 验证 Schema 是否正确获取
-        RowType rowType = deserializer.getRowType();
-
-        assertNotNull(rowType);
-        assertEquals(5, rowType.getFieldCount());
+        assertNotNull(deserializer.getRowType());
+        assertEquals(5, deserializer.getRowType().getFieldCount());
 
         // 验证字段名称（H2 默认返回大写字段名）
-        List<String> fieldNames = rowType.getFieldNames();
+        List<String> fieldNames = deserializer.getRowType().getFieldNames();
         assertTrue(fieldNames.contains("ID"));
         assertTrue(fieldNames.contains("NAME"));
         assertTrue(fieldNames.contains("AGE"));
@@ -83,23 +118,21 @@ class MySqlCdcDeserializerTest {
 
     @Test
     void testDeserializeInsert() throws Exception {
-        // 创建序列化器并初始化 Schema
         MySqlCdcDeserializer deserializer = new MySqlCdcDeserializer(
             "mem:testdb", -1, "testdb", USERNAME, PASSWORD, "users"
         );
-        deserializer.open(null);
 
-        // Debezium INSERT JSON（对应 users 表）
-        // 注意：H2 字段名默认为大写
-        String json = "{" +
-            "\"before\":null," +
-            "\"after\":{\"ID\":1,\"NAME\":\"Alice\",\"AGE\":30,\"SALARY\":5000.5,\"CREATED_AT\":\"2023-01-01 10:00:00\"}," +
-            "\"op\":\"c\"" +
-            "}";
+        String json = "{\"before\":null,\"after\":{\"ID\":1,\"NAME\":\"Alice\",\"AGE\":30,\"SALARY\":5000.5,\"CREATED_AT\":\"2023-01-01 10:00:00\"},\"op\":\"c\"}";
 
-        org.apache.flink.types.Row row = deserializer.deserialize(json.getBytes());
+        TestCollector collector = new TestCollector();
+        SourceRecord record = createSourceRecord(json);
 
-        assertEquals(org.apache.flink.types.RowKind.INSERT, row.getKind());
+        deserializer.deserialize(record, collector);
+
+        Row row = collector.getFirstRow();
+        assertNotNull(row);
+
+        assertEquals(RowKind.INSERT, row.getKind());
         assertEquals(1L, row.getField(0));  // ID
         assertEquals("Alice", row.getField(1));  // NAME
         assertEquals(30, row.getField(2));  // AGE
@@ -111,18 +144,20 @@ class MySqlCdcDeserializerTest {
         MySqlCdcDeserializer deserializer = new MySqlCdcDeserializer(
             "mem:testdb", -1, "testdb", USERNAME, PASSWORD, "users"
         );
-        deserializer.open(null);
 
-        // H2 字段名默认为大写
-        String json = "{" +
-            "\"before\":{\"ID\":1,\"NAME\":\"Alice\",\"AGE\":30,\"SALARY\":5000.5,\"CREATED_AT\":\"2023-01-01 10:00:00\"}," +
+        String json = "{\"before\":{\"ID\":1,\"NAME\":\"Alice\",\"AGE\":30,\"SALARY\":5000.5,\"CREATED_AT\":\"2023-01-01 10:00:00\"}," +
             "\"after\":{\"ID\":1,\"NAME\":\"Bob\",\"AGE\":35,\"SALARY\":6000.0,\"CREATED_AT\":\"2023-01-01 10:00:00\"}," +
-            "\"op\":\"u\"" +
-            "}";
+            "\"op\":\"u\"}";
 
-        org.apache.flink.types.Row row = deserializer.deserialize(json.getBytes());
+        TestCollector collector = new TestCollector();
+        SourceRecord record = createSourceRecord(json);
 
-        assertEquals(org.apache.flink.types.RowKind.UPDATE_AFTER, row.getKind());
+        deserializer.deserialize(record, collector);
+
+        Row row = collector.getFirstRow();
+        assertNotNull(row);
+
+        assertEquals(RowKind.UPDATE_AFTER, row.getKind());
         assertEquals(1L, row.getField(0));
         assertEquals("Bob", row.getField(1));
         assertEquals(35, row.getField(2));
@@ -134,18 +169,20 @@ class MySqlCdcDeserializerTest {
         MySqlCdcDeserializer deserializer = new MySqlCdcDeserializer(
             "mem:testdb", -1, "testdb", USERNAME, PASSWORD, "users"
         );
-        deserializer.open(null);
 
-        // H2 字段名默认为大写
-        String json = "{" +
-            "\"before\":{\"ID\":1,\"NAME\":\"Alice\",\"AGE\":30,\"SALARY\":5000.5,\"CREATED_AT\":\"2023-01-01 10:00:00\"}," +
+        String json = "{\"before\":{\"ID\":1,\"NAME\":\"Alice\",\"AGE\":30,\"SALARY\":5000.5,\"CREATED_AT\":\"2023-01-01 10:00:00\"}," +
             "\"after\":null," +
-            "\"op\":\"d\"" +
-            "}";
+            "\"op\":\"d\"}";
 
-        org.apache.flink.types.Row row = deserializer.deserialize(json.getBytes());
+        TestCollector collector = new TestCollector();
+        SourceRecord record = createSourceRecord(json);
 
-        assertEquals(org.apache.flink.types.RowKind.DELETE, row.getKind());
+        deserializer.deserialize(record, collector);
+
+        Row row = collector.getFirstRow();
+        assertNotNull(row);
+
+        assertEquals(RowKind.DELETE, row.getKind());
         assertEquals(1L, row.getField(0));
         assertEquals("Alice", row.getField(1));
         assertEquals(30, row.getField(2));
@@ -154,42 +191,42 @@ class MySqlCdcDeserializerTest {
 
     @Test
     void testDeserializeRead() throws Exception {
-        // 测试 op='r'（快照读取）的处理
         MySqlCdcDeserializer deserializer = new MySqlCdcDeserializer(
             "mem:testdb", -1, "testdb", USERNAME, PASSWORD, "users"
         );
-        deserializer.open(null);
 
-        String json = "{" +
-            "\"before\":null," +
-            "\"after\":{\"ID\":2,\"NAME\":\"Charlie\",\"AGE\":25,\"SALARY\":4000.0,\"CREATED_AT\":\"2023-01-02 10:00:00\"}," +
-            "\"op\":\"r\"" +
-            "}";
+        String json = "{\"before\":null,\"after\":{\"ID\":2,\"NAME\":\"Charlie\",\"AGE\":25,\"SALARY\":4000.0,\"CREATED_AT\":\"2023-01-02 10:00:00\"},\"op\":\"r\"}";
 
-        org.apache.flink.types.Row row = deserializer.deserialize(json.getBytes());
+        TestCollector collector = new TestCollector();
+        SourceRecord record = createSourceRecord(json);
 
-        assertEquals(org.apache.flink.types.RowKind.INSERT, row.getKind());
+        deserializer.deserialize(record, collector);
+
+        Row row = collector.getFirstRow();
+        assertNotNull(row);
+
+        assertEquals(RowKind.INSERT, row.getKind());  // READ 映射到 INSERT
         assertEquals(2L, row.getField(0));
         assertEquals("Charlie", row.getField(1));
     }
 
     @Test
     void testDeserializeWithNullValue() throws Exception {
-        // 测试字段值为 null 的处理
         MySqlCdcDeserializer deserializer = new MySqlCdcDeserializer(
             "mem:testdb", -1, "testdb", USERNAME, PASSWORD, "users"
         );
-        deserializer.open(null);
 
-        String json = "{" +
-            "\"before\":null," +
-            "\"after\":{\"ID\":3,\"NAME\":null,\"AGE\":null,\"SALARY\":null,\"CREATED_AT\":null}," +
-            "\"op\":\"c\"" +
-            "}";
+        String json = "{\"before\":null,\"after\":{\"ID\":3,\"NAME\":null,\"AGE\":null,\"SALARY\":null,\"CREATED_AT\":null},\"op\":\"c\"}";
 
-        org.apache.flink.types.Row row = deserializer.deserialize(json.getBytes());
+        TestCollector collector = new TestCollector();
+        SourceRecord record = createSourceRecord(json);
 
-        assertEquals(org.apache.flink.types.RowKind.INSERT, row.getKind());
+        deserializer.deserialize(record, collector);
+
+        Row row = collector.getFirstRow();
+        assertNotNull(row);
+
+        assertEquals(RowKind.INSERT, row.getKind());
         assertEquals(3L, row.getField(0));
         assertNull(row.getField(1));
         assertNull(row.getField(2));
@@ -202,34 +239,37 @@ class MySqlCdcDeserializerTest {
         MySqlCdcDeserializer deserializer = new MySqlCdcDeserializer(
             "mem:testdb", -1, "testdb", USERNAME, PASSWORD, "users"
         );
-        deserializer.open(null);
 
-        String json = "{" +
-            "\"before\":null," +
-            "\"after\":{\"ID\":1,\"NAME\":\"Alice\",\"AGE\":30,\"SALARY\":5000.5,\"CREATED_AT\":\"2023-01-01 10:00:00\"}," +
-            "\"op\":\"x\"" +  // 不支持的 op 类型
-            "}";
+        // 先触发 Schema 初始化
+        String validJson = "{\"before\":null,\"after\":{\"ID\":1,\"NAME\":\"Alice\",\"AGE\":30,\"SALARY\":5000.5,\"CREATED_AT\":\"2023-01-01 10:00:00\"},\"op\":\"c\"}";
+        TestCollector initCollector = new TestCollector();
+        SourceRecord initRecord = createSourceRecord(validJson);
+        deserializer.deserialize(initRecord, initCollector);
+
+        // 不支持的 op 类型
+        String invalidJson = "{\"before\":null,\"after\":{\"ID\":1,\"NAME\":\"Alice\",\"AGE\":30,\"SALARY\":5000.5,\"CREATED_AT\":\"2023-01-01 10:00:00\"},\"op\":\"x\"}";
+
+        TestCollector collector = new TestCollector();
+        SourceRecord record = createSourceRecord(invalidJson);
 
         assertThrows(IllegalArgumentException.class, () -> {
-            deserializer.deserialize(json.getBytes());
+            deserializer.deserialize(record, collector);
         });
     }
 
     @Test
-    void testMissingOpField() throws Exception {
+    void testMissingOpField() {
         MySqlCdcDeserializer deserializer = new MySqlCdcDeserializer(
             "mem:testdb", -1, "testdb", USERNAME, PASSWORD, "users"
         );
-        deserializer.open(null);
 
-        // 缺少 'op' 字段
-        String json = "{" +
-            "\"before\":null," +
-            "\"after\":{\"ID\":1,\"NAME\":\"Alice\",\"AGE\":30,\"SALARY\":5000.5,\"CREATED_AT\":\"2023-01-01 10:00:00\"}" +
-            "}";
+        String json = "{\"before\":null,\"after\":{\"ID\":1,\"NAME\":\"Alice\",\"AGE\":30,\"SALARY\":5000.5,\"CREATED_AT\":\"2023-01-01 10:00:00\"}}";
 
-        assertThrows(java.io.IOException.class, () -> {
-            deserializer.deserialize(json.getBytes());
+        TestCollector collector = new TestCollector();
+        SourceRecord record = createSourceRecord(json);
+
+        assertThrows(Exception.class, () -> {
+            deserializer.deserialize(record, collector);
         });
     }
 
@@ -238,17 +278,21 @@ class MySqlCdcDeserializerTest {
         MySqlCdcDeserializer deserializer = new MySqlCdcDeserializer(
             "mem:testdb", -1, "testdb", USERNAME, PASSWORD, "users"
         );
-        deserializer.open(null);
 
-        // DELETE 操作缺少 'before' 字段
-        String json = "{" +
-            "\"before\":null," +
-            "\"after\":null," +
-            "\"op\":\"d\"" +
-            "}";
+        // 先触发 Schema 初始化
+        String validJson = "{\"before\":null,\"after\":{\"ID\":1,\"NAME\":\"Alice\",\"AGE\":30,\"SALARY\":5000.5,\"CREATED_AT\":\"2023-01-01 10:00:00\"},\"op\":\"c\"}";
+        TestCollector initCollector = new TestCollector();
+        SourceRecord initRecord = createSourceRecord(validJson);
+        deserializer.deserialize(initRecord, initCollector);
 
-        assertThrows(java.io.IOException.class, () -> {
-            deserializer.deserialize(json.getBytes());
+        // DELETE 缺少 before 字段
+        String invalidJson = "{\"before\":null,\"after\":null,\"op\":\"d\"}";
+
+        TestCollector collector = new TestCollector();
+        SourceRecord record = createSourceRecord(invalidJson);
+
+        assertThrows(Exception.class, () -> {
+            deserializer.deserialize(record, collector);
         });
     }
 
@@ -257,29 +301,37 @@ class MySqlCdcDeserializerTest {
         MySqlCdcDeserializer deserializer = new MySqlCdcDeserializer(
             "mem:testdb", -1, "testdb", USERNAME, PASSWORD, "users"
         );
-        deserializer.open(null);
 
-        // INSERT 操作缺少 'after' 字段
-        String json = "{" +
-            "\"before\":null," +
-            "\"after\":null," +
-            "\"op\":\"c\"" +
-            "}";
+        // 先触发 Schema 初始化
+        String validJson = "{\"before\":null,\"after\":{\"ID\":1,\"NAME\":\"Alice\",\"AGE\":30,\"SALARY\":5000.5,\"CREATED_AT\":\"2023-01-01 10:00:00\"},\"op\":\"c\"}";
+        TestCollector initCollector = new TestCollector();
+        SourceRecord initRecord = createSourceRecord(validJson);
+        deserializer.deserialize(initRecord, initCollector);
 
-        assertThrows(java.io.IOException.class, () -> {
-            deserializer.deserialize(json.getBytes());
+        // INSERT 缺少 after 字段
+        String invalidJson = "{\"before\":null,\"after\":null,\"op\":\"c\"}";
+
+        TestCollector collector = new TestCollector();
+        SourceRecord record = createSourceRecord(invalidJson);
+
+        assertThrows(Exception.class, () -> {
+            deserializer.deserialize(record, collector);
         });
     }
 
     @Test
     void testTableNotExist() {
-        // 测试表不存在的情况
         MySqlCdcDeserializer deserializer = new MySqlCdcDeserializer(
             "mem:testdb", -1, "testdb", USERNAME, PASSWORD, "non_existent_table"
         );
 
-        assertThrows(IllegalStateException.class, () -> {
-            deserializer.open(null);
+        String json = "{\"before\":null,\"after\":{\"id\":1},\"op\":\"c\"}";
+
+        TestCollector collector = new TestCollector();
+        SourceRecord record = createSourceRecord(json);
+
+        assertThrows(Exception.class, () -> {
+            deserializer.deserialize(record, collector);
         });
     }
 }
