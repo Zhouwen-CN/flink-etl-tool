@@ -661,6 +661,182 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 
 ---
 
+### MySQL CDC Source
+
+实时捕获 MySQL 数据库变更事件,输出带 RowKind 标记的 Row 数据,支持 INSERT、UPDATE、DELETE 操作识别。
+
+#### 配置参数
+
+| 参数 | 必填 | 默认值 | 说明 |
+|------|:----:|--------|------|
+| `url` | 是 | - | JDBC 连接 URL,格式:`jdbc:mysql://host:port/database` |
+| `username` | 是 | - | 数据库用户名 |
+| `password` | 是 | - | 数据库密码 |
+| `table` | 是 | - | 监听的表名(单表) |
+| `startupMode` | 否 | `latest` | 启动模式:`earliest`(从头开始)、`latest`(从最新位置)、`timestamp`(指定时间戳)、`snapshot_first`(先快照再增量) |
+| `startupTimestamp` | 条件必填 | - | 启动时间戳(毫秒),`startupMode=timestamp` 时必填 |
+| `serverId` | 否 | 自动生成 | MySQL binlog client ID,范围 5400-15400。多任务需配置不同值避免冲突 |
+
+#### 配置示例
+
+**基础配置(从最新位置开始):**
+
+```json
+{
+  "source": {
+    "type": "mysql-cdc",
+    "outputTable": "users_cdc",
+    "config": {
+      "url": "jdbc:mysql://localhost:3306/mydb",
+      "username": "root",
+      "password": "password",
+      "table": "users"
+    }
+  }
+}
+```
+
+**从头开始捕获历史变更:**
+
+```json
+{
+  "source": {
+    "type": "mysql-cdc",
+    "outputTable": "orders_cdc",
+    "config": {
+      "url": "jdbc:mysql://localhost:3306/mydb",
+      "username": "root",
+      "password": "password",
+      "table": "orders",
+      "startupMode": "earliest"
+    }
+  }
+}
+```
+
+**指定时间戳开始捕获:**
+
+```json
+{
+  "source": {
+    "type": "mysql-cdc",
+    "outputTable": "products_cdc",
+    "config": {
+      "url": "jdbc:mysql://localhost:3306/mydb",
+      "username": "root",
+      "password": "password",
+      "table": "products",
+      "startupMode": "timestamp",
+      "startupTimestamp": 1609459200000
+    }
+  }
+}
+```
+
+**先快照再增量(推荐生产使用):**
+
+```json
+{
+  "source": {
+    "type": "mysql-cdc",
+    "outputTable": "inventory_cdc",
+    "config": {
+      "url": "jdbc:mysql://localhost:3306/mydb",
+      "username": "root",
+      "password": "password",
+      "table": "inventory",
+      "startupMode": "snapshot_first",
+      "serverId": 5401
+    }
+  }
+}
+```
+
+#### CDC 数据说明
+
+**输出 Row 结构:**
+
+- Row 字段自动从数据库表 Schema 获取(无需配置 schema 参数)
+- Row 设置 RowKind 标记:
+  - INSERT 操作 → `RowKind.INSERT`
+  - UPDATE 操作 → `RowKind.UPDATE_AFTER`
+  - DELETE 操作 → `RowKind.DELETE`
+
+**与 JDBC Sink CDC 模式配合:**
+
+MySQL CDC Source 输出的数据可直接写入 JDBC Sink CDC 模式,实现增量数据实时同步:
+
+```json
+{
+  "job": {
+    "name": "mysql-realtime-sync",
+    "mode": "streaming",
+    "parallelism": 4
+  },
+  "sources": [
+    {
+      "type": "mysql-cdc",
+      "outputTable": "source_cdc",
+      "config": {
+        "url": "jdbc:mysql://source-host:3306/source_db",
+        "username": "root",
+        "password": "password",
+        "table": "users",
+        "startupMode": "snapshot_first"
+      }
+    }
+  ],
+  "sinks": [
+    {
+      "type": "jdbc",
+      "inputTable": "source_cdc",
+      "config": {
+        "url": "jdbc:mysql://target-host:3306/target_db",
+        "username": "root",
+        "password": "password",
+        "table": "users",
+        "mode": "cdc",
+        "batchSize": 100
+      }
+    }
+  ]
+}
+```
+
+> **说明:**
+> - MySQL CDC Source 使用 Ververica CDC Connector 实现
+> - 监听 MySQL binlog 实时捕获变更事件
+> - 支持单表监听,表 Schema 自动从数据库获取
+> - 输出带 RowKind 的 Row,配合 JDBC Sink CDC 模式实现增量同步
+
+#### 运行模式
+
+- 流式运行,持续监听 binlog 事件(`mode: "streaming"`)
+- 支持 checkpoint 时保存 binlog position,故障恢复从上次位置继续
+- at-least-once 语义,故障恢复时可能产生重复事件
+
+#### MySQL 前置要求
+
+MySQL 数据库需满足以下条件:
+
+1. **开启 binlog**: MySQL 配置文件添加:
+   ```
+   [mysqld]
+   log-bin=mysql-bin
+   binlog-format=ROW
+   server-id=1
+   ```
+
+2. **用户权限**: CDC 用户需有以下权限:
+   ```sql
+   GRANT SELECT, RELOAD, SHOW DATABASES, REPLICATION SLAVE, REPLICATION CLIENT ON *.* TO 'cdc_user'@'%';
+   FLUSH PRIVILEGES;
+   ```
+
+3. **表要求**: 表必须有主键(用于识别 DELETE 操作的 before 字段)
+
+---
+
 ### Mock Source
 
 用于测试和开发场景的数据模拟插件，支持固定数据和随机数据生成两种模式。
