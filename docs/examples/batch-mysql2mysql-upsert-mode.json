@@ -21,8 +21,8 @@
       "type": "jdbc",
       "inputTable": "source_table",
       "config": {
-        "url": "jdbc:mysql://127.0.0.1:3306/test_db",
         "mode": "upsert",
+        "url": "jdbc:mysql://127.0.0.1:3306/test_db",
         "table": "user_table_2",
         "username": "root",
         "password": "123456"

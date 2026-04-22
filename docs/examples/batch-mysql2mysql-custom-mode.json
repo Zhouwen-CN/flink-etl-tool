@@ -21,10 +21,10 @@
       "type": "jdbc",
       "inputTable": "source_table",
       "config": {
+        "mode": "custom",
         "url": "jdbc:mysql://127.0.0.1:3306/test_db",
         "username": "root",
         "password": "123456",
-        "mode": "custom",
         "sql": "INSERT INTO user_table_2(id, name, age, email) VALUES(:id, :name, :age, :email) ON DUPLICATE KEY UPDATE name=VALUES(name), age=VALUES(age), email=VALUES(email)"
       }
     }

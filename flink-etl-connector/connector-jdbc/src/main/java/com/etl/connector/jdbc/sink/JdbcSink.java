@@ -40,7 +40,7 @@ public class JdbcSink extends AbstractSink {
 
         String table = config.getString("table");
         String sql = config.getString("sql");
-        String modeStr = config.getString("mode", "INSERT");
+        String modeStr = config.getString("mode", "UPSERT");
         WriteMode mode = WriteMode.valueOf(modeStr.toUpperCase());
 
         List<String> keyFields = config.getList("keyFields");

@@ -888,7 +888,7 @@ Writer 可以通过 `context` 字段访问：
 | `dialect` | 否 | 自动识别 | 数据库方言，可选值：`mysql`、`postgresql`、`oracle`。不配置则根据 URL 自动识别 |
 | `table` | 条件必填 | - | 目标表名。INSERT/UPSERT/CDC 模式必填，CUSTOM 模式忽略 |
 | `sql` | 条件必填 | - | 自定义 SQL，支持具名占位符 `:paramName`。CUSTOM 模式必填，其他模式忽略 |
-| `mode` | 否 | `insert` | 写入模式：`insert`、`upsert`、`cdc`、`custom` |
+| `mode` | 否 | `upsert` | 写入模式：`insert`、`upsert`、`cdc`、`custom` |
 | `keyFields` | 条件必填 | 自动获取 | UPSERT/CDC 模式可选（自动获取主键），INSERT/CUSTOM 模式忽略 |
 | `batchSize` | 否 | `100` | 批量写入大小 |
 
@@ -1026,7 +1026,7 @@ JDBC Sink 支持 4 种写入模式，每种模式有明确的配置要求：
 
 #### 配置示例
 
-**INSERT 模式（默认值） - 自动生成 INSERT：**
+**UPSERT 模式（默认值） - 存在则更新，不存在则插入：**
 
 ```json
 {
@@ -1034,6 +1034,25 @@ JDBC Sink 支持 4 种写入模式，每种模式有明确的配置要求：
     "type": "jdbc",
     "inputTable": "output_data",
     "config": {
+      "url": "jdbc:mysql://localhost:3306/mydb",
+      "username": "root",
+      "password": "password",
+      "table": "target_table",
+      "batchSize": 100
+    }
+  }
+}
+```
+
+**INSERT 模式 - 强制插入所有记录：**
+
+```json
+{
+  "sink": {
+    "type": "jdbc",
+    "inputTable": "output_data",
+    "config": {
+      "mode": "INSERT",
       "url": "jdbc:mysql://localhost:3306/mydb",
       "username": "root",
       "password": "password",
