@@ -1,5 +1,6 @@
 package com.etl.connector.mqtt.source;
 
+import com.etl.connector.mqtt.source.config.MqttSourceConfig;
 import com.etl.core.source.BaseSplitEnumerator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
@@ -21,8 +22,8 @@ public class MqttSplitEnumerator extends BaseSplitEnumerator<MqttSplit, MqttEnum
     /**
      * 构造函数
      *
-     * @param context           枚举器上下文
-     * @param mqttSourceConfig  MQTT 配置
+     * @param context          枚举器上下文
+     * @param mqttSourceConfig MQTT 配置
      */
     public MqttSplitEnumerator(
             SplitEnumeratorContext<MqttSplit> context,
@@ -34,9 +35,9 @@ public class MqttSplitEnumerator extends BaseSplitEnumerator<MqttSplit, MqttEnum
     /**
      * 从检查点恢复的构造函数
      *
-     * @param context           枚举器上下文
-     * @param checkpoint        检查点
-     * @param mqttSourceConfig  MQTT 配置
+     * @param context          枚举器上下文
+     * @param checkpoint       检查点
+     * @param mqttSourceConfig MQTT 配置
      */
     public MqttSplitEnumerator(
             SplitEnumeratorContext<MqttSplit> context,
@@ -52,7 +53,14 @@ public class MqttSplitEnumerator extends BaseSplitEnumerator<MqttSplit, MqttEnum
                 mqttSourceConfig.getBroker(), mqttSourceConfig.getTopic());
 
         // 创建单分片
-        MqttSplit split = new MqttSplit("mqtt-split-0", mqttSourceConfig);
+        MqttSplit split = new MqttSplit(
+                mqttSourceConfig.getTopic(),
+                mqttSourceConfig.getBroker(),
+                mqttSourceConfig.getClientId(),
+                mqttSourceConfig.getUsername(),
+                mqttSourceConfig.getPassword(),
+                mqttSourceConfig.getSchema()
+        );
 
         // 添加到待处理队列
         addPendingSplits(Collections.singletonList(split));

@@ -13,7 +13,7 @@ import java.util.function.Supplier;
  * 继承 BaseSourceReader，自动处理线程模型和状态管理
  */
 @Slf4j
-public class MqttSourceReader extends BaseSourceReader<MqttMessageRecord, Row, MqttSplit, MqttSplitState> {
+public class MqttSourceReader extends BaseSourceReader<Row, Row, MqttSplit, MqttSplitState> {
 
     /**
      * 构造函数
@@ -22,7 +22,7 @@ public class MqttSourceReader extends BaseSourceReader<MqttMessageRecord, Row, M
      * @param context             读取器上下文
      */
     public MqttSourceReader(
-            Supplier<BaseSplitReader<MqttMessageRecord, MqttSplit>> splitReaderSupplier,
+            Supplier<BaseSplitReader<Row, MqttSplit>> splitReaderSupplier,
             SourceReaderContext context
     ) {
         super(splitReaderSupplier, new MqttRecordEmitter(), context);

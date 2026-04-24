@@ -1,0 +1,29 @@
+{
+  "job": {
+    "name": "mqtt-to-console",
+    "mode": "streaming",
+    "parallelism": 1
+  },
+  "sources": [
+    {
+      "type": "mqtt",
+      "outputTable": "source_table",
+      "config": {
+        "broker": "tcp://localhost:1883",
+        "topic": "sensor/data",
+        "clientId": "etl-mqtt-consumer",
+        "schema": {
+          "craneName": "STRING",
+          "time": "STRING",
+          "wind_speed": "DOUBLE"
+        }
+      }
+    }
+  ],
+  "sinks": [
+    {
+      "type": "console",
+      "inputTable": "source_table"
+    }
+  ]
+}

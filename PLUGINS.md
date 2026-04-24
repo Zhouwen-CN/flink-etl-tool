@@ -900,7 +900,6 @@ MySQL 数据库需满足以下条件:
 | `clientId`  |  否   | 自动生成 UUID   | 客户端 ID，多任务建议手动指定避免冲突                       |
 | `username`  |  否   | -           | 认证用户名                                      |
 | `password`  |  否   | -           | 认证密码                                       |
-| `startupMode` |  否  | `latest`    | 启动模式：`earliest`（接收 retained 消息）或 `latest`（新消息） |
 | `schema`    |  是   | -           | 消息体字段定义                                    |
 
 #### 配置示例
@@ -938,7 +937,6 @@ MySQL 数据库需满足以下条件:
       "clientId": "etl-consumer-001",
       "username": "admin",
       "password": "secret",
-      "startupMode": "earliest",
       "schema": {
         "eventId": "STRING",
         "type": "STRING",
@@ -960,11 +958,6 @@ MySQL 数据库需满足以下条件:
 - QoS 1（至少一次送达）
 - 支持 checkpoint 时保存分片状态
 - 自动重连机制（连接断开后自动重新连接）
-
-#### 启动模式说明
-
-- `earliest`：订阅时会尝试接收 broker 保留的 last retained message（如果有）
-- `latest`：只接收订阅后新发布的消息
 
 #### 错误处理
 

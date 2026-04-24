@@ -1,5 +1,6 @@
 package com.etl.connector.mqtt.source;
 
+import com.etl.connector.mqtt.source.config.MqttSourceConfig;
 import com.etl.core.config.SourceConfig;
 import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseSplitReader;
@@ -57,8 +58,8 @@ public class MqttSource extends AbstractSplitSource<MqttSplit, MqttEnumCheckpoin
     @Override
     public SourceReader<Row, MqttSplit> createReader(SourceReaderContext readerContext) {
         log.info("创建 SourceReader");
-        Supplier<BaseSplitReader<MqttMessageRecord, MqttSplit>> splitReaderSupplier =
-                () -> new MqttSplitReader();
+        Supplier<BaseSplitReader<Row, MqttSplit>> splitReaderSupplier =
+                MqttSplitReader::new;
         return new MqttSourceReader(splitReaderSupplier, readerContext);
     }
 

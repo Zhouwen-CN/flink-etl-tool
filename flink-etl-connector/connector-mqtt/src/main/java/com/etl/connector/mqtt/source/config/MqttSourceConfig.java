@@ -1,4 +1,4 @@
-package com.etl.connector.mqtt.source;
+package com.etl.connector.mqtt.source.config;
 
 import com.etl.core.config.SourceConfig;
 import com.etl.core.schema.EtlSchema;
@@ -28,8 +28,6 @@ public class MqttSourceConfig implements Serializable {
     private final String username;
     /** 认证密码（可选） */
     private final String password;
-    /** 启动模式 */
-    private final StartupMode startupMode;
     /** Schema 定义 */
     private final EtlSchema schema;
 
@@ -59,10 +57,6 @@ public class MqttSourceConfig implements Serializable {
         String username = config.getString("username");
         String password = config.getString("password");
 
-        // startupMode（可选，默认 latest）
-        String startupModeValue = config.getString("startupMode", "latest");
-        StartupMode startupMode = StartupMode.fromConfigValue(startupModeValue);
-
         // schema（必填）
         EtlSchema schema = config.getSchema();
         Preconditions.checkNotNull(schema, "schema 不能为空");
@@ -73,7 +67,6 @@ public class MqttSourceConfig implements Serializable {
                 .clientId(clientId)
                 .username(username)
                 .password(password)
-                .startupMode(startupMode)
                 .schema(schema)
                 .build();
     }
