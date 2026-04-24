@@ -1,5 +1,6 @@
 package com.etl.connector.mqtt.source;
 
+import com.etl.core.source.BaseSplitReader;
 import lombok.extern.slf4j.Slf4j;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
@@ -26,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * 使用 Paho 客户端订阅 topic，阻塞读取消息
  */
 @Slf4j
-public class MqttSplitReader implements MqttCallback {
+public class MqttSplitReader implements BaseSplitReader<MqttMessageRecord, MqttSplit>, MqttCallback {
 
     private static final int QOS = 1;
     private static final int QUEUE_CAPACITY = 1000;
@@ -53,6 +54,7 @@ public class MqttSplitReader implements MqttCallback {
      * @return 包含分片 ID 的记录集合
      * @throws IOException 读取异常
      */
+    @Override
     public RecordsWithSplitIds<MqttMessageRecord> fetch() throws IOException {
         RecordsBySplits.Builder<MqttMessageRecord> builder = new RecordsBySplits.Builder<>();
 
@@ -81,6 +83,7 @@ public class MqttSplitReader implements MqttCallback {
      *
      * @param splitsChanges 分片变动
      */
+    @Override
     public void handleSplitsChanges(SplitsChange<MqttSplit> splitsChanges) {
         for (MqttSplit split : splitsChanges.splits()) {
             pendingSplits.add(split);
