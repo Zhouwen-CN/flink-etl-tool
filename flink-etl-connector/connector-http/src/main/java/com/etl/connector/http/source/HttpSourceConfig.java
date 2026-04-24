@@ -1,8 +1,12 @@
 package com.etl.connector.http.source;
 
+import com.etl.core.config.SourceConfig;
 import com.etl.core.schema.EtlSchema;
+import com.etl.core.utils.JsonUtils;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.flink.util.Preconditions;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -13,6 +17,7 @@ import java.util.Map;
  */
 @Getter
 @Builder
+@Slf4j
 public class HttpSourceConfig implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -30,4 +35,48 @@ public class HttpSourceConfig implements Serializable {
     private final String dataPath;
     /** Schema 定义 */
     private final EtlSchema schema;
+
+    public static HttpSourceConfig fromSourceConfig(SourceConfig config) {
+        // URL（必填）
+        String url = config.getString("url");
+        Preconditions.checkArgument(url != null && !url.isEmpty(), "url is null or empty");
+
+        // HTTP 方法（可选，默认 GET）
+        String method = config.getString("method", "GET");
+        Preconditions.checkArgument("GET".equalsIgnoreCase(method) || "POST".equalsIgnoreCase(method),
+                "method must be GET or POST");
+
+        // 请求头（可选）
+        Map<String, Object> headers = config.getMap("headers");
+
+        // 查询参数（可选）
+        Map<String, Object> params = config.getMap("params");
+
+        // 请求体（可选）
+        String body = null;
+        Map<String, Object> bodyMap = config.getMap("body");
+        if (bodyMap != null) {
+            body = JsonUtils.writeValueAsString(bodyMap);
+        }
+
+        // JSONPath（可选）
+        String dataPath = config.getString("dataPath");
+
+        // Schema（必填）
+        EtlSchema schema = config.getSchema();
+        Preconditions.checkNotNull(schema, "schema is null");
+
+        log.info("创建 HttpSource: url={}, method={}, dataPath={}", url, method, dataPath);
+
+        // 封装配置
+        return HttpSourceConfig.builder()
+                .url(url)
+                .method(method.toUpperCase())
+                .headers(headers)
+                .params(params)
+                .body(body)
+                .dataPath(dataPath)
+                .schema(schema)
+                .build();
+    }
 }

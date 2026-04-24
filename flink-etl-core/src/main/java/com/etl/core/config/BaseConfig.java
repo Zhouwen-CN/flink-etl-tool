@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -162,7 +163,7 @@ public abstract class BaseConfig implements Serializable {
      * @return 配置值列表
      */
     @SuppressWarnings("unchecked")
-    public java.util.List<String> getList(String key) {
+    public List<String> getList(String key) {
         if (config == null) {
             return null;
         }
@@ -170,9 +171,30 @@ public abstract class BaseConfig implements Serializable {
         if (value == null) {
             return null;
         }
-        if (value instanceof java.util.List) {
-            return (java.util.List<String>) value;
+        if (value instanceof List) {
+            return (List<String>) value;
         }
         throw new IllegalArgumentException("配置项 '" + key + "' 不是列表类型");
+    }
+
+    /**
+     * 获取映射类型的配置值
+     *
+     * @param key 配置键
+     * @return 配置值映射
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> getMap(String key) {
+        if (config == null) {
+            return null;
+        }
+        Object value = config.get(key);
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Map) {
+            return (Map<String, Object>) value;
+        }
+        throw new IllegalArgumentException("配置项 '" + key + "' 不是映射类型");
     }
 }
