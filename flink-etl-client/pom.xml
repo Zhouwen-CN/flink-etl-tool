@@ -54,6 +54,11 @@
             <artifactId>connector-console</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>com.etl</groupId>
+            <artifactId>connector-mqtt</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- Transform 插件 -->
         <dependency>

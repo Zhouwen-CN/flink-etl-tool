@@ -25,6 +25,7 @@
         <module>connector-http</module>
         <module>connector-mock</module>
         <module>connector-cdc</module>
+        <module>connector-mqtt</module>
     </modules>
 
     <dependencies>
