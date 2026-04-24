@@ -12,6 +12,7 @@
     - [LocalFile Source](#localfile-source)
     - [HTTP Source](#http-source)
     - [Kafka Source](#kafka-source)
+    - [MQTT Source](#mqtt-source)
     - [Mock Source](#mock-source)
 - [Sink 插件](#sink-插件)
     - [Console Sink](#console-sink)
@@ -883,6 +884,93 @@ MySQL 数据库需满足以下条件:
    ```
 
 3. **表要求**: 表必须有主键(用于识别 DELETE 操作的 before 字段)
+
+---
+
+### MQTT Source
+
+从 MQTT broker 订阅 topic，消费 JSON 格式消息，使用 Eclipse Paho 客户端。
+
+#### 配置参数
+
+| 参数          |  必填  | 默认值         | 说明                                         |
+|-------------|:----:|-------------|--------------------------------------------|
+| `broker`    |  是   | -           | MQTT broker 地址，如 `tcp://localhost:1883`    |
+| `topic`     |  是   | -           | 订阅的 topic 名称                               |
+| `clientId`  |  否   | 自动生成 UUID   | 客户端 ID，多任务建议手动指定避免冲突                       |
+| `username`  |  否   | -           | 认证用户名                                      |
+| `password`  |  否   | -           | 认证密码                                       |
+| `startupMode` |  否  | `latest`    | 启动模式：`earliest`（接收 retained 消息）或 `latest`（新消息） |
+| `schema`    |  是   | -           | 消息体字段定义                                    |
+
+#### 配置示例
+
+**基础配置：**
+
+```json
+{
+  "source": {
+    "type": "mqtt",
+    "outputTable": "sensor_data",
+    "config": {
+      "broker": "tcp://localhost:1883",
+      "topic": "sensor/temperature",
+      "schema": {
+        "deviceId": "STRING",
+        "value": "DOUBLE",
+        "timestamp": "TIMESTAMP"
+      }
+    }
+  }
+}
+```
+
+**带认证配置：**
+
+```json
+{
+  "source": {
+    "type": "mqtt",
+    "outputTable": "mqtt_events",
+    "config": {
+      "broker": "tcp://broker.example.com:1883",
+      "topic": "events/log",
+      "clientId": "etl-consumer-001",
+      "username": "admin",
+      "password": "secret",
+      "startupMode": "earliest",
+      "schema": {
+        "eventId": "STRING",
+        "type": "STRING",
+        "data": {
+          "key": "STRING",
+          "value": "DOUBLE"
+        },
+        "tags": ["STRING"],
+        "timestamp": "TIMESTAMP"
+      }
+    }
+  }
+}
+```
+
+#### 运行模式
+
+- 流式消费，持续运行（`mode: "streaming"`）
+- QoS 1（至少一次送达）
+- 支持 checkpoint 时保存分片状态
+- 自动重连机制（连接断开后自动重新连接）
+
+#### 启动模式说明
+
+- `earliest`：订阅时会尝试接收 broker 保留的 last retained message（如果有）
+- `latest`：只接收订阅后新发布的消息
+
+#### 错误处理
+
+- JSON 解析失败：记录 ERROR 日志，跳过该消息，继续消费
+- 连接失败：抛出异常，触发 Flink 重试
+- 认证失败：启动时抛出 IllegalArgumentException
 
 ---
 
