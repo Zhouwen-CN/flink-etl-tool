@@ -21,9 +21,9 @@ java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar --file you
 
 ## 支持的插件
 
-**Source**：JDBC、LocalFile、HTTP、Kafka
+**Source**：JDBC、LocalFile、HTTP、Kafka、MQTT、Mock、MysqlCDC
 
-**Sink**：Console、JDBC
+**Sink**：Console、JDBC、Kafka
 
 **Transform**：SQL
 

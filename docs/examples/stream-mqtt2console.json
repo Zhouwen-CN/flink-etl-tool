@@ -1,6 +1,6 @@
 {
   "job": {
-    "name": "mqtt-to-console",
+    "name": "stream-mqtt2console",
     "mode": "streaming",
     "parallelism": 1
   },

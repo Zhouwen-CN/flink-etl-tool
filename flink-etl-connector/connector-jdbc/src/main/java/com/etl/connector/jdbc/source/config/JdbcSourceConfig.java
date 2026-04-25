@@ -46,7 +46,7 @@ public class JdbcSourceConfig implements Serializable {
     /** 数据库方言 */
     private final JdbcDialect dialect;
 
-    public static JdbcSourceConfig fromSourceConfig(SourceConfig config){
+    public static JdbcSourceConfig fromSourceConfig(SourceConfig config, int defaultBatchSize) {
         String url = Preconditions.checkNotNull(config.getString("url"), "url is null");
 
         // 支持显式配置 dialect
@@ -68,7 +68,7 @@ public class JdbcSourceConfig implements Serializable {
         String splitKey = inferred.getLeft();
         SplitStrategy splitStrategy = inferred.getRight();
 
-        Integer batchSize = config.getInteger("batchSize", 100);
+        Integer batchSize = config.getInteger("batchSize", defaultBatchSize);
         Preconditions.checkArgument(batchSize > 0, "batchSize must be greater than 0");
 
         Integer queryTimeout = config.getInteger("queryTimeout");

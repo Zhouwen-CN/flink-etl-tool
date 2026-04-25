@@ -9,7 +9,11 @@ import com.etl.core.source.serde.DefaultSplitSerializer;
 import com.etl.core.utils.SqlUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
-import org.apache.flink.api.connector.source.*;
+import org.apache.flink.api.connector.source.Boundedness;
+import org.apache.flink.api.connector.source.SourceReader;
+import org.apache.flink.api.connector.source.SourceReaderContext;
+import org.apache.flink.api.connector.source.SplitEnumerator;
+import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
 import org.apache.flink.types.Row;
 
@@ -26,7 +30,7 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
 
     public JdbcSource(SourceConfig config) {
         super(config);
-        jdbcSourceConfig = JdbcSourceConfig.fromSourceConfig(config);
+        jdbcSourceConfig = JdbcSourceConfig.fromSourceConfig(config, super.getDefaultBatchSize());
     }
 
     @Override

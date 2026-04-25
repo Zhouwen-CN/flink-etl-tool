@@ -134,19 +134,19 @@ EtlClient.main()
      ，在此方法中完成所有参数校验、类型转换和推断逻辑，Source 构造函数只调用该方法
    - **Split 包含完整数据**：Split 类必须包含 Reader 执行所需的所有信息（连接参数、配置等），Reader 不通过构造函数接收配置，而是从
      Split 中获取
-      - 方式一（多分片模式）：Split 直接持有字段（如 `RangeSplit` 包含 url、username、password、batchSize、queryTimeout）
-      - 方式二（单分片模式）：Split 持有 Config 对象（如 `HttpSplit`、`MqttSplit` 包含完整的 `HttpSourceConfig`、
-        `MqttSourceConfig`）
 6. 在 `flink-etl-client/pom.xml` 添加模块依赖
 
 ### 扩展新 Sink
 
 1. 在 `flink-etl-connector/` 下创建新模块，依赖 `flink-etl-core`
 2. 包名规范：com.etl.connector.`连接器名称`.sink，比如 `com.etl.connector.jdbc.sink`
+    - 配置类放在 `config/` 子包，比如 `com.etl.connector.jdbc.sink.config.JdbcSinkConfig`
 3. 实现 `SinkPlugin`，添加 `@AutoService(SinkPlugin.class)` 注解
-4. 继承 `AbstractSink`，在构造函数中校验参数
+4. 继承 `AbstractSink`，实现 `createWriter(InitContext context)`
 5. 继承 `AbstractSinkWriter<ConfigT>` 实现 `write()`、`flush()`、`close()`
-6. 在 `flink-etl-client/pom.xml` 添加模块依赖
+6. 配置参数校验分离，配置类（如 `JdbcSinkConfig`）提供静态方法 `fromSinkConfig(SinkConfig config)`
+   ，在此方法中完成所有参数校验、类型转换和推断逻辑，Sink 构造函数只调用该方法
+7. 在 `flink-etl-client/pom.xml` 添加模块依赖
 
 ### 扩展新 UDF
 
