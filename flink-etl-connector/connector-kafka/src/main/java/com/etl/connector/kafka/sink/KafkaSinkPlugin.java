@@ -1,5 +1,6 @@
 package com.etl.connector.kafka.sink;
 
+import com.etl.connector.kafka.sink.config.KafkaSinkConfig;
 import com.etl.core.config.SinkConfig;
 import com.etl.core.spi.SinkPlugin;
 import com.google.auto.service.AutoService;

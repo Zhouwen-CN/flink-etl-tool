@@ -1,5 +1,6 @@
 package com.etl.connector.kafka.source;
 
+import com.etl.connector.kafka.source.config.KafkaSourceConfig;
 import com.etl.connector.kafka.source.format.KafkaFormatPlugin;
 import com.etl.core.config.SourceConfig;
 import com.etl.core.spi.SourcePlugin;

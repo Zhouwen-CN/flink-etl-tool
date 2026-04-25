@@ -1,5 +1,6 @@
 package com.etl.connector.kafka.sink;
 
+import com.etl.connector.kafka.sink.config.KafkaSinkConfig;
 import com.etl.core.schema.RowToJsonConverter;
 import com.etl.core.utils.JsonUtils;
 import lombok.extern.slf4j.Slf4j;

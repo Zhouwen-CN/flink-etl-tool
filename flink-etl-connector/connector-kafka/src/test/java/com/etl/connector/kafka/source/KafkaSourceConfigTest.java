@@ -1,5 +1,6 @@
 package com.etl.connector.kafka.source;
 
+import com.etl.connector.kafka.source.config.KafkaSourceConfig;
 import com.etl.core.config.SourceConfig;
 import org.junit.jupiter.api.Test;
 
@@ -7,7 +8,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class KafkaSourceConfigTest {
 

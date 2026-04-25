@@ -1,4 +1,4 @@
-package com.etl.connector.kafka.sink;
+package com.etl.connector.kafka.sink.config;
 
 import com.etl.core.config.SinkConfig;
 import lombok.Builder;
