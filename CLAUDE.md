@@ -124,11 +124,19 @@ EtlClient.main()
 
 1. 在 `flink-etl-connector/` 下创建新模块，依赖 `flink-etl-core`
 2. 包名规范：com.etl.connector.`连接器名称`.source，比如 `com.etl.connector.jdbc.source`
+   - 配置类放在 `config/` 子包，比如 `com.etl.connector.jdbc.source.config.JdbcSourceConfig`
 3. 实现 `SourcePlugin`，添加 `@AutoService(SourcePlugin.class)` 注解
 4. 继承 `AbstractSplitSource` 实现分片读取
    - 关系型数据库：参考 `connector-jdbc` 模块的 `JdbcSource`，分片逻辑在 Enumerator 的 `start()` 中计算
    - 文件类：参考 `connector-localfile` 模块的 `LocalFileSource`
-5. 配置封装类实现 `Serializable`，参数校验集中在 Source 构造函数
+5. **架构规则（重要）**：
+   - **配置参数校验分离**：配置类（如 `JdbcSourceConfig`）提供静态方法 `fromSourceConfig(SourceConfig config)`
+     ，在此方法中完成所有参数校验、类型转换和推断逻辑，Source 构造函数只调用该方法
+   - **Split 包含完整数据**：Split 类必须包含 Reader 执行所需的所有信息（连接参数、配置等），Reader 不通过构造函数接收配置，而是从
+     Split 中获取
+      - 方式一（多分片模式）：Split 直接持有字段（如 `RangeSplit` 包含 url、username、password、batchSize、queryTimeout）
+      - 方式二（单分片模式）：Split 持有 Config 对象（如 `HttpSplit`、`MqttSplit` 包含完整的 `HttpSourceConfig`、
+        `MqttSourceConfig`）
 6. 在 `flink-etl-client/pom.xml` 添加模块依赖
 
 ### 扩展新 Sink

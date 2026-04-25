@@ -1,5 +1,6 @@
-package com.etl.connector.cdc.mysql;
+package com.etl.connector.cdc.mysql.config;
 
+import com.etl.connector.cdc.mysql.StartupMode;
 import com.etl.core.config.SourceConfig;
 import com.etl.core.utils.SqlUtils;
 import com.ververica.cdc.connectors.mysql.table.StartupOptions;

@@ -37,13 +37,6 @@ import java.util.Set;
  */
 @Slf4j
 public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
-
-    private final String url;
-    private final String username;
-    private final String password;
-    private final int batchSize;
-    private final Integer queryTimeout;
-
     private final Queue<RangeSplit> pendingSplits = new ArrayDeque<>();
     private final Set<String> finishedSplits = new HashSet<>();
 
@@ -54,14 +47,6 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
     private ResultSet currentResultSet;
     private boolean hasNextRecord;
     private int currentOffset;
-
-    public JdbcSplitReader(JdbcSourceConfig config) {
-        this.url = config.getUrl();
-        this.username = config.getUsername();
-        this.password = config.getPassword();
-        this.batchSize = config.getBatchSize();
-        this.queryTimeout = config.getQueryTimeout();
-    }
 
     @Override
     public RecordsWithSplitIds<Row> fetch() throws IOException {
@@ -91,14 +76,15 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
 
         try {
             // 创建连接
-            currentConnection = DriverManager.getConnection(url, username, password);
+            currentConnection = DriverManager.getConnection(split.getUrl(),  split.getUsername(), split.getPassword());
             currentStatement = currentConnection.createStatement(
                     ResultSet.TYPE_FORWARD_ONLY,
                     ResultSet.CONCUR_READ_ONLY
             );
 
             // 设置 fetchSize
-            currentStatement.setFetchSize(batchSize);
+            Integer queryTimeout = split.getQueryTimeout();
+            currentStatement.setFetchSize(split.getBatchSize());
             if (queryTimeout != null) {
                 currentStatement.setQueryTimeout(queryTimeout);
             }
@@ -144,7 +130,7 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
             }
 
             // 读取一批记录
-            while (hasNextRecord && recordsInBatch < batchSize) {
+            while (hasNextRecord && recordsInBatch < currentSplit.getBatchSize()) {
                 Row row = new Row(columnCount);
                 for (int i = 0; i < columnCount; i++) {
                     Object rawValue = currentResultSet.getObject(i + 1);

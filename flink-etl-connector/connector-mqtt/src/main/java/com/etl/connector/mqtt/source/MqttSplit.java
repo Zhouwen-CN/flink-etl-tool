@@ -1,5 +1,6 @@
 package com.etl.connector.mqtt.source;
 
+import com.etl.connector.mqtt.source.config.MqttSourceConfig;
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.source.BaseSourceSplit;
 import com.etl.core.source.serde.DefaultSplitSerializer;
@@ -20,63 +21,19 @@ public class MqttSplit implements BaseSourceSplit {
     private final String splitId;
 
     /**
-     * topic
+     * 配置信息
      */
-    private final String topic;
+    private final MqttSourceConfig config;
 
-    /**
-     * MQTT broker 地址，如 tcp://localhost:1883
-     */
-    private final String broker;
-    /**
-     * 客户端 ID（可选，默认自动生成 UUID）
-     */
-    private final String clientId;
-    /**
-     * 认证用户名（可选）
-     */
-    private final String username;
-    /**
-     * 认证密码（可选）
-     */
-    private final String password;
-    /**
-     * Schema 定义
-     */
-    private final EtlSchema schema;
-
-
-    public MqttSplit(String topic,
-                     String broker,
-                     String clientId,
-                     String username,
-                     String password,
-                     EtlSchema schema
+    public MqttSplit(String splitId,
+                     MqttSourceConfig config
     ) {
-        this.splitId = topic;
-        this.topic = topic;
-        this.broker = broker;
-        this.clientId = clientId;
-        this.username = username;
-        this.password = password;
-        this.schema = schema;
+        this.splitId = splitId;
+        this.config=config;
     }
 
     @Override
     public String splitId() {
         return splitId;
-    }
-
-    @Override
-    public String toString() {
-        return "MqttSplit{" +
-                "splitId='" + splitId + '\'' +
-                ", topic='" + topic + '\'' +
-                ", broker='" + broker + '\'' +
-                ", clientId='" + clientId + '\'' +
-                ", username='" + username + '\'' +
-                ", password='" + password + '\'' +
-                ", schema=" + schema +
-                '}';
     }
 }

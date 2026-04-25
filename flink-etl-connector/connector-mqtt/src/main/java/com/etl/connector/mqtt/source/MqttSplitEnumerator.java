@@ -53,14 +53,7 @@ public class MqttSplitEnumerator extends BaseSplitEnumerator<MqttSplit, MqttEnum
                 mqttSourceConfig.getBroker(), mqttSourceConfig.getTopic());
 
         // 创建单分片
-        MqttSplit split = new MqttSplit(
-                mqttSourceConfig.getTopic(),
-                mqttSourceConfig.getBroker(),
-                mqttSourceConfig.getClientId(),
-                mqttSourceConfig.getUsername(),
-                mqttSourceConfig.getPassword(),
-                mqttSourceConfig.getSchema()
-        );
+        MqttSplit split = new MqttSplit("mqtt-split-0", mqttSourceConfig);
 
         // 添加到待处理队列
         addPendingSplits(Collections.singletonList(split));

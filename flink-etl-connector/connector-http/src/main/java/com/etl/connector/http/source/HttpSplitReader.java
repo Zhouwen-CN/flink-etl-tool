@@ -1,5 +1,6 @@
 package com.etl.connector.http.source;
 
+import com.etl.connector.http.source.config.HttpSourceConfig;
 import com.etl.core.schema.JsonToRowConverter;
 import com.etl.core.source.BaseSplitReader;
 import com.etl.core.utils.JsonUtils;

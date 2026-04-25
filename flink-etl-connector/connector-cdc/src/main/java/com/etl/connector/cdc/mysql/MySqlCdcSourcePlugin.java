@@ -1,5 +1,6 @@
 package com.etl.connector.cdc.mysql;
 
+import com.etl.connector.cdc.mysql.config.MySqlCdcConfig;
 import com.etl.core.config.SourceConfig;
 import com.etl.core.spi.SourcePlugin;
 import com.google.auto.service.AutoService;

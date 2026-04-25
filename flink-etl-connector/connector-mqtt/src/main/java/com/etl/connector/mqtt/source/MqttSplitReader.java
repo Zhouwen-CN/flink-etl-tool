@@ -1,5 +1,6 @@
 package com.etl.connector.mqtt.source;
 
+import com.etl.connector.mqtt.source.config.MqttSourceConfig;
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.JsonToRowConverter;
 import com.etl.core.source.BaseSplitReader;
@@ -120,9 +121,10 @@ public class MqttSplitReader implements BaseSplitReader<Row, MqttSplit> {
      * 连接 MQTT broker 并订阅 topic
      */
     private void connectAndSubscribe() {
+        MqttSourceConfig config = currentSplit.getConfig();
         try {
             // 创建 MQTT 客户端
-            mqttClient = new MqttClient(currentSplit.getBroker(), currentSplit.getClientId());
+            mqttClient = new MqttClient(config.getBroker(), config.getClientId());
 
             // 设置连接选项
             MqttConnectOptions options = new MqttConnectOptions();
@@ -131,24 +133,24 @@ public class MqttSplitReader implements BaseSplitReader<Row, MqttSplit> {
             options.setKeepAliveInterval(60);
 
             // 设置认证信息（可选）
-            if (currentSplit.getUsername() != null && !currentSplit.getUsername().isEmpty()) {
-                options.setUserName(currentSplit.getUsername());
+            if (config.getUsername() != null && !config.getUsername().isEmpty()) {
+                options.setUserName(config.getUsername());
             }
-            if (currentSplit.getPassword() != null && !currentSplit.getPassword().isEmpty()) {
-                options.setPassword(currentSplit.getPassword().toCharArray());
+            if (config.getPassword() != null && !config.getPassword().isEmpty()) {
+                options.setPassword(config.getPassword().toCharArray());
             }
 
             // 设置回调
-            mqttClient.setCallback(new MqttCallbackImpl(currentSplit.getSchema(), messageQueue));
+            mqttClient.setCallback(new MqttCallbackImpl(config.getSchema(), messageQueue));
 
             // 连接
             mqttClient.connect(options);
 
             // 订阅 topic
-            String topic = currentSplit.getTopic();
+            String topic = config.getTopic();
             mqttClient.subscribe(topic, QOS);
             log.info("MQTT 客户端已连接: broker={}, clientId={}, topic={}, QoS: {}",
-                    currentSplit.getBroker(), currentSplit.getClientId(), topic, QOS);
+                    config.getBroker(), config.getClientId(), topic, QOS);
 
             connected = true;
         } catch (MqttException e) {
@@ -172,7 +174,7 @@ public class MqttSplitReader implements BaseSplitReader<Row, MqttSplit> {
     public void close() throws Exception {
         if (mqttClient != null && mqttClient.isConnected()) {
             try {
-                mqttClient.unsubscribe(currentSplit.getTopic());
+                mqttClient.unsubscribe(currentSplit.getConfig().getTopic());
                 mqttClient.disconnect();
                 mqttClient.close();
                 log.info("MQTT 客户端已关闭");

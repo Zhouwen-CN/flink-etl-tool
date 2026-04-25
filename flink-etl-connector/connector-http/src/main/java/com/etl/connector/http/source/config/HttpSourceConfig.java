@@ -1,4 +1,4 @@
-package com.etl.connector.http.source;
+package com.etl.connector.http.source.config;
 
 import com.etl.core.config.SourceConfig;
 import com.etl.core.schema.EtlSchema;

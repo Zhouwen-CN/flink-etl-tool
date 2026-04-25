@@ -1,5 +1,6 @@
 package com.etl.connector.cdc.mysql;
 
+import com.etl.connector.cdc.mysql.config.MySqlCdcConfig;
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.JsonToRowConverter;
 import com.etl.core.utils.JsonUtils;

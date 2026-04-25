@@ -1,5 +1,6 @@
 package com.etl.connector.http.source;
 
+import com.etl.connector.http.source.config.HttpSourceConfig;
 import com.etl.core.config.SourceConfig;
 import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseSplitReader;

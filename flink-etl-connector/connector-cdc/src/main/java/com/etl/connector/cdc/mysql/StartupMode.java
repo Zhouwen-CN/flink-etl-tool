@@ -19,7 +19,7 @@ public enum StartupMode {
      */
     INITIAL;
 
-    static StartupMode of(String value){
+    public static StartupMode of(String value){
         for (StartupMode startupMode : values()) {
             if (startupMode.name().equalsIgnoreCase(value)) {
                 return startupMode;

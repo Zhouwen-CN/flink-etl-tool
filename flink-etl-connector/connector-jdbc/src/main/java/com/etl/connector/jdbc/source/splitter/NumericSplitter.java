@@ -73,7 +73,16 @@ public class NumericSplitter extends ChunkSplitter {
                 baseQuery, column, currentStart, column, currentEnd + 1);
 
             String splitId = splitKey + "_" + currentStart + "_" + currentEnd;
-            splits.add(new RangeSplit(splitId, querySql));
+            splits.add(new RangeSplit(
+                    splitId,
+                    querySql,
+                    url,
+                    username,
+                    password,
+                    batchSize,
+                    queryTimeout
+                    )
+            );
 
             log.debug("分片 {}: {} 到 {}", i, currentStart, currentEnd);
 

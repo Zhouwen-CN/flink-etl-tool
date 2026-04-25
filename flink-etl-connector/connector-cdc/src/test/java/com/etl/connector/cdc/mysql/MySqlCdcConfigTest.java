@@ -1,5 +1,6 @@
 package com.etl.connector.cdc.mysql;
 
+import com.etl.connector.cdc.mysql.config.MySqlCdcConfig;
 import com.etl.core.config.SourceConfig;
 import com.ververica.cdc.connectors.mysql.table.StartupOptions;
 import org.junit.jupiter.api.Test;

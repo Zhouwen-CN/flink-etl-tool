@@ -1,5 +1,6 @@
 package com.etl.connector.http.source;
 
+import com.etl.connector.http.source.config.HttpSourceConfig;
 import com.etl.core.source.BaseSplitEnumerator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;

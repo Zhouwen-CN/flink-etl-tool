@@ -27,27 +27,37 @@ public class RangeSplit implements BaseSourceSplit {
     /** 该分片的查询 SQL */
     private final String querySql;
 
+    private final String url;
+    private final String username;
+    private final String password;
+    private final Integer batchSize;
+    private final Integer queryTimeout;
+
     /**
      * 构造函数
      *
      * @param splitId  分片 ID
      * @param querySql 该分片的查询 SQL
      */
-    public RangeSplit(String splitId, String querySql) {
+    public RangeSplit(String splitId,
+                      String querySql,
+                      String url,
+                      String username,
+                      String password,
+                      Integer batchSize,
+                      Integer queryTimeout
+    ) {
         this.splitId = splitId;
         this.querySql = querySql;
+        this.url = url;
+        this.username = username;
+        this.password = password;
+        this.batchSize = batchSize;
+        this.queryTimeout = queryTimeout;
     }
 
     @Override
     public String splitId() {
         return splitId;
-    }
-
-    @Override
-    public String toString() {
-        return "RangeSplit{" +
-                "splitId='" + splitId + '\'' +
-                ", querySql='" + querySql + '\'' +
-                '}';
     }
 }

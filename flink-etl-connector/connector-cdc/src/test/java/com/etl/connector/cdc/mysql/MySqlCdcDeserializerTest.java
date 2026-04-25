@@ -1,5 +1,6 @@
 package com.etl.connector.cdc.mysql;
 
+import com.etl.connector.cdc.mysql.config.MySqlCdcConfig;
 import org.apache.flink.types.Row;
 import org.apache.flink.types.RowKind;
 import org.apache.flink.util.Collector;

@@ -1,5 +1,6 @@
 package com.etl.connector.http.source;
 
+import com.etl.connector.http.source.config.HttpSourceConfig;
 import com.etl.core.source.BaseSourceSplit;
 import com.etl.core.source.serde.DefaultSplitSerializer;
 import lombok.Getter;
