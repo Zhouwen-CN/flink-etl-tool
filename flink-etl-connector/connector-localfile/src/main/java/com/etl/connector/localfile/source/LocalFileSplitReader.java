@@ -1,8 +1,8 @@
 package com.etl.connector.localfile.source;
 
-import com.etl.core.source.BaseSplitReader;
 import com.etl.connector.localfile.source.config.LocalFileSourceConfig;
 import com.etl.connector.localfile.source.format.FileFormatPlugin;
+import com.etl.core.source.BaseSplitReader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
 import org.apache.flink.connector.base.source.reader.RecordsWithSplitIds;
@@ -13,11 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayDeque;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 
 /**
  * 本地文件分片读取器
@@ -29,15 +25,11 @@ import java.util.Set;
  *   <li>通过 FileFormatPlugin 解析文件内容</li>
  *   <li>直接返回 Flink Row 类型</li>
  *   <li>字段名和类型从 source.schema 配置中获取</li>
- *   <li>格式插件在 Source 构造时加载，通过 localFileSourceConfig 传递，避免重复 ServiceLoader 开销</li>
+ *   <li>配置信息从 Split 中获取，不通过构造函数传递</li>
  * </ul>
  */
 @Slf4j
 public class LocalFileSplitReader implements BaseSplitReader<Row, LocalFileSplit> {
-
-    private final LocalFileSourceConfig localFileSourceConfig;
-    private final FileFormatPlugin formatPlugin;
-    private final Integer batchSize;
 
     private final Queue<LocalFileSplit> pendingSplits = new ArrayDeque<>();
     private final Set<String> finishedSplits = new HashSet<>();
@@ -46,12 +38,6 @@ public class LocalFileSplitReader implements BaseSplitReader<Row, LocalFileSplit
     private LocalFileSplit currentSplit;
     private InputStream currentInputStream;
     private Iterator<Row> currentRowIterator;
-
-    public LocalFileSplitReader(LocalFileSourceConfig localFileSourceConfig) {
-        this.localFileSourceConfig = localFileSourceConfig;
-        this.formatPlugin = localFileSourceConfig.getFormatPlugin();
-        this.batchSize = localFileSourceConfig.getBatchSize();
-    }
 
     @Override
     public RecordsWithSplitIds<Row> fetch() throws IOException {
@@ -79,13 +65,17 @@ public class LocalFileSplitReader implements BaseSplitReader<Row, LocalFileSplit
     private void startNewSplit(LocalFileSplit split) throws IOException {
         log.info("开始读取文件: {}", split.getFilePath());
 
+        // 从 Split 获取配置
+        currentSplit = split;
+        LocalFileSourceConfig config = currentSplit.getConfig();
+        FileFormatPlugin formatPlugin = config.getFormatPlugin();
+
         try {
             currentInputStream = Files.newInputStream(Paths.get(split.getFilePath()));
 
-            // 使用配置中的格式插件和 sourceConfig
-            Iterable<Row> rows = formatPlugin.parse(localFileSourceConfig, currentInputStream);
+            // 使用配置中的格式插件
+            Iterable<Row> rows = formatPlugin.parse(config, currentInputStream);
             currentRowIterator = rows.iterator();
-            currentSplit = split;
 
         } catch (IOException e) {
             closeCurrentSplit();
@@ -103,7 +93,7 @@ public class LocalFileSplitReader implements BaseSplitReader<Row, LocalFileSplit
             int recordsInBatch = 0;
 
             // 读取一批记录
-            while (currentRowIterator.hasNext() && recordsInBatch < batchSize) {
+            while (currentRowIterator.hasNext() && recordsInBatch < currentSplit.getConfig().getBatchSize()) {
                 Row row = currentRowIterator.next();
                 builder.add(currentSplit.splitId(), row);
                 recordsInBatch++;

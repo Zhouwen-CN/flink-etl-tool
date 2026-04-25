@@ -1,5 +1,6 @@
 package com.etl.connector.localfile.source;
 
+import com.etl.connector.localfile.source.config.LocalFileSourceConfig;
 import com.etl.core.source.BaseSourceSplit;
 import com.etl.core.source.serde.DefaultSplitSerializer;
 import lombok.Getter;
@@ -26,27 +27,24 @@ public class LocalFileSplit implements BaseSourceSplit {
     /** 文件名 */
     private final String fileName;
 
+    /** 配置信息 */
+    private final LocalFileSourceConfig config;
+
     /**
      * 构造函数
      *
      * @param filePath 文件绝对路径
+     * @param config   配置信息
      */
-    public LocalFileSplit(String filePath) {
+    public LocalFileSplit(String filePath, LocalFileSourceConfig config) {
         this.filePath = filePath;
         this.fileName = new File(filePath).getName();
         this.splitId = filePath;
+        this.config = config;
     }
 
     @Override
     public String splitId() {
         return splitId;
-    }
-
-    @Override
-    public String toString() {
-        return "LocalFileSplit{" +
-                "splitId='" + splitId + '\'' +
-                ", fileName='" + fileName + '\'' +
-                '}';
     }
 }

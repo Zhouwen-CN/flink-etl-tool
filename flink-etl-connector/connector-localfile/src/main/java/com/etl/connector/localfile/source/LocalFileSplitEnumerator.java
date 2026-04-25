@@ -87,7 +87,7 @@ public class LocalFileSplitEnumerator extends BaseSplitEnumerator<LocalFileSplit
         // 创建分片
         List<LocalFileSplit> splits = new ArrayList<>();
         for (File file : matchedFiles) {
-            splits.add(new LocalFileSplit(file.getAbsolutePath()));
+            splits.add(new LocalFileSplit(file.getAbsolutePath(), localFileSourceConfig));
         }
 
         // 添加到待处理队列
