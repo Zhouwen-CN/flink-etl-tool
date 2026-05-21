@@ -20,9 +20,9 @@ public class ModbusSourceConfig implements Serializable {
     private final boolean bounded;
     private final String ip;
     private final int port;
-    private final int slaveId;
-    private final int startAddress;
-    private final int quantity;
+    private final int deviceId;
+    private final int address;
+    private final int count;
     private final long intervalMs;
 
     public static ModbusSourceConfig fromSourceConfig(SourceConfig config, RuntimeExecutionMode runtimeMode) {
@@ -45,40 +45,40 @@ public class ModbusSourceConfig implements Serializable {
         Preconditions.checkArgument(port >= 1 && port <= 65535,
                 "配置项 'host' 中的端口范围必须为 1-65535，当前值: %s", port);
 
-        // 2. 校验 slaveId
-        int slaveId = config.getInteger("slaveId", 1);
-        Preconditions.checkArgument(slaveId >= 1 && slaveId <= 247,
-                "配置项 'slaveId' 范围必须为 1-247，当前值: %s", slaveId);
+        // 2. 校验 deviceId
+        int deviceId = config.getInteger("deviceId", 1);
+        Preconditions.checkArgument(deviceId >= 1 && deviceId <= 247,
+                "配置项 'deviceId' 范围必须为 1-247，当前值: %s", deviceId);
 
-        // 3. 校验 startAddress
-        Integer startAddress = config.getInteger("startAddress");
-        Preconditions.checkNotNull(startAddress, "配置项 'startAddress' 不能为空");
-        Preconditions.checkArgument(startAddress >= 0,
-                "配置项 'startAddress' 必须 >= 0，当前值: %s", startAddress);
+        // 3. 校验 address
+        Integer address = config.getInteger("address");
+        Preconditions.checkNotNull(address, "配置项 'address' 不能为空");
+        Preconditions.checkArgument(address >= 0,
+                "配置项 'address' 必须 >= 0，当前值: %s", address);
 
-        // 4. 校验 quantity
-        Integer quantity = config.getInteger("quantity");
-        Preconditions.checkNotNull(quantity, "配置项 'quantity' 不能为空");
-        Preconditions.checkArgument(quantity > 0,
-                "配置项 'quantity' 必须 > 0，当前值: %s", quantity);
-        Preconditions.checkArgument(startAddress + quantity <= 65536,
-                "startAddress(%s) + quantity(%s) 不能超过 65536", startAddress, quantity);
+        // 4. 校验 count
+        Integer count = config.getInteger("count");
+        Preconditions.checkNotNull(count, "配置项 'count' 不能为空");
+        Preconditions.checkArgument(count > 0,
+                "配置项 'count' 必须 > 0，当前值: %s", count);
+        Preconditions.checkArgument(address + count <= 65536,
+                "address(%s) + count(%s) 不能超过 65536", address, count);
 
         // 5. 校验 intervalMs
         long intervalMs = config.getLong("intervalMs", 1000L);
         Preconditions.checkArgument(intervalMs > 0,
                 "配置项 'intervalMs' 必须 > 0，当前值: %s", intervalMs);
 
-        log.info("创建 ModbusSource: bounded={}, host={}:{}, slaveId={}, startAddress={}, quantity={}, intervalMs={}",
-                bounded, ip, port, slaveId, startAddress, quantity, intervalMs);
+        log.info("创建 ModbusSource: bounded={}, host={}:{}, deviceId={}, address={}, count={}, intervalMs={}",
+                bounded, ip, port, deviceId, address, count, intervalMs);
 
         return ModbusSourceConfig.builder()
                 .bounded(bounded)
                 .ip(ip)
                 .port(port)
-                .slaveId(slaveId)
-                .startAddress(startAddress)
-                .quantity(quantity)
+                .deviceId(deviceId)
+                .address(address)
+                .count(count)
                 .intervalMs(intervalMs)
                 .build();
     }

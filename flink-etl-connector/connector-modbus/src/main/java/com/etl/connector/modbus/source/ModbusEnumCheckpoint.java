@@ -2,6 +2,7 @@ package com.etl.connector.modbus.source;
 
 import com.etl.core.source.BaseEnumCheckpoint;
 import lombok.Getter;
+
 import java.util.List;
 
 /**
@@ -9,6 +10,8 @@ import java.util.List;
  */
 @Getter
 public class ModbusEnumCheckpoint extends BaseEnumCheckpoint<ModbusSplit> {
+    private static final long serialVersionUID = 1L;
+
     public ModbusEnumCheckpoint(List<ModbusSplit> pendingSplits) {
         super(pendingSplits);
     }

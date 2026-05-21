@@ -1,9 +1,7 @@
 package com.etl.connector.mqtt.source;
 
 import com.etl.connector.mqtt.source.config.MqttSourceConfig;
-import com.etl.core.schema.EtlSchema;
 import com.etl.core.source.BaseSourceSplit;
-import com.etl.core.source.serde.DefaultSplitSerializer;
 import lombok.Getter;
 
 /**
@@ -13,7 +11,7 @@ import lombok.Getter;
 @Getter
 public class MqttSplit implements BaseSourceSplit {
 
-    private static final long serialVersionUID = DefaultSplitSerializer.VERSION;
+    private static final long serialVersionUID = 1L;
 
     /**
      * 分片 ID && topic

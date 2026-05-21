@@ -1,8 +1,7 @@
 package com.etl.connector.modbus.source;
 
-import com.etl.core.source.BaseSourceSplit;
-import com.etl.core.source.serde.DefaultSplitSerializer;
 import com.etl.connector.modbus.source.config.ModbusSourceConfig;
+import com.etl.core.source.BaseSourceSplit;
 import lombok.Getter;
 
 /**
@@ -11,7 +10,7 @@ import lombok.Getter;
 @Getter
 public class ModbusSplit implements BaseSourceSplit {
 
-    private static final long serialVersionUID = DefaultSplitSerializer.VERSION;
+    private static final long serialVersionUID = 1L;
 
     private final String splitId = "modbus-split-0";
     private final ModbusSourceConfig modbusConfig;

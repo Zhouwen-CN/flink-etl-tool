@@ -1,7 +1,6 @@
 package com.etl.connector.http.source;
 
 import com.etl.core.source.BaseEnumCheckpoint;
-import com.etl.core.source.serde.DefaultCheckpointSerializer;
 
 import java.util.Collection;
 
@@ -10,8 +9,7 @@ import java.util.Collection;
  */
 public class HttpEnumCheckpoint extends BaseEnumCheckpoint<HttpSplit> {
 
-    private static final long serialVersionUID = DefaultCheckpointSerializer.VERSION;
-
+    private static final long serialVersionUID = 1L;
     /**
      * 构造函数
      *

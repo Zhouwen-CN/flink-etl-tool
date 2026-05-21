@@ -1,7 +1,6 @@
 package com.etl.connector.jdbc.source;
 
 import com.etl.core.source.BaseSourceSplit;
-import com.etl.core.source.serde.DefaultSplitSerializer;
 import lombok.Getter;
 
 
@@ -19,7 +18,7 @@ import lombok.Getter;
 @Getter
 public class RangeSplit implements BaseSourceSplit {
 
-    private static final long serialVersionUID = DefaultSplitSerializer.VERSION;
+    private static final long serialVersionUID = 1L;
 
     /** 分片 ID，用于状态管理和调试 */
     private final String splitId;

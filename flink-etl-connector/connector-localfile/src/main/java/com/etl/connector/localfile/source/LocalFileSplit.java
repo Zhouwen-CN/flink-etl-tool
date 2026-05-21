@@ -2,7 +2,6 @@ package com.etl.connector.localfile.source;
 
 import com.etl.connector.localfile.source.config.LocalFileSourceConfig;
 import com.etl.core.source.BaseSourceSplit;
-import com.etl.core.source.serde.DefaultSplitSerializer;
 import lombok.Getter;
 
 import java.io.File;
@@ -16,7 +15,7 @@ import java.io.File;
 @Getter
 public class LocalFileSplit implements BaseSourceSplit {
 
-    private static final long serialVersionUID = DefaultSplitSerializer.VERSION;
+    private static final long serialVersionUID = 1L;
 
     /** 分片 ID = 文件路径 */
     private final String splitId;

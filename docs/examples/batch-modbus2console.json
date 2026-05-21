@@ -10,9 +10,9 @@
       "outputTable": "modbus_data",
       "config": {
         "host": "192.168.1.100:502",
-        "slaveId": 1,
-        "startAddress": 0,
-        "quantity": 10
+        "deviceId": 1,
+        "address": 0,
+        "count": 10
       }
     }
   ],

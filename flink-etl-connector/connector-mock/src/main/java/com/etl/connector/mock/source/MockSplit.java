@@ -1,8 +1,7 @@
 package com.etl.connector.mock.source;
 
-import com.etl.core.source.BaseSourceSplit;
-import com.etl.core.source.serde.DefaultSplitSerializer;
 import com.etl.connector.mock.source.config.MockSourceConfig;
+import com.etl.core.source.BaseSourceSplit;
 import lombok.Getter;
 
 /**
@@ -12,7 +11,7 @@ import lombok.Getter;
 @Getter
 public class MockSplit implements BaseSourceSplit {
 
-    private static final long serialVersionUID = DefaultSplitSerializer.VERSION;
+    private static final long serialVersionUID = 1L;
 
     /** 分片 ID，固定值 */
     private final String splitId = "mock-split-0";

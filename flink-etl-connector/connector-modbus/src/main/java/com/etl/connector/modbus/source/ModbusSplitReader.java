@@ -91,26 +91,26 @@ public class ModbusSplitReader implements BaseSplitReader<Row, ModbusSplit> {
         RecordsBySplits.Builder<Row> builder = new RecordsBySplits.Builder<>();
 
         try {
-            int slaveId = currentConfig.getSlaveId();
-            int startAddress = currentConfig.getStartAddress();
-            int quantity = currentConfig.getQuantity();
+            int deviceId = currentConfig.getDeviceId();
+            int address = currentConfig.getAddress();
+            int count = currentConfig.getCount();
 
-            ReadHoldingRegistersRequest request = new ReadHoldingRegistersRequest(slaveId, startAddress, quantity);
+            ReadHoldingRegistersRequest request = new ReadHoldingRegistersRequest(deviceId, address, count);
             ModbusResponse response = master.send(request);
             if (response.isException()) {
                 throw new IOException("Modbus 异常响应: " + response.getExceptionMessage());
             }
 
             short[] data = ((ReadHoldingRegistersResponse) response).getShortData();
-            for (int i = 0; i < quantity; i++) {
-                int address = HOLDING_REGISTER_OFFSET + startAddress + i;
+            for (int i = 0; i < count; i++) {
+                int registerAddress = HOLDING_REGISTER_OFFSET + address + i;
                 Row row = Row.withPositions(RowKind.INSERT, 2);
-                row.setField(0, address);
+                row.setField(0, registerAddress);
                 row.setField(1, (int) data[i]);
 
                 builder.add(currentSplit.splitId(), row);
                 readCount++;
-                log.debug("读取寄存器: address={}, value={}", address, (int) data[i]);
+                log.debug("读取寄存器: address={}, value={}", registerAddress, (int) data[i]);
             }
         } catch (Exception e) {
             throw new IOException("读取 Modbus 寄存器失败", e);

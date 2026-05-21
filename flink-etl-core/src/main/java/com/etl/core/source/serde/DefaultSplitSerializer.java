@@ -14,7 +14,7 @@ import java.io.IOException;
  */
 public class DefaultSplitSerializer<SplitT extends BaseSourceSplit> implements SimpleVersionedSerializer<SplitT> {
 
-    public static final int VERSION = 1;
+    private static final int VERSION = 1;
 
     @Override
     public int getVersion() {

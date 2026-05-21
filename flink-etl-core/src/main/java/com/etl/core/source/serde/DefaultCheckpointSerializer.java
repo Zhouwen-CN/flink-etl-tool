@@ -17,7 +17,7 @@ import java.io.IOException;
 public class DefaultCheckpointSerializer<SplitT extends BaseSourceSplit, CheckpointT extends BaseEnumCheckpoint<SplitT>>
         implements SimpleVersionedSerializer<CheckpointT> {
 
-    public static final int VERSION = 1;
+    private static final int VERSION = 1;
 
     @Override
     public int getVersion() {
