@@ -4,9 +4,10 @@ import com.etl.connector.modbus.source.config.ModbusSourceConfig;
 import com.etl.core.source.BaseSplitReader;
 import com.serotonin.modbus4j.ModbusFactory;
 import com.serotonin.modbus4j.ModbusMaster;
-import com.serotonin.modbus4j.code.DataType;
 import com.serotonin.modbus4j.ip.IpParameters;
-import com.serotonin.modbus4j.locator.BaseLocator;
+import com.serotonin.modbus4j.msg.ModbusResponse;
+import com.serotonin.modbus4j.msg.ReadHoldingRegistersRequest;
+import com.serotonin.modbus4j.msg.ReadHoldingRegistersResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
 import org.apache.flink.connector.base.source.reader.RecordsWithSplitIds;
@@ -84,6 +85,7 @@ public class ModbusSplitReader implements BaseSplitReader<Row, ModbusSplit> {
 
     /**
      * 读取所有寄存器并生成 Row 数据
+     * 使用单个 ReadHoldingRegistersRequest 一次性读取所有寄存器，仅一次 TCP 往返
      */
     private RecordsWithSplitIds<Row> readRegisters() throws IOException {
         RecordsBySplits.Builder<Row> builder = new RecordsBySplits.Builder<>();
@@ -93,20 +95,22 @@ public class ModbusSplitReader implements BaseSplitReader<Row, ModbusSplit> {
             int startAddress = currentConfig.getStartAddress();
             int quantity = currentConfig.getQuantity();
 
-            for (int i = 0; i < quantity; i++) {
-                int offset = startAddress + i;
-                Number value = master.getValue(
-                        BaseLocator.holdingRegister(slaveId, offset, DataType.TWO_BYTE_INT_SIGNED)
-                );
+            ReadHoldingRegistersRequest request = new ReadHoldingRegistersRequest(slaveId, startAddress, quantity);
+            ModbusResponse response = master.send(request);
+            if (response.isException()) {
+                throw new IOException("Modbus 异常响应: " + response.getExceptionMessage());
+            }
 
-                int address = HOLDING_REGISTER_OFFSET + offset;
+            short[] data = ((ReadHoldingRegistersResponse) response).getShortData();
+            for (int i = 0; i < quantity; i++) {
+                int address = HOLDING_REGISTER_OFFSET + startAddress + i;
                 Row row = Row.withPositions(RowKind.INSERT, 2);
                 row.setField(0, address);
-                row.setField(1, value.intValue());
+                row.setField(1, (int) data[i]);
 
                 builder.add(currentSplit.splitId(), row);
                 readCount++;
-                log.debug("读取寄存器: address={}, value={}", address, value.intValue());
+                log.debug("读取寄存器: address={}, value={}", address, (int) data[i]);
             }
         } catch (Exception e) {
             throw new IOException("读取 Modbus 寄存器失败", e);

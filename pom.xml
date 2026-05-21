@@ -78,7 +78,12 @@
     </dependencyManagement>
 
     <repositories>
-        <!-- Modbus4j 仓库 -->
+        <!--
+            Modbus4j 仓库
+            settings.xml 中的 mirrorOf 不能是 *
+            可以是 central 或者 *,!ias-releases
+            不然无法下载 modbus4j
+        -->
         <repository>
             <id>ias-releases</id>
             <name>Infinite Automation Release Repository</name>
