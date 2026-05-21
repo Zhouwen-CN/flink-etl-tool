@@ -80,6 +80,8 @@
 - `name`: Job 名称
 - `mode`: `batch` 或 `streaming`
 - `parallelism`: 并行度（可选），分片数量等于并行度
+- `checkpointInterval`: 检查点间隔（毫秒，可选），默认 `30000`，仅在 streaming 模式下生效
+- `checkpointTimeout`: 检查点超时（毫秒，可选），默认 `30000`，仅在 streaming 模式下生效
 
 ---
 

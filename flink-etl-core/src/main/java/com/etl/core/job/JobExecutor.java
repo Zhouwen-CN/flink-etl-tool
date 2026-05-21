@@ -12,8 +12,6 @@ import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.environment.CheckpointConfig;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 
-import java.time.Duration;
-
 /**
  * Job 执行器
  * 负责执行完整的 ETL Job
@@ -73,11 +71,14 @@ public class JobExecutor {
 
         // steaming 模式下才开启检查点
         if (runtimeMode == RuntimeExecutionMode.STREAMING) {
-            // 检查点间隔（默认1分钟）
-            env.enableCheckpointing(Duration.ofMinutes(1).toMillis(), CheckpointingMode.AT_LEAST_ONCE);
+            long checkpointInterval = jobConfig.getCheckpointInterval();
+            long checkpointTimeout = jobConfig.getCheckpointTimeout();
+            log.info("开启检查点：interval={}ms, timeout={}ms", checkpointInterval, checkpointTimeout);
+            // 检查点间隔
+            env.enableCheckpointing(checkpointInterval, CheckpointingMode.AT_LEAST_ONCE);
             CheckpointConfig checkpointConfig = env.getCheckpointConfig();
-            // 检查点超时（默认1分钟）
-            checkpointConfig.setCheckpointTimeout(Duration.ofMinutes(1).toMillis());
+            // 检查点超时
+            checkpointConfig.setCheckpointTimeout(checkpointTimeout);
             // 上一个checkpoint结束之后,多久才能发出另一个checkpoint
             checkpointConfig.setMinPauseBetweenCheckpoints(500L);
             // 检查点最大并发数量
