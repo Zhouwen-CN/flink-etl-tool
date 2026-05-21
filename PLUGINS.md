@@ -14,6 +14,7 @@
     - [Kafka Source](#kafka-source)
     - [MQTT Source](#mqtt-source)
     - [Mock Source](#mock-source)
+    - [Modbus Source](#modbus-source)
 - [Sink 插件](#sink-插件)
     - [Console Sink](#console-sink)
     - [JDBC Sink](#jdbc-sink)
@@ -1104,6 +1105,83 @@ MySQL 数据库需满足以下条件:
 
 - 完全按照配置的 JSON 数据生成 Row
 - 数据类型严格匹配 schema 定义
+
+---
+
+### Modbus Source
+
+通过 Modbus TCP 协议读取 Holding Registers（功能码 03），支持批处理和流处理模式。
+
+#### 配置参数
+
+| 参数             | 必填 | 默认值    | 说明                                            |
+|----------------|:--:|--------|-----------------------------------------------|
+| `host`         | 是  | -      | Modbus TCP 地址，格式 `ip:port`                    |
+| `slaveId`      | 否  | `1`    | 从站地址（Device ID），范围 1-247                      |
+| `startAddress` | 是  | -      | 寄存器起始地址（0-based）                              |
+| `quantity`     | 是  | -      | 读取寄存器数量，`startAddress + quantity` 不超过 65536   |
+| `intervalMs`   | 否  | `1000` | 流处理模式下的轮询间隔（毫秒）                              |
+
+**输出 Schema（固定，无需配置）：**
+
+| 列名        | 类型  | 说明                                    |
+|-----------|-----|---------------------------------------|
+| `address` | INT | 设备手册地址，从 `40001 + startAddress` 开始    |
+| `value`   | INT | 寄存器值（有符号，范围 -32768~32767）             |
+
+每次读取产生 `quantity` 行数据，每行对应一个寄存器。
+
+**示例输出（`startAddress=0, quantity=5`）：**
+
+```
+address=40001, value=123
+address=40002, value=-456
+address=40003, value=0
+address=40004, value=32767
+address=40005, value=-1
+```
+
+**运行模式说明：**
+
+- **Batch 模式**：读取一次所有寄存器后程序退出
+- **Streaming 模式**：按 `intervalMs` 间隔持续轮询寄存器
+
+#### 配置示例
+
+**Batch 模式：**
+
+```json
+{
+  "source": {
+    "type": "modbus",
+    "outputTable": "modbus_data",
+    "config": {
+      "host": "192.168.1.100:502",
+      "slaveId": 1,
+      "startAddress": 0,
+      "quantity": 10
+    }
+  }
+}
+```
+
+**Streaming 模式：**
+
+```json
+{
+  "source": {
+    "type": "modbus",
+    "outputTable": "modbus_data",
+    "config": {
+      "host": "192.168.1.100:502",
+      "slaveId": 1,
+      "startAddress": 0,
+      "quantity": 10,
+      "intervalMs": 2000
+    }
+  }
+}
+```
 
 ---
 

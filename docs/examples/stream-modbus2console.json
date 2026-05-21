@@ -1,0 +1,26 @@
+{
+  "job": {
+    "name": "stream-modbus2console",
+    "mode": "streaming",
+    "parallelism": 1
+  },
+  "sources": [
+    {
+      "type": "modbus",
+      "outputTable": "modbus_data",
+      "config": {
+        "host": "192.168.1.100:502",
+        "slaveId": 1,
+        "startAddress": 0,
+        "quantity": 10,
+        "intervalMs": 2000
+      }
+    }
+  ],
+  "sinks": [
+    {
+      "type": "console",
+      "inputTable": "modbus_data"
+    }
+  ]
+}
