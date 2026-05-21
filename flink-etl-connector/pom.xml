@@ -26,6 +26,7 @@
         <module>connector-mock</module>
         <module>connector-cdc</module>
         <module>connector-mqtt</module>
+        <module>connector-modbus</module>
     </modules>
 
     <dependencies>
