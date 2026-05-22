@@ -1,6 +1,6 @@
 package com.etl.connector.jdbc.source.splitter;
 
-import com.etl.connector.jdbc.source.RangeSplit;
+import com.etl.connector.jdbc.source.JdbcSplit;
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,11 +19,11 @@ public class FullTableScanSplitter extends ChunkSplitter {
     }
 
     @Override
-    public List<RangeSplit> generateSplits() {
+    public List<JdbcSplit> generateSplits() {
         log.info("使用全表扫描分片模式");
 
         String baseQuery = buildBaseQuery();
-        RangeSplit split = new RangeSplit("full_table_scan",
+        JdbcSplit split = new JdbcSplit("full_table_scan",
                 baseQuery,
                 url,
                 username,

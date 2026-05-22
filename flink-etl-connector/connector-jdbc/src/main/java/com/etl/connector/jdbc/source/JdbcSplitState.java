@@ -12,7 +12,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-public class RangeSplitState extends BaseSplitState<RangeSplit> {
+public class JdbcSplitState extends BaseSplitState<JdbcSplit> {
 
     private static final long serialVersionUID = 1L;
 
@@ -21,7 +21,7 @@ public class RangeSplitState extends BaseSplitState<RangeSplit> {
      *
      * @param split 范围分片
      */
-    public RangeSplitState(RangeSplit split) {
+    public JdbcSplitState(JdbcSplit split) {
         super(split);
     }
 

@@ -1,6 +1,6 @@
 package com.etl.connector.jdbc.source.splitter;
 
-import com.etl.connector.jdbc.source.RangeSplit;
+import com.etl.connector.jdbc.source.JdbcSplit;
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import lombok.extern.slf4j.Slf4j;
 
@@ -19,14 +19,14 @@ public class StringHashSplitter extends ChunkSplitter {
     }
 
     @Override
-    public List<RangeSplit> generateSplits() {
+    public List<JdbcSplit> generateSplits() {
         log.info("使用字符串 Hash Mod 分片模式，并行度: {}", parallelism);
 
         String column = dialect.quoteIdentifier(splitKey);
         String baseQuery = buildBaseQuery();
 
         int splitCount = parallelism;
-        List<RangeSplit> splits = new ArrayList<>();
+        List<JdbcSplit> splits = new ArrayList<>();
 
         for (int i = 0; i < splitCount; i++) {
             // 获取方言的 hash mod 表达式
@@ -36,7 +36,7 @@ public class StringHashSplitter extends ChunkSplitter {
             String querySql = String.format("%s WHERE %s = %d", baseQuery, hashExpression, i);
             String splitId = splitKey + "_hash_" + i;
 
-            splits.add(new RangeSplit(
+            splits.add(new JdbcSplit(
                     splitId,
                     querySql,
                     url,

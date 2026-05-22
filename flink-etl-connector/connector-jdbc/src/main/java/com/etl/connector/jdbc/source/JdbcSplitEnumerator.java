@@ -19,18 +19,18 @@ import java.util.List;
  * 这样可以在运行时动态获取数据范围，支持更灵活的分片策略。
  */
 @Slf4j
-public class JdbcSplitEnumerator extends BaseSplitEnumerator<RangeSplit, RangeEnumCheckpoint> {
+public class JdbcSplitEnumerator extends BaseSplitEnumerator<JdbcSplit, JdbcEnumCheckpoint> {
 
     private final JdbcSourceConfig jdbcSourceConfig;
 
-    public JdbcSplitEnumerator(SplitEnumeratorContext<RangeSplit> context, JdbcSourceConfig jdbcSourceConfig) {
+    public JdbcSplitEnumerator(SplitEnumeratorContext<JdbcSplit> context, JdbcSourceConfig jdbcSourceConfig) {
         super(context);
         this.jdbcSourceConfig = jdbcSourceConfig;
         log.info("JDBC SplitEnumerator 初始化");
     }
 
-    public JdbcSplitEnumerator(SplitEnumeratorContext<RangeSplit> context,
-                               RangeEnumCheckpoint checkpoint,
+    public JdbcSplitEnumerator(SplitEnumeratorContext<JdbcSplit> context,
+                               JdbcEnumCheckpoint checkpoint,
                                JdbcSourceConfig jdbcSourceConfig) {
         super(context, checkpoint);
         this.jdbcSourceConfig = jdbcSourceConfig;
@@ -49,7 +49,7 @@ public class JdbcSplitEnumerator extends BaseSplitEnumerator<RangeSplit, RangeEn
         ChunkSplitter splitter = ChunkSplitter.create(strategy, config, parallelism);
 
         // 2. 生成分片
-        List<RangeSplit> splits = splitter.generateSplits();
+        List<JdbcSplit> splits = splitter.generateSplits();
         log.info("共生成 {} 个分片", splits.size());
 
         // 3. 添加到待分配列表（由父类处理分配逻辑）
@@ -58,10 +58,10 @@ public class JdbcSplitEnumerator extends BaseSplitEnumerator<RangeSplit, RangeEn
     }
 
     @Override
-    public RangeEnumCheckpoint snapshotState(long checkpointId) {
-        List<RangeSplit> pending = new ArrayList<>(pendingSplits);
+    public JdbcEnumCheckpoint snapshotState(long checkpointId) {
+        List<JdbcSplit> pending = new ArrayList<>(pendingSplits);
         log.info("创建检查点 {}，待处理分片数: {}", checkpointId, pending.size());
-        return new RangeEnumCheckpoint(pending);
+        return new JdbcEnumCheckpoint(pending);
     }
 
     @Override

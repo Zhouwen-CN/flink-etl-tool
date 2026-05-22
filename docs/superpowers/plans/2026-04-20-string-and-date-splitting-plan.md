@@ -674,7 +674,7 @@ git commit -m "refactor: JdbcSplitHelper 职责缩小，添加 queryNumericMinMa
 ```java
 package com.etl.connector.jdbc.source.splitter;
 
-import com.etl.connector.jdbc.source.RangeSplit;
+import com.etl.connector.jdbc.source.JdbcSplit;
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import lombok.extern.slf4j.Slf4j;
 
@@ -748,7 +748,7 @@ git commit -m "feat: 创建 ChunkSplitter 抽象基类"
 ```java
 package com.etl.connector.jdbc.source.splitter;
 
-import com.etl.connector.jdbc.source.RangeSplit;
+import com.etl.connector.jdbc.source.JdbcSplit;
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import lombok.extern.slf4j.Slf4j;
 
@@ -807,7 +807,7 @@ git commit -m "feat: 创建 FullTableScanSplitter（全表扫描分片器）"
 package com.etl.connector.jdbc.source.splitter;
 
 import com.etl.connector.jdbc.dialect.JdbcDialect;
-import com.etl.connector.jdbc.source.RangeSplit;
+import com.etl.connector.jdbc.source.JdbcSplit;
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import lombok.extern.slf4j.Slf4j;
 
@@ -882,7 +882,7 @@ git commit -m "feat: 创建 StringHashSplitter（字符串 hash 分片器）"
 package com.etl.connector.jdbc.source.splitter;
 
 import com.etl.connector.jdbc.dialect.JdbcDialect;
-import com.etl.connector.jdbc.source.RangeSplit;
+import com.etl.connector.jdbc.source.JdbcSplit;
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import com.etl.connector.jdbc.source.utils.JdbcSplitHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -1018,7 +1018,7 @@ git commit -m "feat: 创建 DateSplitter（日期动态粒度分片器）"
 package com.etl.connector.jdbc.source.splitter;
 
 import com.etl.connector.jdbc.dialect.JdbcDialect;
-import com.etl.connector.jdbc.source.RangeSplit;
+import com.etl.connector.jdbc.source.JdbcSplit;
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import com.etl.connector.jdbc.source.utils.JdbcSplitHelper;
 import lombok.extern.slf4j.Slf4j;
@@ -1241,7 +1241,7 @@ git commit -m "refactor: JdbcSplitEnumerator 使用策略模式选择 Splitter"
 package com.etl.connector.jdbc.source.splitter;
 
 import com.etl.connector.jdbc.dialect.MySQLDialect;
-import com.etl.connector.jdbc.source.RangeSplit;
+import com.etl.connector.jdbc.source.JdbcSplit;
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import com.etl.connector.jdbc.source.enums.SplitStrategy;
 import org.junit.jupiter.api.Test;
@@ -1306,7 +1306,7 @@ git commit -m "test: NumericSplitter 基础单元测试"
 package com.etl.connector.jdbc.source.splitter;
 
 import com.etl.connector.jdbc.dialect.MySQLDialect;
-import com.etl.connector.jdbc.source.RangeSplit;
+import com.etl.connector.jdbc.source.JdbcSplit;
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import com.etl.connector.jdbc.source.enums.SplitStrategy;
 import org.junit.jupiter.api.Test;
@@ -1373,7 +1373,7 @@ git commit -m "test: StringHashSplitter 单元测试"
 package com.etl.connector.jdbc.source.splitter;
 
 import com.etl.connector.jdbc.dialect.MySQLDialect;
-import com.etl.connector.jdbc.source.RangeSplit;
+import com.etl.connector.jdbc.source.JdbcSplit;
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import com.etl.connector.jdbc.source.enums.SplitStrategy;
 import org.junit.jupiter.api.Test;
@@ -1430,7 +1430,7 @@ git commit -m "test: DateSplitter 基础单元测试"
 package com.etl.connector.jdbc.source.splitter;
 
 import com.etl.connector.jdbc.dialect.MySQLDialect;
-import com.etl.connector.jdbc.source.RangeSplit;
+import com.etl.connector.jdbc.source.JdbcSplit;
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import com.etl.connector.jdbc.source.enums.SplitStrategy;
 import org.junit.jupiter.api.Test;

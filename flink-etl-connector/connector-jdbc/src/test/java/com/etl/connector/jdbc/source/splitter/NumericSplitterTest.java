@@ -1,14 +1,11 @@
 package com.etl.connector.jdbc.source.splitter;
 
 import com.etl.connector.jdbc.dialect.MySQLDialect;
-import com.etl.connector.jdbc.source.RangeSplit;
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import com.etl.connector.jdbc.source.enums.SplitStrategy;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class NumericSplitterTest {
 

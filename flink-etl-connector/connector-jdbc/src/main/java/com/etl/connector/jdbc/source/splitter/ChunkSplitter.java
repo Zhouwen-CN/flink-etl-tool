@@ -1,7 +1,7 @@
 package com.etl.connector.jdbc.source.splitter;
 
 import com.etl.connector.jdbc.dialect.JdbcDialect;
-import com.etl.connector.jdbc.source.RangeSplit;
+import com.etl.connector.jdbc.source.JdbcSplit;
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import com.etl.connector.jdbc.source.enums.SplitStrategy;
 import lombok.extern.slf4j.Slf4j;
@@ -64,7 +64,7 @@ public abstract class ChunkSplitter {
      *
      * @return 分片列表（可能为空，如空表）
      */
-    public abstract List<RangeSplit> generateSplits();
+    public abstract List<JdbcSplit> generateSplits();
 
     /**
      * 构建基础查询 SQL（SELECT * FROM table）

@@ -1,6 +1,6 @@
 package com.etl.connector.jdbc.source.splitter;
 
-import com.etl.connector.jdbc.source.RangeSplit;
+import com.etl.connector.jdbc.source.JdbcSplit;
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
@@ -26,7 +26,7 @@ public class NumericSplitter extends ChunkSplitter {
     }
 
     @Override
-    public List<RangeSplit> generateSplits() {
+    public List<JdbcSplit> generateSplits() {
         log.info("使用数值分片模式，并行度: {}", parallelism);
 
         // 1. 查询 MIN/MAX 数值范围
@@ -60,7 +60,7 @@ public class NumericSplitter extends ChunkSplitter {
         long splitSize = (totalRecords + actualSplitCount - 1) / actualSplitCount;
 
         // 3. 生成分片（使用开区间）
-        List<RangeSplit> splits = new ArrayList<>();
+        List<JdbcSplit> splits = new ArrayList<>();
         String column = dialect.quoteIdentifier(splitKey);
         String baseQuery = buildBaseQuery();
 
@@ -73,7 +73,7 @@ public class NumericSplitter extends ChunkSplitter {
                 baseQuery, column, currentStart, column, currentEnd + 1);
 
             String splitId = splitKey + "_" + currentStart + "_" + currentEnd;
-            splits.add(new RangeSplit(
+            splits.add(new JdbcSplit(
                     splitId,
                     querySql,
                     url,

@@ -1,6 +1,6 @@
 package com.etl.connector.jdbc.source.splitter;
 
-import com.etl.connector.jdbc.source.RangeSplit;
+import com.etl.connector.jdbc.source.JdbcSplit;
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
@@ -32,7 +32,7 @@ public class DateSplitter extends ChunkSplitter {
     }
 
     @Override
-    public List<RangeSplit> generateSplits() {
+    public List<JdbcSplit> generateSplits() {
         log.info("使用日期动态粒度分片模式，并行度: {}", parallelism);
 
         // 1. 查询 MIN/MAX 日期范围
@@ -65,7 +65,7 @@ public class DateSplitter extends ChunkSplitter {
         log.info("每个分片包含 {} 天", daysPerSplit);
 
         // 4. 生成分片（使用开区间）
-        List<RangeSplit> splits = new ArrayList<>();
+        List<JdbcSplit> splits = new ArrayList<>();
         LocalDate currentStart = minDate;
         String column = dialect.quoteIdentifier(splitKey);
         String baseQuery = buildBaseQuery();
@@ -83,7 +83,7 @@ public class DateSplitter extends ChunkSplitter {
             String querySql = dialect.buildDateRangeQuery(baseQuery, column, startDateStr, endDateStr);
             String splitId = splitKey + "_date_" + startDateStr + "_" + endDateStr;
 
-            splits.add(new RangeSplit(
+            splits.add(new JdbcSplit(
                     splitId,
                     querySql,
                     url,

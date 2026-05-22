@@ -18,28 +18,28 @@ import java.util.function.Supplier;
  *
  * <p>子类需要实现的方法：
  * <ul>
- *   <li>{@link #initializedState(RangeSplit)} - 初始化分片状态</li>
- *   <li>{@link #toSplitType(String, RangeSplitState)} - 状态转换为分片</li>
+ *   <li>{@link #initializedState(JdbcSplit)} - 初始化分片状态</li>
+ *   <li>{@link #toSplitType(String, JdbcSplitState)} - 状态转换为分片</li>
  * </ul>
  */
 @Slf4j
-public class JdbcSourceReader extends BaseSourceReader<Row, Row, RangeSplit, RangeSplitState> {
+public class JdbcSourceReader extends BaseSourceReader<Row, Row, JdbcSplit, JdbcSplitState> {
 
     public JdbcSourceReader(
-            Supplier<BaseSplitReader<Row, RangeSplit>> splitReaderSupplier,
+            Supplier<BaseSplitReader<Row, JdbcSplit>> splitReaderSupplier,
             SourceReaderContext context
     ) {
-        super(splitReaderSupplier, new RowRecordEmitter(), context);
+        super(splitReaderSupplier, new JdbcRecordEmitter(), context);
     }
 
     @Override
-    public RangeSplitState initializedState(RangeSplit split) {
+    public JdbcSplitState initializedState(JdbcSplit split) {
         log.debug("初始化分片状态: {}", split.splitId());
-        return new RangeSplitState(split);
+        return new JdbcSplitState(split);
     }
 
     @Override
-    protected RangeSplit toSplitType(String splitId, RangeSplitState splitState) {
+    protected JdbcSplit toSplitType(String splitId, JdbcSplitState splitState) {
         return splitState.getSplit();
     }
 }

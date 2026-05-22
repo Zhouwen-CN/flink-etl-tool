@@ -16,10 +16,10 @@ import org.apache.flink.types.Row;
  * </ul>
  */
 @Slf4j
-public class RowRecordEmitter implements RecordEmitter<Row, Row, RangeSplitState> {
+public class JdbcRecordEmitter implements RecordEmitter<Row, Row, JdbcSplitState> {
 
     @Override
-    public void emitRecord(Row record, SourceOutput<Row> output, RangeSplitState splitState) throws Exception {
+    public void emitRecord(Row record, SourceOutput<Row> output, JdbcSplitState splitState) throws Exception {
         // 发射记录到下游
         output.collect(record);
 

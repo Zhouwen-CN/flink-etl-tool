@@ -24,7 +24,7 @@ import java.util.function.Supplier;
  * 支持主键范围分片读取关系型数据库
  */
 @Slf4j
-public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpoint> {
+public class JdbcSource extends AbstractSplitSource<JdbcSplit, JdbcEnumCheckpoint> {
 
     private final JdbcSourceConfig jdbcSourceConfig;
 
@@ -39,34 +39,34 @@ public class JdbcSource extends AbstractSplitSource<RangeSplit, RangeEnumCheckpo
     }
 
     @Override
-    public SplitEnumerator<RangeSplit, RangeEnumCheckpoint>
-    createEnumerator(SplitEnumeratorContext<RangeSplit> enumContext) {
+    public SplitEnumerator<JdbcSplit, JdbcEnumCheckpoint>
+    createEnumerator(SplitEnumeratorContext<JdbcSplit> enumContext) {
         log.info("创建 SplitEnumerator");
         return new JdbcSplitEnumerator(enumContext, jdbcSourceConfig);
     }
 
     @Override
-    public SplitEnumerator<RangeSplit, RangeEnumCheckpoint>
-    restoreEnumerator(SplitEnumeratorContext<RangeSplit> enumContext,
-                      RangeEnumCheckpoint checkpoint) {
+    public SplitEnumerator<JdbcSplit, JdbcEnumCheckpoint>
+    restoreEnumerator(SplitEnumeratorContext<JdbcSplit> enumContext,
+                      JdbcEnumCheckpoint checkpoint) {
         log.info("从检查点恢复 SplitEnumerator");
         return new JdbcSplitEnumerator(enumContext, checkpoint, jdbcSourceConfig);
     }
 
     @Override
-    public SourceReader<Row, RangeSplit> createReader(SourceReaderContext readerContext) {
+    public SourceReader<Row, JdbcSplit> createReader(SourceReaderContext readerContext) {
         log.info("创建 SourceReader");
-        Supplier<BaseSplitReader<Row, RangeSplit>> splitReaderSupplier = JdbcSplitReader::new;
+        Supplier<BaseSplitReader<Row, JdbcSplit>> splitReaderSupplier = JdbcSplitReader::new;
         return new JdbcSourceReader(splitReaderSupplier, readerContext);
     }
 
     @Override
-    public SimpleVersionedSerializer<RangeSplit> getSplitSerializer() {
+    public SimpleVersionedSerializer<JdbcSplit> getSplitSerializer() {
         return new DefaultSplitSerializer<>();
     }
 
     @Override
-    public SimpleVersionedSerializer<RangeEnumCheckpoint> getEnumeratorCheckpointSerializer() {
+    public SimpleVersionedSerializer<JdbcEnumCheckpoint> getEnumeratorCheckpointSerializer() {
         return new DefaultCheckpointSerializer<>();
     }
 

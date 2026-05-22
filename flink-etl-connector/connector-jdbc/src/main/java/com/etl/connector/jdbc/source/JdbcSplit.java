@@ -16,7 +16,7 @@ import lombok.Getter;
  * </ul>
  */
 @Getter
-public class RangeSplit implements BaseSourceSplit {
+public class JdbcSplit implements BaseSourceSplit {
 
     private static final long serialVersionUID = 1L;
 
@@ -38,13 +38,13 @@ public class RangeSplit implements BaseSourceSplit {
      * @param splitId  分片 ID
      * @param querySql 该分片的查询 SQL
      */
-    public RangeSplit(String splitId,
-                      String querySql,
-                      String url,
-                      String username,
-                      String password,
-                      Integer batchSize,
-                      Integer queryTimeout
+    public JdbcSplit(String splitId,
+                     String querySql,
+                     String url,
+                     String username,
+                     String password,
+                     Integer batchSize,
+                     Integer queryTimeout
     ) {
         this.splitId = splitId;
         this.querySql = querySql;

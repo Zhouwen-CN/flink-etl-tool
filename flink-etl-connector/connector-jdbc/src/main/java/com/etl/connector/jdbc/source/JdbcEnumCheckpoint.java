@@ -8,7 +8,7 @@ import java.util.Collection;
  * 范围分片枚举器检查点
  * 用于保存 JdbcSplitEnumerator 的状态
  */
-public class RangeEnumCheckpoint extends BaseEnumCheckpoint<RangeSplit> {
+public class JdbcEnumCheckpoint extends BaseEnumCheckpoint<JdbcSplit> {
 
     private static final long serialVersionUID = 1L;
 
@@ -17,7 +17,7 @@ public class RangeEnumCheckpoint extends BaseEnumCheckpoint<RangeSplit> {
      *
      * @param pendingSplits 待处理的分片集合
      */
-    public RangeEnumCheckpoint(Collection<RangeSplit> pendingSplits) {
+    public JdbcEnumCheckpoint(Collection<JdbcSplit> pendingSplits) {
         super(pendingSplits);
     }
 }

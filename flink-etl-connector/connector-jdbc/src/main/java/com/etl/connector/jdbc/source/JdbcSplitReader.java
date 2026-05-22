@@ -3,7 +3,6 @@ package com.etl.connector.jdbc.source;
 import com.etl.core.schema.SqlTypeConverter;
 import com.etl.core.schema.TypeConverter;
 import com.etl.core.source.BaseSplitReader;
-import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
@@ -36,12 +35,12 @@ import java.util.Set;
  * </ul>
  */
 @Slf4j
-public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
-    private final Queue<RangeSplit> pendingSplits = new ArrayDeque<>();
+public class JdbcSplitReader implements BaseSplitReader<Row, JdbcSplit> {
+    private final Queue<JdbcSplit> pendingSplits = new ArrayDeque<>();
     private final Set<String> finishedSplits = new HashSet<>();
 
     // 当前分片读取状态
-    private RangeSplit currentSplit;
+    private JdbcSplit currentSplit;
     private Connection currentConnection;
     private Statement currentStatement;
     private ResultSet currentResultSet;
@@ -52,7 +51,7 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
     public RecordsWithSplitIds<Row> fetch() throws IOException {
         // 如果没有当前分片，尝试开始新分片
         if (currentSplit == null) {
-            RangeSplit split = pendingSplits.poll();
+            JdbcSplit split = pendingSplits.poll();
             if (split == null) {
                 // 没有待处理的分片，返回空结果
                 RecordsBySplits.Builder<Row> builder = new RecordsBySplits.Builder<>();
@@ -71,7 +70,7 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
     /**
      * 开始读取新分片
      */
-    private void startNewSplit(RangeSplit split) throws IOException {
+    private void startNewSplit(JdbcSplit split) throws IOException {
         log.info("开始读取分片: {}", split.splitId());
 
         try {
@@ -192,7 +191,7 @@ public class JdbcSplitReader implements BaseSplitReader<Row, RangeSplit> {
     }
 
     @Override
-    public void handleSplitsChanges(SplitsChange<RangeSplit> splitsChanges) {
+    public void handleSplitsChanges(SplitsChange<JdbcSplit> splitsChanges) {
         pendingSplits.addAll(splitsChanges.splits());
         log.debug("接收到 {} 个新分片", splitsChanges.splits().size());
     }
