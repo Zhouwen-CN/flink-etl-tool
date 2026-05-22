@@ -50,7 +50,7 @@ flink-etl-connector/connector-mqtt/
     ├── MqttSplitReader.java         # MQTT 消费逻辑，继承 BaseSplitReader
     ├── MqttRecordEmitter.java       # JSON → Row 转换，实现 RecordEmitter
     ├── MqttSplitState.java          # 分片状态，继承 BaseSplitState
-    └── MqttEnumCheckpoint.java      # 检查点，继承 BaseEnumCheckpoint
+    └── MqttEnumCheckpoint.java      # 检查点，继承 AbstractEnumCheckpoint
 ```
 
 ## 类设计

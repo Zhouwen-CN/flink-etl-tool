@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  */
 @Slf4j
 public abstract class BaseSplitEnumerator<SplitT extends BaseSourceSplit,
-        CheckpointT extends BaseEnumCheckpoint<SplitT>>
+        CheckpointT extends AbstractEnumCheckpoint<SplitT>>
         implements SplitEnumerator<SplitT, CheckpointT> {
 
     /** 待分配的分片队列（线程安全） */

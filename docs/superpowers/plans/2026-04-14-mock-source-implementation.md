@@ -819,7 +819,7 @@ Create `MockEnumCheckpoint.java`:
 ```java
 package com.etl.source.mock;
 
-import com.etl.core.source.BaseEnumCheckpoint;
+import com.etl.core.source.AbstractEnumCheckpoint;
 import lombok.Getter;
 
 import java.util.List;
@@ -828,7 +828,7 @@ import java.util.List;
  * Mock Source Enumerator 检查点
  */
 @Getter
-public class MockEnumCheckpoint extends BaseEnumCheckpoint<MockSplit> {
+public class MockEnumCheckpoint extends AbstractEnumCheckpoint<MockSplit> {
 
     public MockEnumCheckpoint(List<MockSplit> pendingSplits) {
         super(pendingSplits);

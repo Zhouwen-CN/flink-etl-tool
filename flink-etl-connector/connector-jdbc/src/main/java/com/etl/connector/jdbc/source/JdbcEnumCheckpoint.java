@@ -1,6 +1,6 @@
 package com.etl.connector.jdbc.source;
 
-import com.etl.core.source.BaseEnumCheckpoint;
+import com.etl.core.source.AbstractEnumCheckpoint;
 
 import java.util.Collection;
 
@@ -8,7 +8,7 @@ import java.util.Collection;
  * 范围分片枚举器检查点
  * 用于保存 JdbcSplitEnumerator 的状态
  */
-public class JdbcEnumCheckpoint extends BaseEnumCheckpoint<JdbcSplit> {
+public class JdbcEnumCheckpoint extends AbstractEnumCheckpoint<JdbcSplit> {
 
     private static final long serialVersionUID = 1L;
 

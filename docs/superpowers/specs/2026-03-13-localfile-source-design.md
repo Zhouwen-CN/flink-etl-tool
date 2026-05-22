@@ -172,7 +172,7 @@ public class LocalFileSplit implements BaseSourceSplit, Serializable {
 
 ### LocalFileEnumCheckpoint
 
-- 继承 `BaseEnumCheckpoint<LocalFileSplit>`
+- 继承 `AbstractEnumCheckpoint<LocalFileSplit>`
 - 参考 `RangeEnumCheckpoint` 实现
 - 用于保存枚举器状态，支持 Checkpoint 恢复
 

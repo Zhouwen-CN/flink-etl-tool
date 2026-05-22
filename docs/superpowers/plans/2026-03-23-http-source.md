@@ -257,7 +257,7 @@ git commit -m "feat: 添加 HttpSplit 分片定义"
 ```java
 package com.etl.source.http;
 
-import com.etl.core.source.BaseEnumCheckpoint;
+import com.etl.core.source.AbstractEnumCheckpoint;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
 
 import java.util.Collection;
@@ -265,7 +265,7 @@ import java.util.Collection;
 /**
  * HTTP 分片枚举器检查点
  */
-public class HttpEnumCheckpoint extends BaseEnumCheckpoint<HttpSplit> {
+public class HttpEnumCheckpoint extends AbstractEnumCheckpoint<HttpSplit> {
 
     private static final long serialVersionUID = DefaultCheckpointSerializer.VERSION;
 

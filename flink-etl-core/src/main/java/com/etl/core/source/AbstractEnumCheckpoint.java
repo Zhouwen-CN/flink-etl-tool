@@ -12,7 +12,7 @@ import java.util.Collection;
  * @param <SplitT> 分片类型
  */
 @Getter
-public abstract class BaseEnumCheckpoint<SplitT extends BaseSourceSplit> implements Serializable {
+public abstract class AbstractEnumCheckpoint<SplitT extends BaseSourceSplit> implements Serializable {
 
     /** 待处理的分片集合 */
     protected final Collection<SplitT> pendingSplits;
@@ -22,13 +22,13 @@ public abstract class BaseEnumCheckpoint<SplitT extends BaseSourceSplit> impleme
      *
      * @param pendingSplits 待处理的分片集合
      */
-    public BaseEnumCheckpoint(Collection<SplitT> pendingSplits) {
+    public AbstractEnumCheckpoint(Collection<SplitT> pendingSplits) {
         this.pendingSplits = pendingSplits;
     }
 
     @Override
     public String toString() {
-        return "BaseEnumCheckpoint{" +
+        return "AbstractEnumCheckpoint{" +
                 "pendingSplits=" + pendingSplits +
                 '}';
     }

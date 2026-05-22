@@ -1,6 +1,6 @@
 package com.etl.core.source.serde;
 
-import com.etl.core.source.BaseEnumCheckpoint;
+import com.etl.core.source.AbstractEnumCheckpoint;
 import com.etl.core.source.BaseSourceSplit;
 import com.etl.core.utils.SerializerUtils;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
@@ -14,7 +14,7 @@ import java.io.IOException;
  * @param <SplitT>      分片类型
  * @param <CheckpointT> 检查点类型
  */
-public class DefaultCheckpointSerializer<SplitT extends BaseSourceSplit, CheckpointT extends BaseEnumCheckpoint<SplitT>>
+public class DefaultCheckpointSerializer<SplitT extends BaseSourceSplit, CheckpointT extends AbstractEnumCheckpoint<SplitT>>
         implements SimpleVersionedSerializer<CheckpointT> {
 
     private static final int VERSION = 1;

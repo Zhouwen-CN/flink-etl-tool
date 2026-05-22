@@ -1,6 +1,6 @@
 package com.etl.connector.localfile.source;
 
-import com.etl.core.source.BaseEnumCheckpoint;
+import com.etl.core.source.AbstractEnumCheckpoint;
 
 import java.util.Collection;
 
@@ -8,7 +8,7 @@ import java.util.Collection;
  * 文件分片枚举器检查点
  * 用于保存 LocalFileSplitEnumerator 的状态
  */
-public class LocalFileEnumCheckpoint extends BaseEnumCheckpoint<LocalFileSplit> {
+public class LocalFileEnumCheckpoint extends AbstractEnumCheckpoint<LocalFileSplit> {
 
     private static final long serialVersionUID = 1L;
 
