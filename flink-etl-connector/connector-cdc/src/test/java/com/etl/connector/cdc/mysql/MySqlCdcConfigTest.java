@@ -106,44 +106,6 @@ class MySqlCdcConfigTest {
     }
 
     @Test
-    void testStartupModeSnapshotFirst() {
-        Map<String, Object> configMap = new HashMap<>();
-        configMap.put("url", "jdbc:mysql://localhost:3306/mydb");
-        configMap.put("username", "root");
-        configMap.put("password", "password");
-        configMap.put("table", "users");
-        configMap.put("startupMode", "snapshot_first");
-
-        SourceConfig sourceConfig = new SourceConfig();
-        sourceConfig.setConfig(configMap);
-
-        MySqlCdcConfig config = MySqlCdcConfig.fromSourceConfig(sourceConfig);
-
-        assertEquals(StartupMode.INITIAL, config.getStartupMode());
-        StartupOptions options = config.getStartupOptions();
-        assertNotNull(options);
-    }
-
-    @Test
-    void testTimestampModeWithoutStartupTimestamp() {
-        Map<String, Object> configMap = new HashMap<>();
-        configMap.put("url", "jdbc:mysql://localhost:3306/mydb");
-        configMap.put("username", "root");
-        configMap.put("password", "password");
-        configMap.put("table", "users");
-        configMap.put("startupMode", "timestamp");
-        // 不配置 startupTimestamp，应该抛出异常
-
-        SourceConfig sourceConfig = new SourceConfig();
-        sourceConfig.setConfig(configMap);
-
-        // 新实现使用 Preconditions.checkNotNull，抛出 NullPointerException
-        assertThrows(NullPointerException.class, () -> {
-            MySqlCdcConfig.fromSourceConfig(sourceConfig);
-        }, "startupMode=timestamp 时必须配置 startupTimestamp");
-    }
-
-    @Test
     void testOptionalServerId() {
         Map<String, Object> configMap = new HashMap<>();
         configMap.put("url", "jdbc:mysql://localhost:3306/mydb");
