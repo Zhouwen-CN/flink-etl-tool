@@ -1,6 +1,6 @@
 package com.etl.connector.http.source;
 
-import com.etl.core.source.BaseSplitState;
+import com.etl.core.source.AbstractSplitState;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,7 +9,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-public class HttpSplitState extends BaseSplitState<HttpSplit> {
+public class HttpSplitState extends AbstractSplitState<HttpSplit> {
 
     private static final long serialVersionUID = 1L;
 

@@ -18,6 +18,6 @@ public class HttpRecordEmitter implements RecordEmitter<Row, Row, HttpSplitState
         output.collect(record);
 
         // 更新状态
-        splitState.addRecordsRead(1);
+        splitState.addRecordsRead();
     }
 }

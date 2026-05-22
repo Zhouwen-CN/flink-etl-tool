@@ -1,6 +1,6 @@
 package com.etl.connector.mqtt.source;
 
-import com.etl.core.source.BaseSplitState;
+import com.etl.core.source.AbstractSplitState;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -9,7 +9,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
-public class MqttSplitState extends BaseSplitState<MqttSplit> {
+public class MqttSplitState extends AbstractSplitState<MqttSplit> {
 
     private static final long serialVersionUID = 1L;
 

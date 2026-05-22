@@ -23,7 +23,7 @@ import java.util.function.Supplier;
  * <p>子类需要实现：
  * <ul>
  *   <li>{@link #initializedState(BaseSourceSplit)} - 初始化分片状态</li>
- *   <li>{@link #toSplitType(String, BaseSplitState)} - 状态转换为分片</li>
+ *   <li>{@link #toSplitType(String, AbstractSplitState)} - 状态转换为分片</li>
  *   <li>{@link #onSplitFinished(Map)} - 分片完成回调</li>
  * </ul>
  *
@@ -34,7 +34,7 @@ import java.util.function.Supplier;
  * @see SingleThreadMultiplexSourceReaderBase
  */
 @Slf4j
-public abstract class AbstractSourceReader<E, T, SplitT extends BaseSourceSplit, StateT extends BaseSplitState<SplitT>>
+public abstract class AbstractSourceReader<E, T, SplitT extends BaseSourceSplit, StateT extends AbstractSplitState<SplitT>>
         extends SingleThreadMultiplexSourceReaderBase<E, T, SplitT, StateT> {
 
     /**

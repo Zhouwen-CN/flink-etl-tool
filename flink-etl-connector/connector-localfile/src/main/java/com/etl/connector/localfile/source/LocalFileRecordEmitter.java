@@ -18,6 +18,6 @@ public class LocalFileRecordEmitter implements RecordEmitter<Row, Row, LocalFile
         output.collect(record);
 
         // 更新状态
-        splitState.addRecordsRead(1);
+        splitState.addRecordsRead();
     }
 }

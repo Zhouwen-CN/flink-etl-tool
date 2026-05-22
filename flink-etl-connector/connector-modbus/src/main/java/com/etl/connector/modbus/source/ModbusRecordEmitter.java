@@ -11,6 +11,6 @@ public class ModbusRecordEmitter implements RecordEmitter<Row, Row, ModbusSplitS
     @Override
     public void emitRecord(Row record, SourceOutput<Row> output, ModbusSplitState splitState) throws Exception {
         output.collect(record);
-        splitState.addRecordsRead(1);
+        splitState.addRecordsRead();
     }
 }

@@ -22,6 +22,6 @@ public class MqttRecordEmitter implements RecordEmitter<Row, Row, MqttSplitState
         output.collect(record);
 
         // 更新状态
-        splitState.addRecordsRead(1);
+        splitState.addRecordsRead();
     }
 }

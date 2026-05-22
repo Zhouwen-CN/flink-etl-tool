@@ -24,6 +24,6 @@ public class JdbcRecordEmitter implements RecordEmitter<Row, Row, JdbcSplitState
         output.collect(record);
 
         // 更新状态
-        splitState.addRecordsRead(1);
+        splitState.addRecordsRead();
     }
 }

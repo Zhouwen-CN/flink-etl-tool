@@ -13,7 +13,7 @@ import java.io.Serializable;
  */
 @Getter
 @Setter
-public abstract class BaseSplitState<SplitT extends BaseSourceSplit> implements Serializable {
+public abstract class AbstractSplitState<SplitT extends BaseSourceSplit> implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -28,23 +28,21 @@ public abstract class BaseSplitState<SplitT extends BaseSourceSplit> implements 
      *
      * @param split 关联的分片
      */
-    public BaseSplitState(SplitT split) {
+    public AbstractSplitState(SplitT split) {
         this.split = split;
         this.recordsRead = 0;
     }
 
     /**
-     * 增加已读取记录数
-     *
-     * @param count 增加的数量
+     * 已读取记录数加 1
      */
-    public void addRecordsRead(long count) {
-        this.recordsRead += count;
+    public void addRecordsRead() {
+        this.recordsRead++;
     }
 
     @Override
     public String toString() {
-        return "BaseSplitState{" +
+        return "AbstractSplitState{" +
                 "split=" + split +
                 ", recordsRead=" + recordsRead +
                 '}';
