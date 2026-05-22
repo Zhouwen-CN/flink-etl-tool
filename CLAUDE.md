@@ -50,7 +50,9 @@ flink-etl-tool/
 │   ├── connector-localfile/      # 本地文件连接器（Source）
 │   ├── connector-console/        # Console 连接器（Sink）
 │   ├── connector-http/           # HTTP 连接器（Source）
-│   └── connector-mock/           # Mock 连接器（Source）
+│   ├── connector-mock/           # Mock 连接器（Source）
+│   ├── connector-modbus/         # Modbus 连接器（Source）
+│   └── connector-mqtt/           # MQTT 连接器（Source）
 └── flink-etl-transform/          # Transform 插件（SQL Transform）
 ```
 
@@ -95,7 +97,7 @@ EtlClient.main()
 - `AbstractSplitSource<SplitT, CheckpointT>` — Source 基类
 - `AbstractSplitEnumerator` — 分片枚举器（自动处理分片分配和回收）
 - `AbstractSourceReader` — 源阅读器（封装线程模型和状态管理）
-- `BaseSplitReader<SplitT>` — 分片读取器（阻塞式数据读取）
+- `AbstractSplitReader<SplitT>` — 分片读取器（阻塞式数据读取）
 
 所有 Source 输出 `Row` 类型，通过 `ResultTypeQueryable<Row>` 提供类型信息。
 
@@ -186,8 +188,7 @@ EtlClient.main()
 
 **设计文档：** 重要架构决策位于 `docs/superpowers/specs/`，开发计划位于 `docs/superpowers/plans/`。
 
-**示例配置：** 在 `docs/examples/` 目录中，包含 batch 和 streaming 模式的 13 个示例场景，覆盖 JDBC、Kafka、CDC、HTTP、Mock
-等连接器。
+**示例配置：** `docs/examples/` 目录包含 batch 和 streaming 模式的多个示例场景，覆盖 JDBC、Kafka、CDC、HTTP、Mock、Modbus、MQTT 等连接器。
 
 ## 技术栈
 
