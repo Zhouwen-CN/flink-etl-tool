@@ -1,7 +1,7 @@
 package com.etl.connector.localfile.source;
 
 import com.etl.core.source.AbstractSourceReader;
-import com.etl.core.source.BaseSplitReader;
+import com.etl.core.source.AbstractSplitReader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.types.Row;
@@ -16,7 +16,7 @@ import java.util.function.Supplier;
 public class LocalFileSourceReader extends AbstractSourceReader<Row, Row, LocalFileSplit, LocalFileSplitState> {
 
     public LocalFileSourceReader(
-            Supplier<BaseSplitReader<Row, LocalFileSplit>> splitReaderSupplier,
+            Supplier<AbstractSplitReader<Row, LocalFileSplit>> splitReaderSupplier,
             SourceReaderContext context
     ) {
         super(splitReaderSupplier, new LocalFileRecordEmitter(), context);

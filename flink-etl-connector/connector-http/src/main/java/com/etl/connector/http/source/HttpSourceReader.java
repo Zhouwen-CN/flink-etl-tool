@@ -1,7 +1,7 @@
 package com.etl.connector.http.source;
 
 import com.etl.core.source.AbstractSourceReader;
-import com.etl.core.source.BaseSplitReader;
+import com.etl.core.source.AbstractSplitReader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.types.Row;
@@ -16,7 +16,7 @@ import java.util.function.Supplier;
 public class HttpSourceReader extends AbstractSourceReader<Row, Row, HttpSplit, HttpSplitState> {
 
     public HttpSourceReader(
-            Supplier<BaseSplitReader<Row, HttpSplit>> splitReaderSupplier,
+            Supplier<AbstractSplitReader<Row, HttpSplit>> splitReaderSupplier,
             SourceReaderContext context
     ) {
         super(splitReaderSupplier, new HttpRecordEmitter(), context);

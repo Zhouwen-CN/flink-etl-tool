@@ -3,7 +3,7 @@ package com.etl.connector.mqtt.source;
 import com.etl.connector.mqtt.source.config.MqttSourceConfig;
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.JsonToRowConverter;
-import com.etl.core.source.BaseSplitReader;
+import com.etl.core.source.AbstractSplitReader;
 import com.etl.core.utils.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
@@ -20,9 +20,7 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayDeque;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -32,16 +30,11 @@ import java.util.concurrent.TimeUnit;
  * 使用 Paho 客户端订阅 topic，阻塞读取消息
  */
 @Slf4j
-public class MqttSplitReader implements BaseSplitReader<Row, MqttSplit> {
+public class MqttSplitReader extends AbstractSplitReader<Row, MqttSplit> {
 
     private static final int QOS = 1;
     private static final int QUEUE_CAPACITY = 1000;
     private static final long FETCH_TIMEOUT_MS = 100;
-
-    /**
-     * 等待处理的分片
-     **/
-    private final Queue<MqttSplit> pendingSplits = new ArrayDeque<>();
 
     /**
      * 消息阻塞队列
@@ -102,19 +95,6 @@ public class MqttSplitReader implements BaseSplitReader<Row, MqttSplit> {
         }
 
         return builder.build();
-    }
-
-    /**
-     * 处理分片变动
-     *
-     * @param splitsChanges 分片变动
-     */
-    @Override
-    public void handleSplitsChanges(SplitsChange<MqttSplit> splitsChanges) {
-        for (MqttSplit split : splitsChanges.splits()) {
-            pendingSplits.add(split);
-            log.debug("接收到 MQTT 分片: {}", split);
-        }
     }
 
     /**

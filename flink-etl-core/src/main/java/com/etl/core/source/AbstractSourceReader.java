@@ -45,7 +45,7 @@ public abstract class AbstractSourceReader<E, T, SplitT extends BaseSourceSplit,
      * @param context             读取器上下文
      */
     public AbstractSourceReader(
-            Supplier<BaseSplitReader<E, SplitT>> splitReaderSupplier,
+            Supplier<AbstractSplitReader<E, SplitT>> splitReaderSupplier,
             RecordEmitter<E, T, StateT> recordEmitter,
             SourceReaderContext context) {
         super(splitReaderSupplier::get, recordEmitter, new Configuration(), context);
@@ -60,7 +60,7 @@ public abstract class AbstractSourceReader<E, T, SplitT extends BaseSourceSplit,
      * @param context             读取器上下文
      */
     public AbstractSourceReader(
-            Supplier<BaseSplitReader<E, SplitT>> splitReaderSupplier,
+            Supplier<AbstractSplitReader<E, SplitT>> splitReaderSupplier,
             RecordEmitter<E, T, StateT> recordEmitter,
             Configuration config,
             SourceReaderContext context) {

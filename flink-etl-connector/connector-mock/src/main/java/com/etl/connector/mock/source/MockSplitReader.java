@@ -3,19 +3,16 @@ package com.etl.connector.mock.source;
 import com.etl.connector.mock.source.config.MockSourceConfig;
 import com.etl.connector.mock.source.generator.RandomRowGenerator;
 import com.etl.core.schema.JsonToRowConverter;
-import com.etl.core.source.BaseSplitReader;
+import com.etl.core.source.AbstractSplitReader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
 import org.apache.flink.connector.base.source.reader.RecordsWithSplitIds;
-import org.apache.flink.connector.base.source.reader.splitreader.SplitsChange;
 import org.apache.flink.types.Row;
 
 import java.io.IOException;
-import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Queue;
 import java.util.Set;
 
 /**
@@ -30,9 +27,8 @@ import java.util.Set;
  * 配置信息从 Split 中获取，不通过构造函数传递
  */
 @Slf4j
-public class MockSplitReader implements BaseSplitReader<Row, MockSplit> {
+public class MockSplitReader extends AbstractSplitReader<Row, MockSplit> {
 
-    private final Queue<MockSplit> pendingSplits = new ArrayDeque<>();
     private final Set<String> finishedSplits = new HashSet<>();
 
     // 有界模式状态
@@ -126,12 +122,6 @@ public class MockSplitReader implements BaseSplitReader<Row, MockSplit> {
         }
 
         return builder.build();
-    }
-
-    @Override
-    public void handleSplitsChanges(SplitsChange<MockSplit> splitsChanges) {
-        pendingSplits.addAll(splitsChanges.splits());
-        log.debug("接收到 {} 个新分片", splitsChanges.splits().size());
     }
 
     @Override

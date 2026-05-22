@@ -3,7 +3,7 @@ package com.etl.connector.http.source;
 import com.etl.connector.http.source.config.HttpSourceConfig;
 import com.etl.core.config.SourceConfig;
 import com.etl.core.source.AbstractSplitSource;
-import com.etl.core.source.BaseSplitReader;
+import com.etl.core.source.AbstractSplitReader;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
 import lombok.extern.slf4j.Slf4j;
@@ -54,7 +54,7 @@ public class HttpSource extends AbstractSplitSource<HttpSplit, HttpEnumCheckpoin
     @Override
     public SourceReader<Row, HttpSplit> createReader(SourceReaderContext readerContext) {
         log.info("创建 SourceReader");
-        Supplier<BaseSplitReader<Row, HttpSplit>> splitReaderSupplier = HttpSplitReader::new;
+        Supplier<AbstractSplitReader<Row, HttpSplit>> splitReaderSupplier = HttpSplitReader::new;
         return new HttpSourceReader(splitReaderSupplier, readerContext);
     }
 

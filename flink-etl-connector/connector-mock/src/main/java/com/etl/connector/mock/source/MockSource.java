@@ -2,7 +2,7 @@ package com.etl.connector.mock.source;
 
 import com.etl.core.config.SourceConfig;
 import com.etl.core.source.AbstractSplitSource;
-import com.etl.core.source.BaseSplitReader;
+import com.etl.core.source.AbstractSplitReader;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
 import com.etl.connector.mock.source.config.MockSourceConfig;
@@ -66,7 +66,7 @@ public class MockSource extends AbstractSplitSource<MockSplit, MockEnumCheckpoin
     public SourceReader<Row, MockSplit> createReader(SourceReaderContext readerContext) {
         log.info("创建 MockSourceReader");
 
-        Supplier<BaseSplitReader<Row, MockSplit>> splitReaderSupplier = MockSplitReader::new;
+        Supplier<AbstractSplitReader<Row, MockSplit>> splitReaderSupplier = MockSplitReader::new;
 
         return new MockSourceReader(splitReaderSupplier, readerContext);
     }

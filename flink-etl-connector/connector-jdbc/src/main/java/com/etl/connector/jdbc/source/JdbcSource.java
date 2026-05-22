@@ -3,7 +3,7 @@ package com.etl.connector.jdbc.source;
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import com.etl.core.config.SourceConfig;
 import com.etl.core.source.AbstractSplitSource;
-import com.etl.core.source.BaseSplitReader;
+import com.etl.core.source.AbstractSplitReader;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
 import com.etl.core.utils.SqlUtils;
@@ -56,7 +56,7 @@ public class JdbcSource extends AbstractSplitSource<JdbcSplit, JdbcEnumCheckpoin
     @Override
     public SourceReader<Row, JdbcSplit> createReader(SourceReaderContext readerContext) {
         log.info("创建 SourceReader");
-        Supplier<BaseSplitReader<Row, JdbcSplit>> splitReaderSupplier = JdbcSplitReader::new;
+        Supplier<AbstractSplitReader<Row, JdbcSplit>> splitReaderSupplier = JdbcSplitReader::new;
         return new JdbcSourceReader(splitReaderSupplier, readerContext);
     }
 

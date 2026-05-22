@@ -1,7 +1,7 @@
 package com.etl.connector.modbus.source;
 
 import com.etl.connector.modbus.source.config.ModbusSourceConfig;
-import com.etl.core.source.BaseSplitReader;
+import com.etl.core.source.AbstractSplitReader;
 import com.serotonin.modbus4j.ModbusFactory;
 import com.serotonin.modbus4j.ModbusMaster;
 import com.serotonin.modbus4j.ip.IpParameters;
@@ -11,14 +11,11 @@ import com.serotonin.modbus4j.msg.ReadHoldingRegistersResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
 import org.apache.flink.connector.base.source.reader.RecordsWithSplitIds;
-import org.apache.flink.connector.base.source.reader.splitreader.SplitsChange;
 import org.apache.flink.types.Row;
 import org.apache.flink.types.RowKind;
 
 import java.io.IOException;
-import java.util.ArrayDeque;
 import java.util.HashSet;
-import java.util.Queue;
 import java.util.Set;
 
 /**
@@ -33,12 +30,11 @@ import java.util.Set;
  * 配置信息从 Split 中获取，不通过构造函数传递
  */
 @Slf4j
-public class ModbusSplitReader implements BaseSplitReader<Row, ModbusSplit> {
+public class ModbusSplitReader extends AbstractSplitReader<Row, ModbusSplit> {
 
     /** Modbus 保持寄存器的手册地址起始偏移 */
     private static final int HOLDING_REGISTER_OFFSET = 40001;
 
-    private final Queue<ModbusSplit> pendingSplits = new ArrayDeque<>();
     private final Set<String> finishedSplits = new HashSet<>();
 
     private ModbusSplit currentSplit;
@@ -139,12 +135,6 @@ public class ModbusSplitReader implements BaseSplitReader<Row, ModbusSplit> {
             master = null;
             log.info("Modbus TCP 连接已释放");
         }
-    }
-
-    @Override
-    public void handleSplitsChanges(SplitsChange<ModbusSplit> splitsChanges) {
-        pendingSplits.addAll(splitsChanges.splits());
-        log.debug("接收到 {} 个新分片", splitsChanges.splits().size());
     }
 
     @Override

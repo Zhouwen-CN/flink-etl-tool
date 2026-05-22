@@ -3,7 +3,7 @@ package com.etl.connector.localfile.source;
 import com.etl.connector.localfile.source.config.LocalFileSourceConfig;
 import com.etl.core.config.SourceConfig;
 import com.etl.core.source.AbstractSplitSource;
-import com.etl.core.source.BaseSplitReader;
+import com.etl.core.source.AbstractSplitReader;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
 import lombok.extern.slf4j.Slf4j;
@@ -62,7 +62,7 @@ public class LocalFileSource extends AbstractSplitSource<LocalFileSplit, LocalFi
         log.info("创建 SourceReader");
 
         // 创建 SplitReader 供应器
-        Supplier<BaseSplitReader<Row, LocalFileSplit>> splitReaderSupplier = LocalFileSplitReader::new;
+        Supplier<AbstractSplitReader<Row, LocalFileSplit>> splitReaderSupplier = LocalFileSplitReader::new;
 
         // 创建 Reader
         return new LocalFileSourceReader(

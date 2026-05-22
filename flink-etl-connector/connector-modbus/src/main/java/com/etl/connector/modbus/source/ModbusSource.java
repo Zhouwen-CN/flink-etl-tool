@@ -2,7 +2,7 @@ package com.etl.connector.modbus.source;
 
 import com.etl.core.config.SourceConfig;
 import com.etl.core.source.AbstractSplitSource;
-import com.etl.core.source.BaseSplitReader;
+import com.etl.core.source.AbstractSplitReader;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
 import com.etl.connector.modbus.source.config.ModbusSourceConfig;
@@ -72,7 +72,7 @@ public class ModbusSource extends AbstractSplitSource<ModbusSplit, ModbusEnumChe
     @Override
     public SourceReader<Row, ModbusSplit> createReader(SourceReaderContext readerContext) {
         log.info("创建 ModbusSourceReader");
-        Supplier<BaseSplitReader<Row, ModbusSplit>> splitReaderSupplier = ModbusSplitReader::new;
+        Supplier<AbstractSplitReader<Row, ModbusSplit>> splitReaderSupplier = ModbusSplitReader::new;
         return new ModbusSourceReader(splitReaderSupplier, readerContext);
     }
 

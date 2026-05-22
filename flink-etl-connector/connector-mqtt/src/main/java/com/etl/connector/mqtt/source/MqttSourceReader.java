@@ -1,7 +1,7 @@
 package com.etl.connector.mqtt.source;
 
 import com.etl.core.source.AbstractSourceReader;
-import com.etl.core.source.BaseSplitReader;
+import com.etl.core.source.AbstractSplitReader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.types.Row;
@@ -22,7 +22,7 @@ public class MqttSourceReader extends AbstractSourceReader<Row, Row, MqttSplit, 
      * @param context             读取器上下文
      */
     public MqttSourceReader(
-            Supplier<BaseSplitReader<Row, MqttSplit>> splitReaderSupplier,
+            Supplier<AbstractSplitReader<Row, MqttSplit>> splitReaderSupplier,
             SourceReaderContext context
     ) {
         super(splitReaderSupplier, new MqttRecordEmitter(), context);

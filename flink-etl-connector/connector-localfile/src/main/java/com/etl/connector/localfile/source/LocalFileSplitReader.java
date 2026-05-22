@@ -2,11 +2,10 @@ package com.etl.connector.localfile.source;
 
 import com.etl.connector.localfile.source.config.LocalFileSourceConfig;
 import com.etl.connector.localfile.source.format.FileFormatPlugin;
-import com.etl.core.source.BaseSplitReader;
+import com.etl.core.source.AbstractSplitReader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
 import org.apache.flink.connector.base.source.reader.RecordsWithSplitIds;
-import org.apache.flink.connector.base.source.reader.splitreader.SplitsChange;
 import org.apache.flink.types.Row;
 
 import java.io.IOException;
@@ -29,9 +28,8 @@ import java.util.*;
  * </ul>
  */
 @Slf4j
-public class LocalFileSplitReader implements BaseSplitReader<Row, LocalFileSplit> {
+public class LocalFileSplitReader extends AbstractSplitReader<Row, LocalFileSplit> {
 
-    private final Queue<LocalFileSplit> pendingSplits = new ArrayDeque<>();
     private final Set<String> finishedSplits = new HashSet<>();
 
     // 当前分片读取状态
@@ -131,12 +129,6 @@ public class LocalFileSplitReader implements BaseSplitReader<Row, LocalFileSplit
         currentInputStream = null;
         currentRowIterator = null;
         currentSplit = null;
-    }
-
-    @Override
-    public void handleSplitsChanges(SplitsChange<LocalFileSplit> splitsChanges) {
-        pendingSplits.addAll(splitsChanges.splits());
-        log.debug("接收到 {} 个新文件分片", splitsChanges.splits().size());
     }
 
     @Override

@@ -2,12 +2,11 @@ package com.etl.connector.jdbc.source;
 
 import com.etl.core.schema.SqlTypeConverter;
 import com.etl.core.schema.TypeConverter;
-import com.etl.core.source.BaseSplitReader;
+import com.etl.core.source.AbstractSplitReader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
 import org.apache.flink.connector.base.source.reader.RecordsWithSplitIds;
-import org.apache.flink.connector.base.source.reader.splitreader.SplitsChange;
 import org.apache.flink.types.Row;
 
 import java.io.IOException;
@@ -17,9 +16,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayDeque;
 import java.util.HashSet;
-import java.util.Queue;
 import java.util.Set;
 
 /**
@@ -35,8 +32,7 @@ import java.util.Set;
  * </ul>
  */
 @Slf4j
-public class JdbcSplitReader implements BaseSplitReader<Row, JdbcSplit> {
-    private final Queue<JdbcSplit> pendingSplits = new ArrayDeque<>();
+public class JdbcSplitReader extends AbstractSplitReader<Row, JdbcSplit> {
     private final Set<String> finishedSplits = new HashSet<>();
 
     // 当前分片读取状态
@@ -188,12 +184,6 @@ public class JdbcSplitReader implements BaseSplitReader<Row, JdbcSplit> {
                 log.warn("关闭 {} 失败", resourceName, e);
             }
         }
-    }
-
-    @Override
-    public void handleSplitsChanges(SplitsChange<JdbcSplit> splitsChanges) {
-        pendingSplits.addAll(splitsChanges.splits());
-        log.debug("接收到 {} 个新分片", splitsChanges.splits().size());
     }
 
     @Override

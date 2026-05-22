@@ -1,7 +1,7 @@
 package com.etl.connector.jdbc.source;
 
 import com.etl.core.source.AbstractSourceReader;
-import com.etl.core.source.BaseSplitReader;
+import com.etl.core.source.AbstractSplitReader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.types.Row;
@@ -26,7 +26,7 @@ import java.util.function.Supplier;
 public class JdbcSourceReader extends AbstractSourceReader<Row, Row, JdbcSplit, JdbcSplitState> {
 
     public JdbcSourceReader(
-            Supplier<BaseSplitReader<Row, JdbcSplit>> splitReaderSupplier,
+            Supplier<AbstractSplitReader<Row, JdbcSplit>> splitReaderSupplier,
             SourceReaderContext context
     ) {
         super(splitReaderSupplier, new JdbcRecordEmitter(), context);

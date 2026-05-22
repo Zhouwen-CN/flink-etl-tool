@@ -3,7 +3,7 @@ package com.etl.connector.mqtt.source;
 import com.etl.connector.mqtt.source.config.MqttSourceConfig;
 import com.etl.core.config.SourceConfig;
 import com.etl.core.source.AbstractSplitSource;
-import com.etl.core.source.BaseSplitReader;
+import com.etl.core.source.AbstractSplitReader;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
 import lombok.extern.slf4j.Slf4j;
@@ -58,7 +58,7 @@ public class MqttSource extends AbstractSplitSource<MqttSplit, MqttEnumCheckpoin
     @Override
     public SourceReader<Row, MqttSplit> createReader(SourceReaderContext readerContext) {
         log.info("创建 SourceReader");
-        Supplier<BaseSplitReader<Row, MqttSplit>> splitReaderSupplier =
+        Supplier<AbstractSplitReader<Row, MqttSplit>> splitReaderSupplier =
                 MqttSplitReader::new;
         return new MqttSourceReader(splitReaderSupplier, readerContext);
     }

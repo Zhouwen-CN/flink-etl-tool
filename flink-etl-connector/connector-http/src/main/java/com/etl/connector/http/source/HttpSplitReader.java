@@ -2,13 +2,12 @@ package com.etl.connector.http.source;
 
 import com.etl.connector.http.source.config.HttpSourceConfig;
 import com.etl.core.schema.JsonToRowConverter;
-import com.etl.core.source.BaseSplitReader;
+import com.etl.core.source.AbstractSplitReader;
 import com.etl.core.utils.JsonUtils;
 import com.jayway.jsonpath.PathNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
 import org.apache.flink.connector.base.source.reader.RecordsWithSplitIds;
-import org.apache.flink.connector.base.source.reader.splitreader.SplitsChange;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
 import org.apache.flink.types.Row;
 
@@ -20,11 +19,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 
 /**
@@ -32,11 +29,10 @@ import java.util.Set;
  * 执行 HTTP 请求并将响应转换为 Row
  */
 @Slf4j
-public class HttpSplitReader implements BaseSplitReader<Row, HttpSplit> {
+public class HttpSplitReader extends AbstractSplitReader<Row, HttpSplit> {
     private static final int CONNECT_TIMEOUT = 30000;
     private static final int READ_TIMEOUT = 60000;
 
-    private final Queue<HttpSplit> pendingSplits = new ArrayDeque<>();
     private final Set<String> finishedSplits = new HashSet<>();
 
     @Override
@@ -154,12 +150,6 @@ public class HttpSplitReader implements BaseSplitReader<Row, HttpSplit> {
         } finally {
             connection.disconnect();
         }
-    }
-
-    @Override
-    public void handleSplitsChanges(SplitsChange<HttpSplit> splitsChanges) {
-        pendingSplits.addAll(splitsChanges.splits());
-        log.debug("接收到 {} 个 HTTP 分片", splitsChanges.splits().size());
     }
 
     @Override
