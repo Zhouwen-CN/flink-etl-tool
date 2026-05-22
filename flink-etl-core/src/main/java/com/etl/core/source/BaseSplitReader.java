@@ -11,7 +11,7 @@ import java.io.IOException;
  * 简化的 SplitReader 接口，子类只需关注数据读取
  *
  * <p>该接口基于 Flink 的 SplitReader，提供阻塞式数据读取能力。
- * 配合 {@link BaseSourceReader} 使用可以大大简化 SourceReader 的实现。
+ * 配合 {@link AbstractSourceReader} 使用可以大大简化 SourceReader 的实现。
  *
  * @param <E> 原始记录类型（从外部系统读取的原始数据）
  * @param <SplitT> 分片类型

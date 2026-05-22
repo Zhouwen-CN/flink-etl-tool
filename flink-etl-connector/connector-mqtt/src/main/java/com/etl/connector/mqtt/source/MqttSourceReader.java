@@ -1,6 +1,6 @@
 package com.etl.connector.mqtt.source;
 
-import com.etl.core.source.BaseSourceReader;
+import com.etl.core.source.AbstractSourceReader;
 import com.etl.core.source.BaseSplitReader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SourceReaderContext;
@@ -10,10 +10,10 @@ import java.util.function.Supplier;
 
 /**
  * MQTT Source Reader
- * 继承 BaseSourceReader，自动处理线程模型和状态管理
+ * 继承 AbstractSourceReader，自动处理线程模型和状态管理
  */
 @Slf4j
-public class MqttSourceReader extends BaseSourceReader<Row, Row, MqttSplit, MqttSplitState> {
+public class MqttSourceReader extends AbstractSourceReader<Row, Row, MqttSplit, MqttSplitState> {
 
     /**
      * 构造函数

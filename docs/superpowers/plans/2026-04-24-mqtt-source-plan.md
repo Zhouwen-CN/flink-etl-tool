@@ -4,7 +4,7 @@
 
 **Goal:** 新增 MQTT Source 插件，使用 Eclipse Paho 客户端订阅 MQTT topic，消费 JSON 消息并转换为 Flink Row 数据。
 
-**Architecture:** 使用项目抽象层（AbstractSplitSource + BaseSplitEnumerator + BaseSourceReader），单 topic 单分片模式，流式运行。
+**Architecture:** 使用项目抽象层（AbstractSplitSource + BaseSplitEnumerator + AbstractSourceReader），单 topic 单分片模式，流式运行。
 
 **Tech Stack:** Eclipse Paho MQTT Client 1.2.5, Flink 1.15.2 Source API, JsonToRowConverter
 
@@ -862,7 +862,7 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 ```java
 package com.etl.connector.mqtt.source;
 
-import com.etl.core.source.BaseSourceReader;
+import com.etl.core.source.AbstractSourceReader;
 import com.etl.core.source.BaseSplitReader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SourceReaderContext;
@@ -871,10 +871,10 @@ import java.util.function.Supplier;
 
 /**
  * MQTT Source Reader
- * 继承 BaseSourceReader，自动处理线程模型和状态管理
+ * 继承 AbstractSourceReader，自动处理线程模型和状态管理
  */
 @Slf4j
-public class MqttSourceReader extends BaseSourceReader<MqttMessageRecord, Row, MqttSplit, MqttSplitState> {
+public class MqttSourceReader extends AbstractSourceReader<MqttMessageRecord, Row, MqttSplit, MqttSplitState> {
 
     public MqttSourceReader(
             Supplier<BaseSplitReader<MqttMessageRecord, MqttSplit>> splitReaderSupplier,

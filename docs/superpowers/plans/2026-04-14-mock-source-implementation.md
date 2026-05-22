@@ -26,7 +26,7 @@
 - `MockSplit.java` - Single split with fixed ID
 - `MockSplitEnumerator.java` - Split enumerator (extends BaseSplitEnumerator)
 - `MockSplitReader.java` - Split reader (extends BaseSplitReader)
-- `MockSourceReader.java` - Source reader (extends BaseSourceReader)
+- `MockSourceReader.java` - Source reader (extends AbstractSourceReader)
 - `MockRecordEmitter.java` - Record emitter
 - `MockEnumCheckpoint.java` - Enumerator checkpoint
 - `MockSplitState.java` - Split state
@@ -1210,7 +1210,7 @@ Create `MockSourceReader.java`:
 ```java
 package com.etl.source.mock;
 
-import com.etl.core.source.BaseSourceReader;
+import com.etl.core.source.AbstractSourceReader;
 import com.etl.core.source.BaseSplitReader;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.configuration.Configuration;
@@ -1223,7 +1223,7 @@ import java.util.function.Supplier;
  * 包装 MockSplitReader，处理分片状态
  */
 public class MockSourceReader
-        extends BaseSourceReader<Row, Row, MockSplit, MockSplitState> {
+        extends AbstractSourceReader<Row, Row, MockSplit, MockSplitState> {
 
     private final Supplier<BaseSplitReader<Row, MockSplit>> splitReaderSupplier;
 

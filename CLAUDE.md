@@ -94,7 +94,7 @@ EtlClient.main()
 
 - `AbstractSplitSource<SplitT, CheckpointT>` — Source 基类
 - `BaseSplitEnumerator` — 分片枚举器（自动处理分片分配和回收）
-- `BaseSourceReader` — 源阅读器（封装线程模型和状态管理）
+- `AbstractSourceReader` — 源阅读器（封装线程模型和状态管理）
 - `BaseSplitReader<SplitT>` — 分片读取器（阻塞式数据读取）
 
 所有 Source 输出 `Row` 类型，通过 `ResultTypeQueryable<Row>` 提供类型信息。

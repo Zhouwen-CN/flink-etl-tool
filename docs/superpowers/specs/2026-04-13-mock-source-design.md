@@ -107,7 +107,7 @@ Mock Source 是一个用于测试和演示的数据源插件，能够生成模�
 
 1. **架构一致性**：继承 `AbstractSplitSource`，遵循项目所有 Source 插件的统一设计
 2. **需求匹配**：明确单分片设计，符合"不进行分片"需求，避免过度设计
-3. **复用基础设施**：使用 `BaseSplitEnumerator`（自动处理分片分配）、`BaseSourceReader`（自动处理线程模型）
+3. **复用基础设施**：使用 `BaseSplitEnumerator`（自动处理分片分配）、`AbstractSourceReader`（自动处理线程模型）
 4. **实现简洁**：核心逻辑集中在 `MockSplitReader`，batch/streaming 模式逻辑清晰
 5. **可扩展性**：保持架构开放，未来可扩展支持多分片（如多个 Mock 实例并行）
 
@@ -370,7 +370,7 @@ flink-etl-source/
         │           ├── MockSplit.java                 # 单分片（固定 ID）
         │           ├── MockSplitEnumerator.java       # 分片枚举器（继承 BaseSplitEnumerator）
         │           ├── MockSplitReader.java           # 分片读取器（继承 BaseSplitReader）
-        │           ├── MockSourceReader.java          # 源阅读器（继承 BaseSourceReader）
+        │           ├── MockSourceReader.java          # 源阅读器（继承 AbstractSourceReader）
         │           ├── MockRecordEmitter.java         # 记录发射器
         │           ├── MockEnumCheckpoint.java        # 枚举器检查点
         │           ├── MockSplitState.java            # 分片状态
@@ -398,7 +398,7 @@ flink-etl-source/
 | `MockSplit` | 单分片，固定 ID="mock-split-0" | `BaseSourceSplit` | `splitId()`、`getMockConfig()` |
 | `MockSplitEnumerator` | 在 `start()` 时创建并分配单分片 | `BaseSplitEnumerator<MockSplit, MockEnumCheckpoint>` | `start()`、`snapshotState()` |
 | `MockSplitReader` | **核心逻辑**：batch 模式读取 rows/numRows 数据；streaming 模式定时生成数据 | `BaseSplitReader<Row, MockSplit>` | `fetchNextBatch()`（batch）、`scheduleNextGeneration()`（streaming） |
-| `MockSourceReader` | 包装 MockSplitReader，处理分片状态 | `BaseSourceReader<Row, Row, MockSplit, MockSplitState>` | `initializedState()`、`toSplitType()` |
+| `MockSourceReader` | 包装 MockSplitReader，处理分片状态 | `AbstractSourceReader<Row, Row, MockSplit, MockSplitState>` | `initializedState()`、`toSplitType()` |
 | `MockRecordEmitter` | 发射 Row 数据到下游 | `RecordEmitter<Row, Row, MockSplitState>` | `emitRecord()` |
 | `MockSourceConfig` | 配置封装：rows、numRows、intervalMs、schema、运行模式 | POJO（实现 Serializable） | Builder 模式构建 |
 | `DataRowGenerator` | 从 rows 配置解析并生成 Row 数据（包含 RowKind） | 工具类 | `generateRows()`、`parseRowKind()` |
@@ -415,7 +415,7 @@ MockSourcePlugin
         │     └── extends BaseSplitEnumerator
         │     └── creates MockSplit (single split)
         ├── creates MockSourceReader
-        │     └── extends BaseSourceReader
+        │     └── extends AbstractSourceReader
         │     └── uses MockRecordEmitter
         │     └── creates MockSplitReader
         │           ├── extends BaseSplitReader
@@ -1130,4 +1130,4 @@ com.etl.connector.mock.source.MockSourcePlugin
 
 ## 总结
 
-Mock Source 通过简化单分片实现，提供轻量级的测试数据生成能力，无需外部依赖即可快速验证 ETL 任务配置。设计遵循项目现有的 Source 抽象层规范，复用 BaseSplitEnumerator 和 BaseSourceReader 基础设施，保持架构一致性。配置灵活支持固定数据和随机生成两种模式，适配 batch/streaming 运行场景，支持 CDC RowKind 标记，可完整测试 JDBC Sink 的 CDC 写入逻辑。
+Mock Source 通过简化单分片实现，提供轻量级的测试数据生成能力，无需外部依赖即可快速验证 ETL 任务配置。设计遵循项目现有的 Source 抽象层规范，复用 BaseSplitEnumerator 和 AbstractSourceReader 基础设施，保持架构一致性。配置灵活支持固定数据和随机生成两种模式，适配 batch/streaming 运行场景，支持 CDC RowKind 标记，可完整测试 JDBC Sink 的 CDC 写入逻辑。

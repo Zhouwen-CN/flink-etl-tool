@@ -107,7 +107,7 @@ import java.util.Set;
 
 /**
  * JDBC 分片读取器
- * 实现阻塞式数据读取，配合 BaseSourceReader 使用
+ * 实现阻塞式数据读取，配合 AbstractSourceReader 使用
  *
  * <p>设计说明：
  * <ul>
@@ -207,7 +207,7 @@ package com.etl.source.jdbc;
 
 import source.com.etl.connector.jdbc.RangeSplit;
 import source.com.etl.connector.jdbc.RangeSplitState;
-import com.etl.core.source.BaseSourceReader;
+import com.etl.core.source.AbstractSourceReader;
 import com.etl.core.source.BaseSplitReader;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.configuration.Configuration;
@@ -220,7 +220,7 @@ import java.util.function.Supplier;
 
 /**
  * JDBC Source Reader
- * 继承 BaseSourceReader，自动处理线程模型和状态管理
+ * 继承 AbstractSourceReader，自动处理线程模型和状态管理
  *
  * <p>优化后代码行数：~50 行（优化前：~160 行）
  * <p>消除的重复代码：线程管理、状态追踪、pollNext 逻辑
@@ -233,7 +233,7 @@ import java.util.function.Supplier;
  *   <li>{@link #onSplitFinished(Map)} - 分片完成回调</li>
  * </ul>
  */
-public class JdbcSourceReader extends BaseSourceReader<Row, Row, RangeSplit, RangeSplitState> {
+public class JdbcSourceReader extends AbstractSourceReader<Row, Row, RangeSplit, RangeSplitState> {
 
     private static final Logger logger = LoggerFactory.getLogger(JdbcSourceReader.class);
 
@@ -310,7 +310,7 @@ import java.util.List;
  * <p>优化后使用新的抽象类：
  * <ul>
  *   <li>{@link JdbcSplitEnumerator} - 继承 BaseSplitEnumerator</li>
- *   <li>{@link JdbcSourceReader} - 继承 BaseSourceReader</li>
+ *   <li>{@link JdbcSourceReader} - 继承 AbstractSourceReader</li>
  *   <li>默认序列化器 - 无需手写</li>
  *   <li>直接输出 Flink Row 类型</li>
  * </ul>

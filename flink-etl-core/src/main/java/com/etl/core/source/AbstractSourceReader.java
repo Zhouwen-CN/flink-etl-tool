@@ -34,7 +34,7 @@ import java.util.function.Supplier;
  * @see SingleThreadMultiplexSourceReaderBase
  */
 @Slf4j
-public abstract class BaseSourceReader<E, T, SplitT extends BaseSourceSplit, StateT extends BaseSplitState<SplitT>>
+public abstract class AbstractSourceReader<E, T, SplitT extends BaseSourceSplit, StateT extends BaseSplitState<SplitT>>
         extends SingleThreadMultiplexSourceReaderBase<E, T, SplitT, StateT> {
 
     /**
@@ -44,7 +44,7 @@ public abstract class BaseSourceReader<E, T, SplitT extends BaseSourceSplit, Sta
      * @param recordEmitter       记录发射器
      * @param context             读取器上下文
      */
-    public BaseSourceReader(
+    public AbstractSourceReader(
             Supplier<BaseSplitReader<E, SplitT>> splitReaderSupplier,
             RecordEmitter<E, T, StateT> recordEmitter,
             SourceReaderContext context) {
@@ -59,7 +59,7 @@ public abstract class BaseSourceReader<E, T, SplitT extends BaseSourceSplit, Sta
      * @param config              配置
      * @param context             读取器上下文
      */
-    public BaseSourceReader(
+    public AbstractSourceReader(
             Supplier<BaseSplitReader<E, SplitT>> splitReaderSupplier,
             RecordEmitter<E, T, StateT> recordEmitter,
             Configuration config,
@@ -75,7 +75,7 @@ public abstract class BaseSourceReader<E, T, SplitT extends BaseSourceSplit, Sta
      * @param config 配置
      * @param context 读取器上下文
      */
-    /*public BaseSourceReader(
+    /*public AbstractSourceReader(
             SingleThreadFetcherManager<E, SplitT> splitFetcherManager,
             RecordEmitter<E, T, StateT> recordEmitter,
             Configuration config,
@@ -92,7 +92,7 @@ public abstract class BaseSourceReader<E, T, SplitT extends BaseSourceSplit, Sta
      * @param config 配置
      * @param context 读取器上下文
      */
-    /*public BaseSourceReader(
+    /*public AbstractSourceReader(
             SingleThreadFetcherManager<E, SplitT> splitFetcherManager,
             RecordEmitter<E, T, StateT> recordEmitter,
             @Nullable RecordEvaluator<T> eofRecordEvaluator,

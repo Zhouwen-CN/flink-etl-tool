@@ -241,7 +241,7 @@ public class LocalFileSplit implements BaseSourceSplit, Serializable {
 
 ### LocalFileSourceReader
 
-- 继承 `BaseSourceReader<Row, Row, LocalFileSplit, LocalFileSplitState>`
+- 继承 `AbstractSourceReader<Row, Row, LocalFileSplit, LocalFileSplitState>`
 - 职责：管理分片状态，创建 SplitReader
 
 ### LocalFileSplitReader

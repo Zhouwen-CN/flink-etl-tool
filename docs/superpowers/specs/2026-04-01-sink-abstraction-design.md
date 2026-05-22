@@ -939,7 +939,7 @@ Committer<CommT>
 | 对比项 | Source 抽象层 | Sink 抽象层 |
 |--------|--------------|------------|
 | 基础接口 | `Source<Row, SplitT, CheckpointT>` | `Sink<Row>` |
-| 抽象类数量 | 5个（AbstractSplitSource, BaseSplitEnumerator, BaseSourceReader, BaseSplitReader, BaseSplitState） | 2个（AbstractSink, AbstractSinkWriter） |
+| 抽象类数量 | 5个（AbstractSplitSource, BaseSplitEnumerator, AbstractSourceReader, BaseSplitReader, BaseSplitState） | 2个（AbstractSink, AbstractSinkWriter） |
 | 参数校验位置 | 具体 Source 构造函数 | 具体 Sink 构造函数 |
 | 批量管理 | Reader 内部处理 | Writer 自动管理 |
 | 状态恢复 | Split 和 Checkpoint 序列化 | 无（基础 Sink 不保存状态） |

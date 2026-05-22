@@ -8,7 +8,7 @@
 
 - **MQTT 客户端**：Eclipse Paho `org.eclipse.paho.client.mqttv3` 1.2.5
 - **QoS 级别**：QoS 1（至少一次送达）
-- **架构**：使用项目抽象层（AbstractSplitSource + BaseSplitEnumerator + BaseSourceReader）
+- **架构**：使用项目抽象层（AbstractSplitSource + BaseSplitEnumerator + AbstractSourceReader）
 
 ## 需求规格
 
@@ -46,7 +46,7 @@ flink-etl-connector/connector-mqtt/
     ├── MqttSourceConfig.java        # 配置封装类（Serializable）
     ├── MqttSplit.java               # 分片定义，继承 BaseSourceSplit
     ├── MqttSplitEnumerator.java     # 分片枚举器，继承 BaseSplitEnumerator
-    ├── MqttSourceReader.java        # Source Reader，继承 BaseSourceReader
+    ├── MqttSourceReader.java        # Source Reader，继承 AbstractSourceReader
     ├── MqttSplitReader.java         # MQTT 消费逻辑，继承 BaseSplitReader
     ├── MqttRecordEmitter.java       # JSON → Row 转换，实现 RecordEmitter
     ├── MqttSplitState.java          # 分片状态，继承 BaseSplitState
@@ -146,7 +146,7 @@ ElementsQueue (Flink 内部队列)
     ↓
 MqttRecordEmitter (JSON → Row，使用 JsonToRowConverter)
     ↓
-BaseSourceReader (输出到下游)
+AbstractSourceReader (输出到下游)
     ↓
 DataStream<Row> → Table API
 ```
