@@ -24,9 +24,4 @@ public class MockSourceReader
     public MockSplitState initializedState(MockSplit split) {
         return new MockSplitState(split);
     }
-
-    @Override
-    protected MockSplit toSplitType(String splitId, MockSplitState splitState) {
-        return splitState.getSplit();
-    }
 }

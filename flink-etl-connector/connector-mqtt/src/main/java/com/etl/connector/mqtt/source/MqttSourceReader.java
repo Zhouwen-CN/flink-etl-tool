@@ -33,9 +33,4 @@ public class MqttSourceReader extends AbstractSourceReader<Row, Row, MqttSplit, 
         log.debug("初始化分片状态: {}", split.splitId());
         return new MqttSplitState(split);
     }
-
-    @Override
-    protected MqttSplit toSplitType(String splitId, MqttSplitState splitState) {
-        return splitState.getSplit();
-    }
 }

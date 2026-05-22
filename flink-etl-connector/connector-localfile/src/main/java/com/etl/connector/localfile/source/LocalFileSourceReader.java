@@ -27,9 +27,4 @@ public class LocalFileSourceReader extends AbstractSourceReader<Row, Row, LocalF
         log.debug("初始化分片状态: {}", split.splitId());
         return new LocalFileSplitState(split);
     }
-
-    @Override
-    protected LocalFileSplit toSplitType(String splitId, LocalFileSplitState splitState) {
-        return splitState.getSplit();
-    }
 }

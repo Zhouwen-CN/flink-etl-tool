@@ -27,9 +27,4 @@ public class HttpSourceReader extends AbstractSourceReader<Row, Row, HttpSplit, 
         log.debug("初始化分片状态: {}", split.splitId());
         return new HttpSplitState(split);
     }
-
-    @Override
-    protected HttpSplit toSplitType(String splitId, HttpSplitState splitState) {
-        return splitState.getSplit();
-    }
 }

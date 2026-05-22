@@ -23,8 +23,6 @@ import java.util.function.Supplier;
  * <p>子类需要实现：
  * <ul>
  *   <li>{@link #initializedState(BaseSourceSplit)} - 初始化分片状态</li>
- *   <li>{@link #toSplitType(String, AbstractSplitState)} - 状态转换为分片</li>
- *   <li>{@link #onSplitFinished(Map)} - 分片完成回调</li>
  * </ul>
  *
  * @param <E>      原始记录类型（从外部系统读取的原始数据）
@@ -59,13 +57,13 @@ public abstract class AbstractSourceReader<E, T, SplitT extends BaseSourceSplit,
      * @param config              配置
      * @param context             读取器上下文
      */
-    public AbstractSourceReader(
+    /*public AbstractSourceReader(
             Supplier<AbstractSplitReader<E, SplitT>> splitReaderSupplier,
             RecordEmitter<E, T, StateT> recordEmitter,
             Configuration config,
             SourceReaderContext context) {
         super(splitReaderSupplier::get, recordEmitter, config, context);
-    }
+    }*/
 
     /**
      * 构造函数（自定义 FetcherManager）
@@ -137,12 +135,14 @@ public abstract class AbstractSourceReader<E, T, SplitT extends BaseSourceSplit,
 
     /**
      * 将状态转换为分片类型
-     * 用于检查点恢复
+     * 用于检查点恢复，默认从 {@link AbstractSplitState#getSplit()} 获取
      *
      * @param splitId    分片 ID
      * @param splitState 分片状态
      * @return 分片
      */
     @Override
-    protected abstract SplitT toSplitType(String splitId, StateT splitState);
+    protected SplitT toSplitType(String splitId, StateT splitState) {
+        return splitState.getSplit();
+    }
 }

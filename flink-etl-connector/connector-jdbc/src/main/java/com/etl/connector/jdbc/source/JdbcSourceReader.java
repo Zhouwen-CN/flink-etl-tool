@@ -19,7 +19,6 @@ import java.util.function.Supplier;
  * <p>子类需要实现的方法：
  * <ul>
  *   <li>{@link #initializedState(JdbcSplit)} - 初始化分片状态</li>
- *   <li>{@link #toSplitType(String, JdbcSplitState)} - 状态转换为分片</li>
  * </ul>
  */
 @Slf4j
@@ -36,10 +35,5 @@ public class JdbcSourceReader extends AbstractSourceReader<Row, Row, JdbcSplit, 
     public JdbcSplitState initializedState(JdbcSplit split) {
         log.debug("初始化分片状态: {}", split.splitId());
         return new JdbcSplitState(split);
-    }
-
-    @Override
-    protected JdbcSplit toSplitType(String splitId, JdbcSplitState splitState) {
-        return splitState.getSplit();
     }
 }

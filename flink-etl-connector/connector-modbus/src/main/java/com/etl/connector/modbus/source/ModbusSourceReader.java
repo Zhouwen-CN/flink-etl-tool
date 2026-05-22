@@ -23,9 +23,4 @@ public class ModbusSourceReader
     public ModbusSplitState initializedState(ModbusSplit split) {
         return new ModbusSplitState(split);
     }
-
-    @Override
-    protected ModbusSplit toSplitType(String splitId, ModbusSplitState splitState) {
-        return splitState.getSplit();
-    }
 }
