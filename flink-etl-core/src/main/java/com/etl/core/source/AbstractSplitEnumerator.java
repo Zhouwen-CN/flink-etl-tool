@@ -23,7 +23,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
  * @param <CheckpointT> 检查点类型
  */
 @Slf4j
-public abstract class BaseSplitEnumerator<SplitT extends BaseSourceSplit,
+public abstract class AbstractSplitEnumerator<SplitT extends BaseSourceSplit,
         CheckpointT extends AbstractEnumCheckpoint<SplitT>>
         implements SplitEnumerator<SplitT, CheckpointT> {
 
@@ -38,7 +38,7 @@ public abstract class BaseSplitEnumerator<SplitT extends BaseSourceSplit,
      *
      * @param context 枚举器上下文
      */
-    public BaseSplitEnumerator(SplitEnumeratorContext<SplitT> context) {
+    public AbstractSplitEnumerator(SplitEnumeratorContext<SplitT> context) {
         this.context = context;
     }
 
@@ -48,7 +48,7 @@ public abstract class BaseSplitEnumerator<SplitT extends BaseSourceSplit,
      * @param context 枚举器上下文
      * @param checkpoint 检查点
      */
-    public BaseSplitEnumerator(SplitEnumeratorContext<SplitT> context, CheckpointT checkpoint) {
+    public AbstractSplitEnumerator(SplitEnumeratorContext<SplitT> context, CheckpointT checkpoint) {
         this(context);
         if (checkpoint != null && checkpoint.getPendingSplits() != null) {
             pendingSplits.addAll(checkpoint.getPendingSplits());

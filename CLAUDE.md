@@ -93,7 +93,7 @@ EtlClient.main()
 简化 Flink FLIP-27 Source API，核心类在 `flink-etl-core/source/`：
 
 - `AbstractSplitSource<SplitT, CheckpointT>` — Source 基类
-- `BaseSplitEnumerator` — 分片枚举器（自动处理分片分配和回收）
+- `AbstractSplitEnumerator` — 分片枚举器（自动处理分片分配和回收）
 - `AbstractSourceReader` — 源阅读器（封装线程模型和状态管理）
 - `BaseSplitReader<SplitT>` — 分片读取器（阻塞式数据读取）
 

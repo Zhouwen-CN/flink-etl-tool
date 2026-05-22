@@ -1,7 +1,7 @@
 package com.etl.connector.http.source;
 
 import com.etl.connector.http.source.config.HttpSourceConfig;
-import com.etl.core.source.BaseSplitEnumerator;
+import com.etl.core.source.AbstractSplitEnumerator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 
@@ -15,7 +15,7 @@ import java.util.List;
  * 单分片模式，创建一个包含完整配置的分片
  */
 @Slf4j
-public class HttpSplitEnumerator extends BaseSplitEnumerator<HttpSplit, HttpEnumCheckpoint> {
+public class HttpSplitEnumerator extends AbstractSplitEnumerator<HttpSplit, HttpEnumCheckpoint> {
 
     private final HttpSourceConfig httpSourceConfig;
 

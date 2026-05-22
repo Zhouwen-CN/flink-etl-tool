@@ -1,7 +1,7 @@
 package com.etl.connector.mqtt.source;
 
 import com.etl.connector.mqtt.source.config.MqttSourceConfig;
-import com.etl.core.source.BaseSplitEnumerator;
+import com.etl.core.source.AbstractSplitEnumerator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 
@@ -15,7 +15,7 @@ import java.util.List;
  * 单分片模式，创建一个包含完整配置的分片
  */
 @Slf4j
-public class MqttSplitEnumerator extends BaseSplitEnumerator<MqttSplit, MqttEnumCheckpoint> {
+public class MqttSplitEnumerator extends AbstractSplitEnumerator<MqttSplit, MqttEnumCheckpoint> {
 
     private final MqttSourceConfig mqttSourceConfig;
 

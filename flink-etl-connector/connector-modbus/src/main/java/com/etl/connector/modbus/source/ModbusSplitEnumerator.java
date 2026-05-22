@@ -1,6 +1,6 @@
 package com.etl.connector.modbus.source;
 
-import com.etl.core.source.BaseSplitEnumerator;
+import com.etl.core.source.AbstractSplitEnumerator;
 import com.etl.connector.modbus.source.config.ModbusSourceConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
@@ -14,7 +14,7 @@ import java.util.List;
  */
 @Slf4j
 public class ModbusSplitEnumerator
-        extends BaseSplitEnumerator<ModbusSplit, ModbusEnumCheckpoint> {
+        extends AbstractSplitEnumerator<ModbusSplit, ModbusEnumCheckpoint> {
 
     private final ModbusSourceConfig modbusConfig;
 

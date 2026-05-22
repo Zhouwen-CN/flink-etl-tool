@@ -1,7 +1,7 @@
 package com.etl.connector.localfile.source;
 
 import com.etl.core.exception.SourceConfigException;
-import com.etl.core.source.BaseSplitEnumerator;
+import com.etl.core.source.AbstractSplitEnumerator;
 import com.etl.connector.localfile.source.config.LocalFileSourceConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
@@ -19,7 +19,7 @@ import java.util.stream.Stream;
 
 /**
  * 本地文件分片枚举器
- * 继承 BaseSplitEnumerator，自动处理分片分配逻辑
+ * 继承 AbstractSplitEnumerator，自动处理分片分配逻辑
  *
  * <p>职责：
  * <ul>
@@ -30,7 +30,7 @@ import java.util.stream.Stream;
  * <p>注意：字段名和类型从 source.schema 配置中获取，无需从文件推断
  */
 @Slf4j
-public class LocalFileSplitEnumerator extends BaseSplitEnumerator<LocalFileSplit, LocalFileEnumCheckpoint> {
+public class LocalFileSplitEnumerator extends AbstractSplitEnumerator<LocalFileSplit, LocalFileEnumCheckpoint> {
 
     private final LocalFileSourceConfig localFileSourceConfig;
 

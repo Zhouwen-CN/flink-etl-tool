@@ -1,6 +1,6 @@
 package com.etl.connector.mock.source;
 
-import com.etl.core.source.BaseSplitEnumerator;
+import com.etl.core.source.AbstractSplitEnumerator;
 import com.etl.connector.mock.source.config.MockSourceConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
@@ -14,7 +14,7 @@ import java.util.List;
  */
 @Slf4j
 public class MockSplitEnumerator
-        extends BaseSplitEnumerator<MockSplit, MockEnumCheckpoint> {
+        extends AbstractSplitEnumerator<MockSplit, MockEnumCheckpoint> {
 
     private final MockSourceConfig mockConfig;
 

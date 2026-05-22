@@ -3,7 +3,7 @@ package com.etl.connector.jdbc.source;
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import com.etl.connector.jdbc.source.enums.SplitStrategy;
 import com.etl.connector.jdbc.source.splitter.ChunkSplitter;
-import com.etl.core.source.BaseSplitEnumerator;
+import com.etl.core.source.AbstractSplitEnumerator;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 
@@ -13,13 +13,13 @@ import java.util.List;
 
 /**
  * JDBC 分片枚举器
- * 继承 BaseSplitEnumerator，在 start() 中执行分片计算
+ * 继承 AbstractSplitEnumerator，在 start() 中执行分片计算
  *
  * <p>分片计算延迟到 enumerator 启动时执行，而非创建时预计算。
  * 这样可以在运行时动态获取数据范围，支持更灵活的分片策略。
  */
 @Slf4j
-public class JdbcSplitEnumerator extends BaseSplitEnumerator<JdbcSplit, JdbcEnumCheckpoint> {
+public class JdbcSplitEnumerator extends AbstractSplitEnumerator<JdbcSplit, JdbcEnumCheckpoint> {
 
     private final JdbcSourceConfig jdbcSourceConfig;
 
