@@ -2,6 +2,7 @@ package com.etl.connector.modbus.source;
 
 import com.etl.core.source.AbstractSourceReader;
 import com.etl.core.source.AbstractSplitReader;
+import com.etl.core.source.BaseRecordEmitter;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.types.Row;
 
@@ -15,8 +16,9 @@ public class ModbusSourceReader
 
     public ModbusSourceReader(
             Supplier<AbstractSplitReader<Row, ModbusSplit>> splitReaderSupplier,
-            SourceReaderContext context) {
-        super(splitReaderSupplier, new ModbusRecordEmitter(), context);
+            SourceReaderContext context
+    ) {
+        super(splitReaderSupplier, new BaseRecordEmitter<>(context), context);
     }
 
     @Override

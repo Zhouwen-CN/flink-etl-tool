@@ -2,6 +2,7 @@ package com.etl.connector.mock.source;
 
 import com.etl.core.source.AbstractSourceReader;
 import com.etl.core.source.AbstractSplitReader;
+import com.etl.core.source.BaseRecordEmitter;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.types.Row;
 
@@ -16,8 +17,9 @@ public class MockSourceReader
 
     public MockSourceReader(
             Supplier<AbstractSplitReader<Row, MockSplit>> splitReaderSupplier,
-            SourceReaderContext context) {
-        super(splitReaderSupplier, new MockRecordEmitter(), context);
+            SourceReaderContext context
+    ) {
+        super(splitReaderSupplier, new BaseRecordEmitter<>(context), context);
     }
 
     @Override
