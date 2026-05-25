@@ -42,7 +42,7 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
     }
 
     @Override
-    public void write(Row row, Context context) throws IOException, InterruptedException {
+    public void write(Row row) throws IOException, InterruptedException {
         try {
             // 首次写入时缓存列名
             if (outputFormat == null) {

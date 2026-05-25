@@ -28,17 +28,21 @@ import java.io.IOException;
  */
 public abstract class AbstractSinkWriter<ConfigT> implements SinkWriter<Row> {
 
-    /** Writer 初始化上下文 */
+    /**
+     * Writer 初始化上下文
+     */
     protected final Sink.InitContext context;
 
-    /** Sink 配置对象 */
+    /**
+     * Sink 配置对象
+     */
     protected final ConfigT config;
 
     /**
      * 构造函数
      *
      * @param context Writer 初始化上下文
-     * @param config Sink 配置对象
+     * @param config  Sink 配置对象
      */
     public AbstractSinkWriter(Sink.InitContext context, ConfigT config) {
         this.context = context;
@@ -49,19 +53,37 @@ public abstract class AbstractSinkWriter<ConfigT> implements SinkWriter<Row> {
      * 写入数据
      * 子类实现此方法定义写入逻辑，自行决定是否需要批量管理
      *
-     * @param row 数据行
+     * @param row     数据行
      * @param context 写入上下文
-     * @throws IOException 如果写入失败
+     * @throws IOException          如果写入失败
      * @throws InterruptedException 如果写入被中断
      */
     @Override
-    public abstract void write(Row row, Context context) throws IOException, InterruptedException;
+    public void write(Row row, Context context) throws IOException, InterruptedException{
+        this.write(row);
+
+        // 这个指标是 source scope 级别的，需要在 metrics 面板上自己拉图表，不够直观
+        // this.context.metricGroup().getIOMetricGroup().getNumRecordsOutCounter().inc();
+
+        // 这里使用 bytes 来指代条数，因为可以在webui上直观的看到
+        this.context.metricGroup().getIOMetricGroup().getNumBytesOutCounter().inc();
+    }
+
+    /**
+     * 写入数据
+     * 子类实现此方法定义写入逻辑，自行决定是否需要批量管理
+     *
+     * @param row     数据行
+     * @throws IOException          如果写入失败
+     * @throws InterruptedException 如果写入被中断
+     */
+    public abstract void write(Row row) throws IOException, InterruptedException;
 
     /**
      * 检查点提交时或者结束输出时，刷写数据，保证最少一次语义
      *
      * @param endOfInput 是否为输入结束时的 flush
-     * @throws IOException 如果提交失败
+     * @throws IOException          如果提交失败
      * @throws InterruptedException 如果提交被中断
      */
     @Override
