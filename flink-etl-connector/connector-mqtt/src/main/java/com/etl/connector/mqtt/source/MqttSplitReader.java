@@ -8,7 +8,6 @@ import com.etl.core.utils.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
 import org.apache.flink.connector.base.source.reader.RecordsWithSplitIds;
-import org.apache.flink.connector.base.source.reader.splitreader.SplitsChange;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
 import org.apache.flink.types.Row;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
@@ -33,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 public class MqttSplitReader extends AbstractSplitReader<Row, MqttSplit> {
 
     private static final int QOS = 1;
-    private static final int QUEUE_CAPACITY = 1000;
+    private static final int QUEUE_CAPACITY = 1024;
     private static final long FETCH_TIMEOUT_MS = 100;
 
     /**
@@ -48,15 +47,9 @@ public class MqttSplitReader extends AbstractSplitReader<Row, MqttSplit> {
     private MqttClient mqttClient;
 
     /**
-     * 是否已连接
-     */
-    private volatile boolean connected = false;
-
-    /**
      * 当前分片
      */
     private MqttSplit currentSplit;
-
 
     /**
      * 阻塞式提取数据
@@ -74,9 +67,6 @@ public class MqttSplitReader extends AbstractSplitReader<Row, MqttSplit> {
                 return builder.build();
             }
             currentSplit = split;
-        }
-
-        if (!connected) {
             connectAndSubscribe();
         }
 
@@ -131,8 +121,6 @@ public class MqttSplitReader extends AbstractSplitReader<Row, MqttSplit> {
             mqttClient.subscribe(topic, QOS);
             log.info("MQTT 客户端已连接: broker={}, clientId={}, topic={}, QoS: {}",
                     config.getBroker(), config.getClientId(), topic, QOS);
-
-            connected = true;
         } catch (MqttException e) {
             log.error("MQTT 连接失败: {}", e.getMessage(), e);
             throw new RuntimeException("MQTT 连接失败: " + e.getMessage(), e);
@@ -162,7 +150,6 @@ public class MqttSplitReader extends AbstractSplitReader<Row, MqttSplit> {
                 log.warn("关闭 MQTT 客户端异常: {}", e.getMessage());
             }
         }
-        connected = false;
     }
 
     public static class MqttCallbackImpl implements MqttCallback {

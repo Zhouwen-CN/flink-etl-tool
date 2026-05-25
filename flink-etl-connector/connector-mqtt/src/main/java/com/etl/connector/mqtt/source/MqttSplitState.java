@@ -21,12 +21,4 @@ public class MqttSplitState extends AbstractSplitState<MqttSplit> {
     public MqttSplitState(MqttSplit split) {
         super(split);
     }
-
-    @Override
-    public String toString() {
-        return "MqttSplitState{" +
-                "split=" + getSplit() +
-                ", recordsRead=" + getRecordsRead() +
-                '}';
-    }
 }

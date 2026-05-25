@@ -22,11 +22,4 @@ public class HttpSplitState extends AbstractSplitState<HttpSplit> {
         super(split);
     }
 
-    @Override
-    public String toString() {
-        return "HttpSplitState{" +
-                "split=" + getSplit() +
-                ", recordsRead=" + getRecordsRead() +
-                '}';
-    }
 }

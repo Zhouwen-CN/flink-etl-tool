@@ -24,12 +24,4 @@ public class JdbcSplitState extends AbstractSplitState<JdbcSplit> {
     public JdbcSplitState(JdbcSplit split) {
         super(split);
     }
-
-    @Override
-    public String toString() {
-        return "RangeSplitState{" +
-                "split=" + getSplit() +
-                ", recordsRead=" + getRecordsRead() +
-                '}';
-    }
 }

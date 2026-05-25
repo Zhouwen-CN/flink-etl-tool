@@ -41,7 +41,9 @@ public class JdbcSplitReader extends AbstractSplitReader<Row, JdbcSplit> {
     private Statement currentStatement;
     private ResultSet currentResultSet;
     private boolean hasNextRecord;
-    private int currentOffset;
+
+    private String[] columnNames;
+    private TypeInformation<?>[] flinkTypes;
 
     @Override
     public RecordsWithSplitIds<Row> fetch() throws IOException {
@@ -71,7 +73,7 @@ public class JdbcSplitReader extends AbstractSplitReader<Row, JdbcSplit> {
 
         try {
             // 创建连接
-            currentConnection = DriverManager.getConnection(split.getUrl(),  split.getUsername(), split.getPassword());
+            currentConnection = DriverManager.getConnection(split.getUrl(), split.getUsername(), split.getPassword());
             currentStatement = currentConnection.createStatement(
                     ResultSet.TYPE_FORWARD_ONLY,
                     ResultSet.CONCUR_READ_ONLY
@@ -92,9 +94,7 @@ public class JdbcSplitReader extends AbstractSplitReader<Row, JdbcSplit> {
             // 执行查询
             currentResultSet = currentStatement.executeQuery(querySql);
             hasNextRecord = currentResultSet.next();
-            currentOffset = 0;
             currentSplit = split;
-
         } catch (SQLException e) {
             // 出错时关闭资源
             closeCurrentSplit();
@@ -113,15 +113,16 @@ public class JdbcSplitReader extends AbstractSplitReader<Row, JdbcSplit> {
             ResultSetMetaData metaData = currentResultSet.getMetaData();
             int columnCount = metaData.getColumnCount();
 
-            // 预计算列元数据（避免在热路径中重复调用）
-            String[] columnNames = new String[columnCount];
-            int[] sqlTypes = new int[columnCount];
-            TypeInformation<?>[] flinkTypes = new TypeInformation<?>[columnCount];
+            // 计算列元数据
+            if (columnNames == null || flinkTypes == null) {
+                columnNames = new String[columnCount];
+                flinkTypes = new TypeInformation<?>[columnCount];
 
-            for (int i = 0; i < columnCount; i++) {
-                columnNames[i] = metaData.getColumnLabel(i + 1);
-                sqlTypes[i] = metaData.getColumnType(i + 1);
-                flinkTypes[i] = SqlTypeConverter.fromSqlType(sqlTypes[i]);
+                for (int i = 0; i < columnCount; i++) {
+                    columnNames[i] = metaData.getColumnLabel(i + 1);
+                    int sqlType = metaData.getColumnType(i + 1);
+                    flinkTypes[i] = SqlTypeConverter.fromSqlType(sqlType);
+                }
             }
 
             // 读取一批记录
@@ -135,7 +136,6 @@ public class JdbcSplitReader extends AbstractSplitReader<Row, JdbcSplit> {
 
                 builder.add(currentSplit.splitId(), row);
                 recordsInBatch++;
-                currentOffset++;
 
                 // 读取下一条记录
                 hasNextRecord = currentResultSet.next();
@@ -144,12 +144,11 @@ public class JdbcSplitReader extends AbstractSplitReader<Row, JdbcSplit> {
             // 如果没有更多记录，标记分片完成
             if (!hasNextRecord) {
                 finishedSplits.add(currentSplit.splitId());
-                log.debug("分片 {} 读取完成，共 {} 条记录", currentSplit.splitId(), currentOffset);
+                log.debug("分片 {} 读取完成", currentSplit.splitId());
 
                 // 关闭资源
                 closeCurrentSplit();
             }
-
         } catch (SQLException e) {
             closeCurrentSplit();
             throw new IOException("读取分片失败: " + currentSplit.splitId(), e);
@@ -171,6 +170,8 @@ public class JdbcSplitReader extends AbstractSplitReader<Row, JdbcSplit> {
         currentConnection = null;
         currentSplit = null;
         hasNextRecord = false;
+        columnNames = null;
+        flinkTypes = null;
     }
 
     /**

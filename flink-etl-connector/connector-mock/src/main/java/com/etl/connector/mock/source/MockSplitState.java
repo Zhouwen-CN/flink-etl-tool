@@ -9,6 +9,8 @@ import lombok.Getter;
 @Getter
 public class MockSplitState extends AbstractSplitState<MockSplit> {
 
+    private static final long serialVersionUID = 1L;
+
     public MockSplitState(MockSplit split) {
         super(split);
     }

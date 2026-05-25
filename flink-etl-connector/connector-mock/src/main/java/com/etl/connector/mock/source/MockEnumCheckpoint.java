@@ -10,6 +10,7 @@ import java.util.List;
  */
 @Getter
 public class MockEnumCheckpoint extends AbstractEnumCheckpoint<MockSplit> {
+
     private static final long serialVersionUID = 1L;
 
     public MockEnumCheckpoint(List<MockSplit> pendingSplits) {

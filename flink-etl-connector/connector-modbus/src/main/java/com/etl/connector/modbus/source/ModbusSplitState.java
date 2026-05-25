@@ -8,6 +8,9 @@ import lombok.Getter;
  */
 @Getter
 public class ModbusSplitState extends AbstractSplitState<ModbusSplit> {
+
+    private static final long serialVersionUID = 1L;
+
     public ModbusSplitState(ModbusSplit split) {
         super(split);
     }

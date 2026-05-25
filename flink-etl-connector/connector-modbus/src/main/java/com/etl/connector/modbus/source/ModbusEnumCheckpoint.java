@@ -10,6 +10,7 @@ import java.util.List;
  */
 @Getter
 public class ModbusEnumCheckpoint extends AbstractEnumCheckpoint<ModbusSplit> {
+
     private static final long serialVersionUID = 1L;
 
     public ModbusEnumCheckpoint(List<ModbusSplit> pendingSplits) {

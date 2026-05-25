@@ -80,7 +80,6 @@ public class HttpSplitReader extends AbstractSplitReader<Row, HttpSplit> {
             throw new RuntimeException("数据转换失败: " + e.getMessage(), e);
         }
 
-        builder.addFinishedSplits(finishedSplits);
         return builder.build();
     }
 

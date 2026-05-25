@@ -14,6 +14,8 @@ import java.util.Collection;
 @Getter
 public abstract class AbstractEnumCheckpoint<SplitT extends BaseSourceSplit> implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
     /** 待处理的分片集合 */
     protected final Collection<SplitT> pendingSplits;
 

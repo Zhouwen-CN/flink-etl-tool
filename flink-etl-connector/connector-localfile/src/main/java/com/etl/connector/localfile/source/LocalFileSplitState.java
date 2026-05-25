@@ -24,12 +24,4 @@ public class LocalFileSplitState extends AbstractSplitState<LocalFileSplit> {
     public LocalFileSplitState(LocalFileSplit split) {
         super(split);
     }
-
-    @Override
-    public String toString() {
-        return "LocalFileSplitState{" +
-                "split=" + getSplit() +
-                ", recordsRead=" + getRecordsRead() +
-                '}';
-    }
 }
