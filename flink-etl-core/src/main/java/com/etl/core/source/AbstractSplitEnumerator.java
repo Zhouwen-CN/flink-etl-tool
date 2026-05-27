@@ -5,7 +5,6 @@ import org.apache.flink.api.connector.source.SplitEnumerator;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 
 import javax.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -86,9 +85,8 @@ public abstract class AbstractSplitEnumerator<SplitT extends BaseSourceSplit>
      */
     @Override
     public BaseEnumCheckpoint<SplitT> snapshotState(long checkpointId) {
-        List<SplitT> pending = new ArrayList<>(pendingSplits);
-        log.info("创建检查点 {}，待处理分片数: {}", checkpointId, pending.size());
-        return new BaseEnumCheckpoint<>(pending);
+        log.info("创建检查点 {}，待处理分片数: {}", checkpointId, pendingSplits.size());
+        return new BaseEnumCheckpoint<>(pendingSplits);
     }
 
     /**

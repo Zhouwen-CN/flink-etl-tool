@@ -2,6 +2,7 @@ package com.etl.core.sink;
 
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.api.connector.sink2.SinkWriter;
+import org.apache.flink.metrics.groups.OperatorIOMetricGroup;
 import org.apache.flink.types.Row;
 
 import java.io.IOException;
@@ -62,11 +63,11 @@ public abstract class AbstractSinkWriter<ConfigT> implements SinkWriter<Row> {
     public void write(Row row, Context context) throws IOException, InterruptedException{
         this.write(row);
 
-        // 这个指标是 source scope 级别的，需要在 metrics 面板上自己拉图表，不够直观
-        // this.context.metricGroup().getIOMetricGroup().getNumRecordsOutCounter().inc();
-
+        OperatorIOMetricGroup ioMetricGroup = this.context.metricGroup().getIOMetricGroup();
+        // 这个指标是 sink scope 级别的，需要在 metrics 面板上自己拉图表
+        ioMetricGroup.getNumRecordsOutCounter().inc();
         // 这里使用 bytes 来指代条数，因为可以在webui上直观的看到
-        this.context.metricGroup().getIOMetricGroup().getNumBytesOutCounter().inc();
+        ioMetricGroup.getNumBytesOutCounter().inc();
     }
 
     /**

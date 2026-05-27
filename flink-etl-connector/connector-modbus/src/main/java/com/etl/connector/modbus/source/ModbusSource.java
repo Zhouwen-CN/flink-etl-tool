@@ -1,11 +1,12 @@
 package com.etl.connector.modbus.source;
 
+import com.etl.connector.modbus.source.config.ModbusSourceConfig;
 import com.etl.core.config.SourceConfig;
-import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.AbstractSplitReader;
+import com.etl.core.source.AbstractSplitSource;
+import com.etl.core.source.BaseEnumCheckpoint;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
-import com.etl.connector.modbus.source.config.ModbusSourceConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -27,7 +28,7 @@ import java.util.function.Supplier;
  * 输出固定 Schema: Row(address: INT, value: INT)
  */
 @Slf4j
-public class ModbusSource extends AbstractSplitSource<ModbusSplit, ModbusEnumCheckpoint> {
+public class ModbusSource extends AbstractSplitSource<ModbusSplit> {
 
     private final ModbusSourceConfig modbusConfig;
     private final boolean bounded;
@@ -55,16 +56,16 @@ public class ModbusSource extends AbstractSplitSource<ModbusSplit, ModbusEnumChe
     }
 
     @Override
-    public SplitEnumerator<ModbusSplit, ModbusEnumCheckpoint> createEnumerator(
+    public SplitEnumerator<ModbusSplit, BaseEnumCheckpoint<ModbusSplit>> createEnumerator(
             SplitEnumeratorContext<ModbusSplit> enumContext) {
         log.info("创建 ModbusSplitEnumerator");
         return new ModbusSplitEnumerator(enumContext, modbusConfig);
     }
 
     @Override
-    public SplitEnumerator<ModbusSplit, ModbusEnumCheckpoint> restoreEnumerator(
+    public SplitEnumerator<ModbusSplit, BaseEnumCheckpoint<ModbusSplit>> restoreEnumerator(
             SplitEnumeratorContext<ModbusSplit> enumContext,
-            ModbusEnumCheckpoint checkpoint) {
+            BaseEnumCheckpoint<ModbusSplit> checkpoint) {
         log.info("从检查点恢复 ModbusSplitEnumerator");
         return new ModbusSplitEnumerator(enumContext, checkpoint, modbusConfig);
     }
@@ -82,7 +83,7 @@ public class ModbusSource extends AbstractSplitSource<ModbusSplit, ModbusEnumChe
     }
 
     @Override
-    public SimpleVersionedSerializer<ModbusEnumCheckpoint> getEnumeratorCheckpointSerializer() {
+    public SimpleVersionedSerializer<BaseEnumCheckpoint<ModbusSplit>> getEnumeratorCheckpointSerializer() {
         return new DefaultCheckpointSerializer<>();
     }
 }
