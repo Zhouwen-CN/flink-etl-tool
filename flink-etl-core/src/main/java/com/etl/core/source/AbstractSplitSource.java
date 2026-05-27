@@ -8,7 +8,6 @@ import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.connector.source.Source;
 import org.apache.flink.api.connector.source.SourceReader;
 import org.apache.flink.api.connector.source.SourceReaderContext;
-import org.apache.flink.api.connector.source.SourceSplit;
 import org.apache.flink.api.connector.source.SplitEnumerator;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
@@ -20,10 +19,9 @@ import org.apache.flink.types.Row;
  * 简化 Flink FLIP-27 Source API 的实现
  *
  * @param <SplitT> 分片类型
- * @param <CheckpointT> 检查点类型
  */
-public abstract class AbstractSplitSource<SplitT extends SourceSplit, CheckpointT>
-        implements Source<Row, SplitT, CheckpointT>, ResultTypeQueryable<Row> {
+public abstract class AbstractSplitSource<SplitT extends BaseSourceSplit>
+        implements Source<Row, SplitT, BaseEnumCheckpoint<SplitT>>, ResultTypeQueryable<Row> {
 
     protected final SourceConfig config;
 
@@ -33,17 +31,19 @@ public abstract class AbstractSplitSource<SplitT extends SourceSplit, Checkpoint
 
     /**
      * 所有 source 默认的 batchSize
-     * @return 批次大小
      */
     protected int getDefaultBatchSize() {
         return 100;
     }
 
     @Override
-    public abstract SplitEnumerator<SplitT, CheckpointT> createEnumerator(SplitEnumeratorContext<SplitT> enumContext);
+    public abstract SplitEnumerator<SplitT, BaseEnumCheckpoint<SplitT>>
+            createEnumerator(SplitEnumeratorContext<SplitT> enumContext);
 
     @Override
-    public abstract SplitEnumerator<SplitT, CheckpointT> restoreEnumerator(SplitEnumeratorContext<SplitT> enumContext, CheckpointT checkpoint);
+    public abstract SplitEnumerator<SplitT, BaseEnumCheckpoint<SplitT>>
+            restoreEnumerator(SplitEnumeratorContext<SplitT> enumContext,
+                              BaseEnumCheckpoint<SplitT> checkpoint);
 
     @Override
     public abstract SourceReader<Row, SplitT> createReader(SourceReaderContext readerContext);
@@ -52,7 +52,8 @@ public abstract class AbstractSplitSource<SplitT extends SourceSplit, Checkpoint
     public abstract SimpleVersionedSerializer<SplitT> getSplitSerializer();
 
     @Override
-    public abstract SimpleVersionedSerializer<CheckpointT> getEnumeratorCheckpointSerializer();
+    public abstract SimpleVersionedSerializer<BaseEnumCheckpoint<SplitT>>
+            getEnumeratorCheckpointSerializer();
 
     /**
      * 默认从 source.schema 中获取，子类可以重写
@@ -63,8 +64,6 @@ public abstract class AbstractSplitSource<SplitT extends SourceSplit, Checkpoint
         if (schema == null) {
             throw new SchemaConfigException("schema is null");
         }
-
-        // 直接使用 EtlSchema 中的字段名和类型
         return Types.ROW_NAMED(schema.getFieldNames(), schema.getFieldTypes());
     }
 }
