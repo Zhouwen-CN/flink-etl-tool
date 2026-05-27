@@ -167,7 +167,7 @@ public class CliArgumentParser {
 
             // 简单校验解码后的内容是否像 JSON（以 { 或 [ 开头）
             String trimmedDecoded = decodedString.trim();
-            if (trimmedDecoded.startsWith("{") || trimmedDecoded.endsWith("}")) {
+            if (trimmedDecoded.startsWith("{") && trimmedDecoded.endsWith("}")) {
                 log.info("检测到 Base64 编码的配置，已解码");
                 log.debug("解码后的配置内容长度: {}", decodedString.length());
                 return decodedString;

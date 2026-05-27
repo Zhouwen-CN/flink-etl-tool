@@ -5,15 +5,14 @@ import com.etl.core.config.SourceConfig;
 import com.etl.core.source.AbstractSplitReader;
 import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseEnumCheckpoint;
-import com.etl.core.source.serde.DefaultCheckpointSerializer;
-import com.etl.core.source.serde.DefaultSplitSerializer;
+
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.Boundedness;
 import org.apache.flink.api.connector.source.SourceReader;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.api.connector.source.SplitEnumerator;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
-import org.apache.flink.core.io.SimpleVersionedSerializer;
+
 import org.apache.flink.types.Row;
 
 import java.util.function.Supplier;
@@ -62,15 +61,5 @@ public class MqttSource extends AbstractSplitSource<MqttSplit> {
         Supplier<AbstractSplitReader<Row, MqttSplit>> splitReaderSupplier =
                 MqttSplitReader::new;
         return new MqttSourceReader(splitReaderSupplier, readerContext);
-    }
-
-    @Override
-    public SimpleVersionedSerializer<MqttSplit> getSplitSerializer() {
-        return new DefaultSplitSerializer<>();
-    }
-
-    @Override
-    public SimpleVersionedSerializer<BaseEnumCheckpoint<MqttSplit>> getEnumeratorCheckpointSerializer() {
-        return new DefaultCheckpointSerializer<>();
     }
 }

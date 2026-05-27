@@ -21,7 +21,7 @@ public class BaseRecordEmitter<SplitT extends BaseSourceSplit> implements Record
         output.collect(element);
 
         OperatorIOMetricGroup ioMetricGroup = context.metricGroup().getIOMetricGroup();
-        ioMetricGroup.getNumRecordsInCounter();
+        ioMetricGroup.getNumRecordsInCounter().inc();
         ioMetricGroup.getNumBytesInCounter().inc();
     }
 }

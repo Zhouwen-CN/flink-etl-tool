@@ -3,6 +3,8 @@ package com.etl.core.source;
 import com.etl.core.config.SourceConfig;
 import com.etl.core.exception.SchemaConfigException;
 import com.etl.core.schema.EtlSchema;
+import com.etl.core.source.serde.DefaultCheckpointSerializer;
+import com.etl.core.source.serde.DefaultSplitSerializer;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.connector.source.Source;
@@ -37,23 +39,24 @@ public abstract class AbstractSplitSource<SplitT extends BaseSourceSplit>
     }
 
     @Override
-    public abstract SplitEnumerator<SplitT, BaseEnumCheckpoint<SplitT>>
-            createEnumerator(SplitEnumeratorContext<SplitT> enumContext);
+    public abstract SplitEnumerator<SplitT, BaseEnumCheckpoint<SplitT>> createEnumerator(SplitEnumeratorContext<SplitT> enumContext);
 
     @Override
-    public abstract SplitEnumerator<SplitT, BaseEnumCheckpoint<SplitT>>
-            restoreEnumerator(SplitEnumeratorContext<SplitT> enumContext,
-                              BaseEnumCheckpoint<SplitT> checkpoint);
+    public abstract SplitEnumerator<SplitT, BaseEnumCheckpoint<SplitT>> restoreEnumerator(SplitEnumeratorContext<SplitT> enumContext,
+                                                                                          BaseEnumCheckpoint<SplitT> checkpoint);
 
     @Override
     public abstract SourceReader<Row, SplitT> createReader(SourceReaderContext readerContext);
 
     @Override
-    public abstract SimpleVersionedSerializer<SplitT> getSplitSerializer();
+    public SimpleVersionedSerializer<SplitT> getSplitSerializer() {
+        return new DefaultSplitSerializer<>();
+    }
 
     @Override
-    public abstract SimpleVersionedSerializer<BaseEnumCheckpoint<SplitT>>
-            getEnumeratorCheckpointSerializer();
+    public SimpleVersionedSerializer<BaseEnumCheckpoint<SplitT>> getEnumeratorCheckpointSerializer() {
+        return new DefaultCheckpointSerializer<>();
+    }
 
     /**
      * 默认从 source.schema 中获取，子类可以重写

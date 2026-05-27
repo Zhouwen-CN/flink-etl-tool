@@ -5,8 +5,7 @@ import com.etl.core.config.SourceConfig;
 import com.etl.core.source.AbstractSplitReader;
 import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseEnumCheckpoint;
-import com.etl.core.source.serde.DefaultCheckpointSerializer;
-import com.etl.core.source.serde.DefaultSplitSerializer;
+
 import com.etl.core.utils.SqlUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -15,7 +14,7 @@ import org.apache.flink.api.connector.source.SourceReader;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.api.connector.source.SplitEnumerator;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
-import org.apache.flink.core.io.SimpleVersionedSerializer;
+
 import org.apache.flink.types.Row;
 
 import java.util.function.Supplier;
@@ -59,16 +58,6 @@ public class JdbcSource extends AbstractSplitSource<JdbcSplit> {
         log.info("创建 SourceReader");
         Supplier<AbstractSplitReader<Row, JdbcSplit>> splitReaderSupplier = JdbcSplitReader::new;
         return new JdbcSourceReader(splitReaderSupplier, readerContext);
-    }
-
-    @Override
-    public SimpleVersionedSerializer<JdbcSplit> getSplitSerializer() {
-        return new DefaultSplitSerializer<>();
-    }
-
-    @Override
-    public SimpleVersionedSerializer<BaseEnumCheckpoint<JdbcSplit>> getEnumeratorCheckpointSerializer() {
-        return new DefaultCheckpointSerializer<>();
     }
 
     @Override
