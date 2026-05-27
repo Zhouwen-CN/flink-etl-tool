@@ -3,7 +3,6 @@ package com.etl.connector.mqtt.source;
 import com.etl.core.source.AbstractSourceReader;
 import com.etl.core.source.AbstractSplitReader;
 import com.etl.core.source.BaseRecordEmitter;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.types.Row;
 
@@ -13,25 +12,12 @@ import java.util.function.Supplier;
  * MQTT Source Reader
  * 继承 AbstractSourceReader，自动处理线程模型和状态管理
  */
-@Slf4j
-public class MqttSourceReader extends AbstractSourceReader<Row, Row, MqttSplit, MqttSplitState> {
+public class MqttSourceReader extends AbstractSourceReader<Row, Row, MqttSplit> {
 
-    /**
-     * 构造函数
-     *
-     * @param splitReaderSupplier 分片读取器供应器
-     * @param context             读取器上下文
-     */
     public MqttSourceReader(
             Supplier<AbstractSplitReader<Row, MqttSplit>> splitReaderSupplier,
             SourceReaderContext context
     ) {
         super(splitReaderSupplier, new BaseRecordEmitter<>(context), context);
-    }
-
-    @Override
-    public MqttSplitState initializedState(MqttSplit split) {
-        log.debug("初始化分片状态: {}", split.splitId());
-        return new MqttSplitState(split);
     }
 }
