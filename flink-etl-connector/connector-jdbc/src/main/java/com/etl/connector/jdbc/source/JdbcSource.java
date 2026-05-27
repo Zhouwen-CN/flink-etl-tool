@@ -2,8 +2,9 @@ package com.etl.connector.jdbc.source;
 
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import com.etl.core.config.SourceConfig;
-import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.AbstractSplitReader;
+import com.etl.core.source.AbstractSplitSource;
+import com.etl.core.source.BaseEnumCheckpoint;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
 import com.etl.core.utils.SqlUtils;
@@ -24,7 +25,7 @@ import java.util.function.Supplier;
  * 支持主键范围分片读取关系型数据库
  */
 @Slf4j
-public class JdbcSource extends AbstractSplitSource<JdbcSplit, JdbcEnumCheckpoint> {
+public class JdbcSource extends AbstractSplitSource<JdbcSplit> {
 
     private final JdbcSourceConfig jdbcSourceConfig;
 
@@ -39,16 +40,16 @@ public class JdbcSource extends AbstractSplitSource<JdbcSplit, JdbcEnumCheckpoin
     }
 
     @Override
-    public SplitEnumerator<JdbcSplit, JdbcEnumCheckpoint>
+    public SplitEnumerator<JdbcSplit, BaseEnumCheckpoint<JdbcSplit>>
     createEnumerator(SplitEnumeratorContext<JdbcSplit> enumContext) {
         log.info("创建 SplitEnumerator");
         return new JdbcSplitEnumerator(enumContext, jdbcSourceConfig);
     }
 
     @Override
-    public SplitEnumerator<JdbcSplit, JdbcEnumCheckpoint>
+    public SplitEnumerator<JdbcSplit, BaseEnumCheckpoint<JdbcSplit>>
     restoreEnumerator(SplitEnumeratorContext<JdbcSplit> enumContext,
-                      JdbcEnumCheckpoint checkpoint) {
+                      BaseEnumCheckpoint<JdbcSplit> checkpoint) {
         log.info("从检查点恢复 SplitEnumerator");
         return new JdbcSplitEnumerator(enumContext, checkpoint, jdbcSourceConfig);
     }
@@ -66,7 +67,7 @@ public class JdbcSource extends AbstractSplitSource<JdbcSplit, JdbcEnumCheckpoin
     }
 
     @Override
-    public SimpleVersionedSerializer<JdbcEnumCheckpoint> getEnumeratorCheckpointSerializer() {
+    public SimpleVersionedSerializer<BaseEnumCheckpoint<JdbcSplit>> getEnumeratorCheckpointSerializer() {
         return new DefaultCheckpointSerializer<>();
     }
 

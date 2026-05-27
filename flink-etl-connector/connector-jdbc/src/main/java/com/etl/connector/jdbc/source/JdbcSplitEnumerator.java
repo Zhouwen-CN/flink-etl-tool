@@ -4,11 +4,11 @@ import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import com.etl.connector.jdbc.source.enums.SplitStrategy;
 import com.etl.connector.jdbc.source.splitter.ChunkSplitter;
 import com.etl.core.source.AbstractSplitEnumerator;
+import com.etl.core.source.BaseEnumCheckpoint;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -19,7 +19,7 @@ import java.util.List;
  * 这样可以在运行时动态获取数据范围，支持更灵活的分片策略。
  */
 @Slf4j
-public class JdbcSplitEnumerator extends AbstractSplitEnumerator<JdbcSplit, JdbcEnumCheckpoint> {
+public class JdbcSplitEnumerator extends AbstractSplitEnumerator<JdbcSplit> {
 
     private final JdbcSourceConfig jdbcSourceConfig;
 
@@ -30,7 +30,7 @@ public class JdbcSplitEnumerator extends AbstractSplitEnumerator<JdbcSplit, Jdbc
     }
 
     public JdbcSplitEnumerator(SplitEnumeratorContext<JdbcSplit> context,
-                               JdbcEnumCheckpoint checkpoint,
+                               BaseEnumCheckpoint<JdbcSplit> checkpoint,
                                JdbcSourceConfig jdbcSourceConfig) {
         super(context, checkpoint);
         this.jdbcSourceConfig = jdbcSourceConfig;
@@ -55,13 +55,6 @@ public class JdbcSplitEnumerator extends AbstractSplitEnumerator<JdbcSplit, Jdbc
         // 3. 添加到待分配列表（由父类处理分配逻辑）
         addPendingSplits(splits);
         log.info("JDBC SplitEnumerator 启动完成");
-    }
-
-    @Override
-    public JdbcEnumCheckpoint snapshotState(long checkpointId) {
-        List<JdbcSplit> pending = new ArrayList<>(pendingSplits);
-        log.info("创建检查点 {}，待处理分片数: {}", checkpointId, pending.size());
-        return new JdbcEnumCheckpoint(pending);
     }
 
     @Override
