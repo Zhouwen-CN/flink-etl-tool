@@ -1,5 +1,6 @@
 package com.etl.core.schema;
 
+import com.etl.core.constants.SchemaConstants;
 import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
@@ -11,7 +12,6 @@ import org.apache.flink.types.Row;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -23,9 +23,6 @@ import java.util.function.Function;
  * 处理 JsonNode 到 Flink Row 的转换
  */
 public class JsonToRowConverter {
-
-    private static final DateTimeFormatter DEFAULT_TIMESTAMP_FORMAT =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     // region JsonNode 转换器映射
 
@@ -43,7 +40,7 @@ public class JsonToRowConverter {
         JSON_NODE_CONVERTERS.put(Types.DOUBLE, JsonNode::asDouble);
         JSON_NODE_CONVERTERS.put(Types.BOOLEAN, JsonNode::asBoolean);
         JSON_NODE_CONVERTERS.put(Types.BIG_DEC, node -> new BigDecimal(node.asText()));
-        JSON_NODE_CONVERTERS.put(Types.LOCAL_DATE_TIME, node -> LocalDateTime.parse(node.asText(), DEFAULT_TIMESTAMP_FORMAT));
+        JSON_NODE_CONVERTERS.put(Types.LOCAL_DATE_TIME, node -> LocalDateTime.parse(node.asText(), SchemaConstants.DEFAULT_TIMESTAMP_FORMAT));
 
         // 初始化 JsonNode 数组元素转换器（处理 null 情况）
         JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.STRING, node -> node.isNull() ? null : node.asText());
@@ -52,7 +49,7 @@ public class JsonToRowConverter {
         JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.DOUBLE, node -> node.isNull() ? null : node.asDouble());
         JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.BOOLEAN, node -> node.isNull() ? null : node.asBoolean());
         JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.BIG_DEC, node -> node.isNull() ? null : new BigDecimal(node.asText()));
-        JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.LOCAL_DATE_TIME, node -> node.isNull() ? null : LocalDateTime.parse(node.asText(), DEFAULT_TIMESTAMP_FORMAT));
+        JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.LOCAL_DATE_TIME, node -> node.isNull() ? null : LocalDateTime.parse(node.asText(), SchemaConstants.DEFAULT_TIMESTAMP_FORMAT));
     }
     // endregion
 

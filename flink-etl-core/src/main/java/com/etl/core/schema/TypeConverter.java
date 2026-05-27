@@ -1,12 +1,12 @@
 package com.etl.core.schema;
 
+import com.etl.core.constants.SchemaConstants;
 import com.etl.core.exception.TypeConversionException;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,10 +29,6 @@ public class TypeConverter {
         // 私有构造函数，防止实例化
     }
 
-    private static final DateTimeFormatter DEFAULT_TIMESTAMP_FORMAT =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-
-
     /**
      * 字符串值转换器映射
      */
@@ -51,7 +47,7 @@ public class TypeConverter {
         STRING_CONVERTERS.put(Types.DOUBLE, Double::parseDouble);
         STRING_CONVERTERS.put(Types.BOOLEAN, TypeConverter::parseBoolean);
         STRING_CONVERTERS.put(Types.BIG_DEC, BigDecimal::new);
-        STRING_CONVERTERS.put(Types.LOCAL_DATE_TIME, v -> LocalDateTime.parse(v, DEFAULT_TIMESTAMP_FORMAT));
+        STRING_CONVERTERS.put(Types.LOCAL_DATE_TIME, v -> LocalDateTime.parse(v, SchemaConstants.DEFAULT_TIMESTAMP_FORMAT));
 
         // 初始化类型兼容性检查器
         TYPE_COMPATIBILITY_CHECKERS.put(Types.STRING, v -> v instanceof String);

@@ -3,12 +3,12 @@ package com.etl.connector.jdbc.source;
 import com.etl.core.schema.SqlTypeConverter;
 import com.etl.core.schema.TypeConverter;
 import com.etl.core.source.AbstractSplitReader;
-import com.etl.core.utils.IOUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
 import org.apache.flink.connector.base.source.reader.RecordsWithSplitIds;
 import org.apache.flink.types.Row;
+import org.apache.flink.util.IOUtils;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -162,9 +162,9 @@ public class JdbcSplitReader extends AbstractSplitReader<Row, JdbcSplit> {
      * 关闭当前分片的资源
      */
     private void closeCurrentSplit() {
-        IOUtil.closeQuietly(currentResultSet);
-        IOUtil.closeQuietly(currentStatement);
-        IOUtil.closeQuietly(currentConnection);
+        IOUtils.closeQuietly(currentResultSet);
+        IOUtils.closeQuietly(currentStatement);
+        IOUtils.closeQuietly(currentConnection);
 
         currentResultSet = null;
         currentStatement = null;

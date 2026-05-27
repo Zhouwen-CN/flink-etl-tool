@@ -1,5 +1,6 @@
 package com.etl.core.schema;
 
+import com.etl.core.constants.SchemaConstants;
 import com.etl.core.utils.JsonUtils;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
@@ -9,7 +10,6 @@ import org.apache.flink.types.Row;
 
 import java.lang.reflect.Array;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Set;
 
 /**
@@ -17,9 +17,6 @@ import java.util.Set;
  * 处理 Flink Row 到 JsonNode 的转换
  */
 public class RowToJsonConverter {
-
-    private static final DateTimeFormatter DEFAULT_TIMESTAMP_FORMAT =
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private RowToJsonConverter() {
         // 私有构造函数，防止实例化
@@ -78,7 +75,7 @@ public class RowToJsonConverter {
 
         // LocalDateTime 使用固定格式
         if (value instanceof LocalDateTime) {
-            String formatted = ((LocalDateTime) value).format(DEFAULT_TIMESTAMP_FORMAT);
+            String formatted = ((LocalDateTime) value).format(SchemaConstants.DEFAULT_TIMESTAMP_FORMAT);
             return mapper.getNodeFactory().textNode(formatted);
         }
 

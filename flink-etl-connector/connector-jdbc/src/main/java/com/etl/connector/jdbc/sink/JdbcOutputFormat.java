@@ -13,7 +13,7 @@ import java.sql.SQLException;
  * 管理批量刷写逻辑，双重检查（batch_size + batch_interval_ms）
  */
 @Slf4j
-public class JdbcOutputFormat {
+public class JdbcOutputFormat implements AutoCloseable {
 
     private final JdbcBatchStatementExecutor executor;
     private final Connection connection;
@@ -66,7 +66,7 @@ public class JdbcOutputFormat {
             return;
         }
 
-        for (int retry = 0; retry <= maxRetries; retry++) {
+        for (int retry = 1; retry <= maxRetries; retry++) {
             try {
                 executor.executeBatch();
                 connection.commit();
@@ -75,14 +75,17 @@ public class JdbcOutputFormat {
                 log.debug("Flush 成功: subtaskId={}", Thread.currentThread().getId());
                 break;
             } catch (SQLException e) {
+                // 回滚当前事务，确保下次重试处于干净状态
+                try {
+                    connection.rollback();
+                    log.warn("Flush 失败，已回滚事务 (retry={})", retry);
+                } catch (SQLException rollbackEx) {
+                    log.error("回滚失败", rollbackEx);
+                    e.addSuppressed(rollbackEx);
+                }
+
                 if (retry >= maxRetries) {
-                    // 重试次数用尽，回滚事务
-                    try {
-                        connection.rollback();
-                        log.warn("Flush 失败，已回滚事务");
-                    } catch (SQLException rollbackEx) {
-                        log.error("回滚失败", rollbackEx);
-                    }
+                    batchCount = 0;
                     throw new IOException("Flush failed after " + maxRetries + " retries", e);
                 }
 
@@ -97,12 +100,15 @@ public class JdbcOutputFormat {
     /**
      * 关闭资源
      */
+    @Override
     public void close() throws SQLException, IOException, InterruptedException {
-        // 提交剩余数据
-        flush();
-
-        // 关闭 Executor
-        executor.closeStatements();
+        try {
+            // 提交剩余数据
+            flush();
+        } finally {
+            // 关闭 Executor（无论 flush 是否成功）
+            executor.closeStatements();
+        }
     }
 
     private boolean isOverBatchSize() {

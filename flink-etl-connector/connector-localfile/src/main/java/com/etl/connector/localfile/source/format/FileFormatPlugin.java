@@ -3,6 +3,7 @@ package com.etl.connector.localfile.source.format;
 import com.etl.connector.localfile.source.config.LocalFileSourceConfig;
 import org.apache.flink.types.Row;
 
+import java.io.Closeable;
 import java.io.InputStream;
 import java.io.Serializable;
 
@@ -18,7 +19,7 @@ import java.io.Serializable;
  *
  * <p>字段名和类型从 source.schema 配置中获取
  */
-public interface FileFormatPlugin extends Serializable {
+public interface FileFormatPlugin extends Serializable, AutoCloseable {
 
     /**
      * 获取格式类型标识
@@ -31,7 +32,7 @@ public interface FileFormatPlugin extends Serializable {
     /**
      * 解析文件内容，返回 Row 迭代器
      *
-     * @param config 配置
+     * @param config      配置
      * @param inputStream 文件输入流
      *                    调用方负责打开，实现方负责在迭代完成后关闭
      * @return Row 迭代器

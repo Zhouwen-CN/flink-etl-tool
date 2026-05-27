@@ -3,11 +3,11 @@ package com.etl.connector.localfile.source;
 import com.etl.connector.localfile.source.config.LocalFileSourceConfig;
 import com.etl.connector.localfile.source.format.FileFormatPlugin;
 import com.etl.core.source.AbstractSplitReader;
-import com.etl.core.utils.IOUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
 import org.apache.flink.connector.base.source.reader.RecordsWithSplitIds;
 import org.apache.flink.types.Row;
+import org.apache.flink.util.IOUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,8 +35,8 @@ public class LocalFileSplitReader extends AbstractSplitReader<Row, LocalFileSpli
 
     // 当前分片读取状态
     private LocalFileSplit currentSplit;
-    private InputStream currentInputStream;
-    private Iterator<Row> currentRowIterator;
+    private Iterator<Row> rowIterator;
+    private FileFormatPlugin formatPlugin;
 
     @Override
     public RecordsWithSplitIds<Row> fetch() throws IOException {
@@ -67,19 +67,12 @@ public class LocalFileSplitReader extends AbstractSplitReader<Row, LocalFileSpli
         // 从 Split 获取配置
         currentSplit = split;
         LocalFileSourceConfig config = currentSplit.getConfig();
-        FileFormatPlugin formatPlugin = config.getFormatPlugin();
+        formatPlugin = config.getFormatPlugin();
 
-        try {
-            currentInputStream = Files.newInputStream(Paths.get(split.getFilePath()));
-
-            // 使用配置中的格式插件
-            Iterable<Row> rows = formatPlugin.parse(config, currentInputStream);
-            currentRowIterator = rows.iterator();
-
-        } catch (IOException e) {
-            closeCurrentSplit();
-            throw new IOException("打开文件失败: " + split.getFilePath(), e);
-        }
+        // 使用配置中的格式插件
+        InputStream inputStream = Files.newInputStream(Paths.get(split.getFilePath()));
+        Iterable<Row> rows = formatPlugin.parse(config, inputStream);
+        rowIterator = rows.iterator();
     }
 
     /**
@@ -88,47 +81,33 @@ public class LocalFileSplitReader extends AbstractSplitReader<Row, LocalFileSpli
     private RecordsWithSplitIds<Row> fetchRows() throws IOException {
         RecordsBySplits.Builder<Row> builder = new RecordsBySplits.Builder<>();
 
-        try {
-            int recordsInBatch = 0;
+        int recordsInBatch = 0;
+        Integer batchSize = currentSplit.getConfig().getBatchSize();
+        String splitId = currentSplit.splitId();
 
-            // 读取一批记录
-            while (currentRowIterator.hasNext() && recordsInBatch < currentSplit.getConfig().getBatchSize()) {
-                Row row = currentRowIterator.next();
-                builder.add(currentSplit.splitId(), row);
-                recordsInBatch++;
-            }
+        // 读取一批记录
+        while (rowIterator.hasNext() && recordsInBatch < batchSize) {
+            Row row = rowIterator.next();
+            builder.add(splitId, row);
+            recordsInBatch++;
+        }
 
-            // 如果没有更多记录，标记分片完成
-            if (!currentRowIterator.hasNext()) {
-                finishedSplits.add(currentSplit.splitId());
-                log.info("文件 {} 读取完成", currentSplit.getFileName());
-
-                // 关闭资源
-                closeCurrentSplit();
-            }
-
-        } catch (Exception e) {
-            closeCurrentSplit();
-            throw e;
+        // 如果没有更多记录，标记分片完成
+        if (!rowIterator.hasNext()) {
+            finishedSplits.add(splitId);
+            log.info("文件 {} 读取完成", currentSplit.getFileName());
+            this.close();
         }
 
         return builder.build();
     }
 
-    /**
-     * 关闭当前分片的资源
-     */
-    private void closeCurrentSplit() {
-        IOUtil.closeQuietly(currentInputStream);
-
-        currentInputStream = null;
-        currentRowIterator = null;
-        currentSplit = null;
-    }
-
     @Override
-    public void close() throws Exception {
-        closeCurrentSplit();
+    public void close() {
+        IOUtils.closeQuietly(formatPlugin);
+        rowIterator = null;
+        currentSplit = null;
+        formatPlugin = null;
         log.info("LocalFileSplitReader 关闭");
     }
 }

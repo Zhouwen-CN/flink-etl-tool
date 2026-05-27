@@ -1,9 +1,8 @@
 package com.etl.connector.localfile.source.format;
 
+import com.etl.connector.localfile.source.config.LocalFileSourceConfig;
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.TypeConverter;
-import com.etl.core.utils.IOUtil;
-import com.etl.connector.localfile.source.config.LocalFileSourceConfig;
 import com.google.auto.service.AutoService;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -11,6 +10,7 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
 import org.apache.flink.types.Row;
+import org.apache.flink.util.IOUtils;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -26,6 +26,8 @@ import java.util.Iterator;
 @Slf4j
 @AutoService(FileFormatPlugin.class)
 public class CsvFormatPlugin implements FileFormatPlugin {
+
+    private CSVParser parser;
 
     @Override
     public String getType() {
@@ -46,14 +48,17 @@ public class CsvFormatPlugin implements FileFormatPlugin {
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, charset));
         try {
-            CSVParser parser = csvFormat.parse(reader);
-            return new CsvRowIterable(parser, schema, reader, inputStream, skipHeader);
+            parser = csvFormat.parse(reader);
+            return new CsvRowIterable(parser, schema, skipHeader);
         } catch (IOException e) {
-            // 关闭已创建的资源
-            IOUtil.closeQuietly(reader);
-            IOUtil.closeQuietly(inputStream);
+            this.close();
             throw new RuntimeException("解析 CSV 文件失败: " + e.getMessage(), e);
         }
+    }
+
+    @Override
+    public void close() {
+        IOUtils.closeQuietly(parser);
     }
 
     /**
@@ -64,17 +69,11 @@ public class CsvFormatPlugin implements FileFormatPlugin {
 
         private final CSVParser parser;
         private final EtlSchema schema;
-        private final BufferedReader reader;
-        private final InputStream inputStream;
         private final boolean skipHeader;
-        private volatile boolean closed = false;
 
-        CsvRowIterable(CSVParser parser, EtlSchema schema, BufferedReader reader,
-                       InputStream inputStream, boolean skipHeader) {
+        CsvRowIterable(CSVParser parser, EtlSchema schema, boolean skipHeader) {
             this.parser = parser;
             this.schema = schema;
-            this.reader = reader;
-            this.inputStream = inputStream;
             this.skipHeader = skipHeader;
         }
 
@@ -86,19 +85,12 @@ public class CsvFormatPlugin implements FileFormatPlugin {
 
                 @Override
                 public boolean hasNext() {
-                    if (closed) {
-                        return false;
-                    }
                     // 跳过头部行（如果配置了 skipHeader=true）
                     if (skipHeader && !headerSkipped && csvIterator.hasNext()) {
                         csvIterator.next(); // 跳过头部
                         headerSkipped = true;
                     }
-                    boolean hasNext = csvIterator.hasNext();
-                    if (!hasNext) {
-                        closeQuietly();
-                    }
-                    return hasNext;
+                    return csvIterator.hasNext();
                 }
 
                 @Override
@@ -128,16 +120,6 @@ public class CsvFormatPlugin implements FileFormatPlugin {
                     }
 
                     return row;
-                }
-
-                private void closeQuietly() {
-                    if (closed) {
-                        return;
-                    }
-                    closed = true;
-                    IOUtil.closeQuietly(parser);
-                    IOUtil.closeQuietly(reader);
-                    IOUtil.closeQuietly(inputStream);
                 }
             };
         }

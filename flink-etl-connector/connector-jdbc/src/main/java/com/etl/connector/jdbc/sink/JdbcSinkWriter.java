@@ -5,6 +5,7 @@ import com.etl.core.sink.AbstractSinkWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.types.Row;
+import org.apache.flink.util.IOUtils;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -21,7 +22,6 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
 
     private final transient Connection connection;
     private transient JdbcOutputFormat outputFormat;
-    private String[] columns;
 
     public JdbcSinkWriter(Sink.InitContext context, JdbcSinkConfig config) throws IOException {
         super(context, config);
@@ -47,9 +47,7 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
         try {
             // 首次写入时缓存列名
             if (outputFormat == null) {
-                if(columns == null){
-                    columns = row.getFieldNames(true).toArray(new String[0]);
-                }
+                String[] columns = row.getFieldNames(true).toArray(new String[0]);
                 log.debug("JDBC Sink 写入字段: {}", Arrays.toString(columns));
 
                 // 延迟创建 OutputFormat（等 columns 确定后再 build）
@@ -71,23 +69,9 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
     }
 
     @Override
-    public void close() throws IOException {
-        try {
-            // 提交剩余数据并关闭 OutputFormat
-            if (outputFormat != null) {
-                outputFormat.close();
-            }
-
-            // 关闭数据库连接
-            if (connection != null) {
-                connection.close();
-            }
-            log.info("JDBC Sink 资源清理完成, subtaskId={}", context.getSubtaskId());
-        } catch (SQLException e) {
-            throw new IOException("Failed to cleanup JDBC resources", e);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IOException("Interrupted while closing", e);
-        }
+    public void close() {
+        IOUtils.closeQuietly(outputFormat);
+        IOUtils.closeQuietly(connection);
+        log.info("JDBC Sink 资源清理完成, subtaskId={}", context.getSubtaskId());
     }
 }

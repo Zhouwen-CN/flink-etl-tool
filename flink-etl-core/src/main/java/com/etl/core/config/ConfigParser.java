@@ -77,6 +77,14 @@ public class ConfigParser {
                 if (transform.getType() == null || transform.getType().isEmpty()) {
                     throw new IllegalArgumentException("缺少 transforms[" + i + "].type 配置");
                 }
+                // 因为只有 sql transform，inputTable 其实在sql中，所以不需要检验
+                /*if (transform.getInputTable() == null || transform.getInputTable().isEmpty()) {
+                    throw new IllegalArgumentException("缺少 transforms[" + i + "].inputTable 配置");
+                }
+                if (!outputTables.contains(transform.getInputTable())) {
+                    throw new IllegalArgumentException("transforms[" + i + "].inputTable '"
+                            + transform.getInputTable() + "' 未在上游 outputTable 中定义");
+                }*/
                 if (transform.getOutputTable() == null || transform.getOutputTable().isEmpty()) {
                     throw new IllegalArgumentException("缺少 transforms[" + i + "].outputTable 配置");
                 }

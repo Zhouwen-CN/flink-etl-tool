@@ -31,8 +31,16 @@ public class SimpleBufferedExecutor implements JdbcBatchStatementExecutor {
 
     @Override
     public void addToBatch(Row record) throws SQLException {
-        for (int i = 0; i < columns.length; i++) {
-            statement.setObject(i + 1, record.getField(columns[i]));
+        try {
+            // 优先尝试 name-based 访问（兼容 Row.withNames() 创建的命名 Row）
+            for (int i = 0; i < columns.length; i++) {
+                statement.setObject(i + 1, record.getField(columns[i]));
+            }
+        } catch (IllegalArgumentException e) {
+            // 回退到 position-based 访问（兼容 Row.of() 创建的位置 Row），测试类
+            for (int i = 0; i < columns.length; i++) {
+                statement.setObject(i + 1, record.getField(i));
+            }
         }
         statement.addBatch();
     }

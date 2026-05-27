@@ -142,7 +142,6 @@ public class MqttSplitReader extends AbstractSplitReader<Row, MqttSplit> {
     public void close() throws Exception {
         if (mqttClient != null && mqttClient.isConnected()) {
             try {
-                mqttClient.unsubscribe(currentSplit.getConfig().getTopic());
                 mqttClient.disconnect();
                 mqttClient.close();
                 log.info("MQTT 客户端已关闭");

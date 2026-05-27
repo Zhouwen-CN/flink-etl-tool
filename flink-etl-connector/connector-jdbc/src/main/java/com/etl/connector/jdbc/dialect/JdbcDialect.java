@@ -95,6 +95,7 @@ public interface JdbcDialect extends Serializable {
 
     /**
      * 构建日期范围查询 SQL（开区间）
+     * 默认实现使用字符串字面量拼接，Oracle 等需要特殊日期函数的方言应覆盖此方法
      *
      * @param baseQuery 基础查询（SELECT * FROM table）
      * @param columnName 列名（已转义）
@@ -102,6 +103,17 @@ public interface JdbcDialect extends Serializable {
      * @param endDate 结束日期（null 表示最后一个分片）
      * @return 完整查询 SQL（使用 >= AND < 开区间）
      */
-    String buildDateRangeQuery(String baseQuery, String columnName,
-                                String startDate, String endDate);
+    default String buildDateRangeQuery(String baseQuery, String columnName,
+                                String startDate, String endDate) {
+        if (startDate == null && endDate == null) {
+            return baseQuery;
+        } else if (startDate == null) {
+            return String.format("%s WHERE %s < '%s'", baseQuery, columnName, endDate);
+        } else if (endDate == null) {
+            return String.format("%s WHERE %s >= '%s'", baseQuery, columnName, startDate);
+        } else {
+            return String.format("%s WHERE %s >= '%s' AND %s < '%s'",
+                baseQuery, columnName, startDate, columnName, endDate);
+        }
+    }
 }
