@@ -3,6 +3,7 @@ package com.etl.connector.localfile.source;
 import com.etl.connector.localfile.source.config.LocalFileSourceConfig;
 import com.etl.connector.localfile.source.format.FileFormatPlugin;
 import com.etl.core.source.AbstractSplitReader;
+import com.etl.core.utils.IOUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
 import org.apache.flink.connector.base.source.reader.RecordsWithSplitIds;
@@ -118,13 +119,7 @@ public class LocalFileSplitReader extends AbstractSplitReader<Row, LocalFileSpli
      * 关闭当前分片的资源
      */
     private void closeCurrentSplit() {
-        if (currentInputStream != null) {
-            try {
-                currentInputStream.close();
-            } catch (Exception e) {
-                log.warn("关闭输入流失败", e);
-            }
-        }
+        IOUtil.closeQuietly(currentInputStream);
 
         currentInputStream = null;
         currentRowIterator = null;

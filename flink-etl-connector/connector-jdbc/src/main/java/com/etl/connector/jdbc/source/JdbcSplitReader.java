@@ -3,6 +3,7 @@ package com.etl.connector.jdbc.source;
 import com.etl.core.schema.SqlTypeConverter;
 import com.etl.core.schema.TypeConverter;
 import com.etl.core.source.AbstractSplitReader;
+import com.etl.core.utils.IOUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
@@ -161,9 +162,9 @@ public class JdbcSplitReader extends AbstractSplitReader<Row, JdbcSplit> {
      * 关闭当前分片的资源
      */
     private void closeCurrentSplit() {
-        closeQuietly(currentResultSet, "ResultSet");
-        closeQuietly(currentStatement, "Statement");
-        closeQuietly(currentConnection, "Connection");
+        IOUtil.closeQuietly(currentResultSet);
+        IOUtil.closeQuietly(currentStatement);
+        IOUtil.closeQuietly(currentConnection);
 
         currentResultSet = null;
         currentStatement = null;
@@ -172,19 +173,6 @@ public class JdbcSplitReader extends AbstractSplitReader<Row, JdbcSplit> {
         hasNextRecord = false;
         columnNames = null;
         flinkTypes = null;
-    }
-
-    /**
-     * 安静地关闭资源（忽略异常）
-     */
-    private void closeQuietly(AutoCloseable resource, String resourceName) {
-        if (resource != null) {
-            try {
-                resource.close();
-            } catch (Exception e) {
-                log.warn("关闭 {} 失败", resourceName, e);
-            }
-        }
     }
 
     @Override

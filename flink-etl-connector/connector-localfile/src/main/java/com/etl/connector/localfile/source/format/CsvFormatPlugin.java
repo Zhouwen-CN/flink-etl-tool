@@ -2,6 +2,7 @@ package com.etl.connector.localfile.source.format;
 
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.TypeConverter;
+import com.etl.core.utils.IOUtil;
 import com.etl.connector.localfile.source.config.LocalFileSourceConfig;
 import com.google.auto.service.AutoService;
 import lombok.NonNull;
@@ -49,22 +50,9 @@ public class CsvFormatPlugin implements FileFormatPlugin {
             return new CsvRowIterable(parser, schema, reader, inputStream, skipHeader);
         } catch (IOException e) {
             // 关闭已创建的资源
-            closeQuietly(reader);
-            closeQuietly(inputStream);
+            IOUtil.closeQuietly(reader);
+            IOUtil.closeQuietly(inputStream);
             throw new RuntimeException("解析 CSV 文件失败: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * 安静地关闭资源
-     */
-    private void closeQuietly(AutoCloseable resource) {
-        if (resource != null) {
-            try {
-                resource.close();
-            } catch (Exception e) {
-                // 忽略关闭异常
-            }
         }
     }
 
@@ -147,21 +135,9 @@ public class CsvFormatPlugin implements FileFormatPlugin {
                         return;
                     }
                     closed = true;
-                    try {
-                        parser.close();
-                    } catch (Exception e) {
-                        log.warn("关闭 CSV 解析器失败", e);
-                    }
-                    try {
-                        reader.close();
-                    } catch (Exception e) {
-                        log.warn("关闭 BufferedReader 失败", e);
-                    }
-                    try {
-                        inputStream.close();
-                    } catch (Exception e) {
-                        log.warn("关闭输入流失败", e);
-                    }
+                    IOUtil.closeQuietly(parser);
+                    IOUtil.closeQuietly(reader);
+                    IOUtil.closeQuietly(inputStream);
                 }
             };
         }
