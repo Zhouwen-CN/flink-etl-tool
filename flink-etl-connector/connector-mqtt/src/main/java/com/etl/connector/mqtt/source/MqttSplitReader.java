@@ -186,13 +186,11 @@ public class MqttSplitReader extends AbstractSplitReader<Row, MqttSplit> {
                 // 转换为 Row
                 List<Row> rows = JsonToRowConverter.convertJsonToRows(jsonNode, schema);
                 for (Row row : rows) {
-                    // 射入队列
-                    messageQueue.put(row);
+                    if (!messageQueue.offer(row)) {
+                        log.warn("消息队列已满，丢弃消息");
+                    }
                 }
 
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                log.warn("消息入队被中断");
             } catch (Exception e) {
                 log.error("处理 MQTT 消息失败: {}", e.getMessage(), e);
             }

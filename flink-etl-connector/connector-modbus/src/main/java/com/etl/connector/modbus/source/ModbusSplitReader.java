@@ -98,6 +98,10 @@ public class ModbusSplitReader extends AbstractSplitReader<Row, ModbusSplit> {
             }
 
             short[] data = ((ReadHoldingRegistersResponse) response).getShortData();
+            if (data == null || data.length < count) {
+                throw new IOException(String.format("Modbus 响应数据不足: 期望 %d 个寄存器, 实际 %s",
+                        count, data == null ? "null" : data.length));
+            }
             for (int i = 0; i < count; i++) {
                 int registerAddress = HOLDING_REGISTER_OFFSET + address + i;
                 Row row = Row.withPositions(RowKind.INSERT, 2);
