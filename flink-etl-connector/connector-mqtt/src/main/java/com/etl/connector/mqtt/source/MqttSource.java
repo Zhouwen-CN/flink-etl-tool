@@ -2,8 +2,9 @@ package com.etl.connector.mqtt.source;
 
 import com.etl.connector.mqtt.source.config.MqttSourceConfig;
 import com.etl.core.config.SourceConfig;
-import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.AbstractSplitReader;
+import com.etl.core.source.AbstractSplitSource;
+import com.etl.core.source.BaseEnumCheckpoint;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +23,7 @@ import java.util.function.Supplier;
  * 使用 Paho 客户端订阅 MQTT topic，消费 JSON 消息
  */
 @Slf4j
-public class MqttSource extends AbstractSplitSource<MqttSplit, MqttEnumCheckpoint> {
+public class MqttSource extends AbstractSplitSource<MqttSplit> {
 
     private final MqttSourceConfig mqttSourceConfig;
 
@@ -41,16 +42,16 @@ public class MqttSource extends AbstractSplitSource<MqttSplit, MqttEnumCheckpoin
     }
 
     @Override
-    public SplitEnumerator<MqttSplit, MqttEnumCheckpoint> createEnumerator(
+    public SplitEnumerator<MqttSplit, BaseEnumCheckpoint<MqttSplit>> createEnumerator(
             SplitEnumeratorContext<MqttSplit> enumContext) {
         log.info("创建 SplitEnumerator");
         return new MqttSplitEnumerator(enumContext, mqttSourceConfig);
     }
 
     @Override
-    public SplitEnumerator<MqttSplit, MqttEnumCheckpoint> restoreEnumerator(
+    public SplitEnumerator<MqttSplit, BaseEnumCheckpoint<MqttSplit>> restoreEnumerator(
             SplitEnumeratorContext<MqttSplit> enumContext,
-            MqttEnumCheckpoint checkpoint) {
+            BaseEnumCheckpoint<MqttSplit> checkpoint) {
         log.info("从检查点恢复 SplitEnumerator");
         return new MqttSplitEnumerator(enumContext, checkpoint, mqttSourceConfig);
     }
@@ -69,7 +70,7 @@ public class MqttSource extends AbstractSplitSource<MqttSplit, MqttEnumCheckpoin
     }
 
     @Override
-    public SimpleVersionedSerializer<MqttEnumCheckpoint> getEnumeratorCheckpointSerializer() {
+    public SimpleVersionedSerializer<BaseEnumCheckpoint<MqttSplit>> getEnumeratorCheckpointSerializer() {
         return new DefaultCheckpointSerializer<>();
     }
 }
