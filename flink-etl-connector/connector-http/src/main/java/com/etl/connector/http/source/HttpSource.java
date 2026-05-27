@@ -2,8 +2,9 @@ package com.etl.connector.http.source;
 
 import com.etl.connector.http.source.config.HttpSourceConfig;
 import com.etl.core.config.SourceConfig;
-import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.AbstractSplitReader;
+import com.etl.core.source.AbstractSplitSource;
+import com.etl.core.source.BaseEnumCheckpoint;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +23,7 @@ import java.util.function.Supplier;
  * 支持 GET/POST 请求获取 JSON 数据
  */
 @Slf4j
-public class HttpSource extends AbstractSplitSource<HttpSplit, HttpEnumCheckpoint> {
+public class HttpSource extends AbstractSplitSource<HttpSplit> {
 
     private final HttpSourceConfig httpSourceConfig;
 
@@ -37,16 +38,16 @@ public class HttpSource extends AbstractSplitSource<HttpSplit, HttpEnumCheckpoin
     }
 
     @Override
-    public SplitEnumerator<HttpSplit, HttpEnumCheckpoint> createEnumerator(
+    public SplitEnumerator<HttpSplit, BaseEnumCheckpoint<HttpSplit>> createEnumerator(
             SplitEnumeratorContext<HttpSplit> enumContext) {
         log.info("创建 SplitEnumerator");
         return new HttpSplitEnumerator(enumContext, httpSourceConfig);
     }
 
     @Override
-    public SplitEnumerator<HttpSplit, HttpEnumCheckpoint> restoreEnumerator(
+    public SplitEnumerator<HttpSplit, BaseEnumCheckpoint<HttpSplit>> restoreEnumerator(
             SplitEnumeratorContext<HttpSplit> enumContext,
-            HttpEnumCheckpoint checkpoint) {
+            BaseEnumCheckpoint<HttpSplit> checkpoint) {
         log.info("从检查点恢复 SplitEnumerator");
         return new HttpSplitEnumerator(enumContext, checkpoint, httpSourceConfig);
     }
@@ -64,7 +65,7 @@ public class HttpSource extends AbstractSplitSource<HttpSplit, HttpEnumCheckpoin
     }
 
     @Override
-    public SimpleVersionedSerializer<HttpEnumCheckpoint> getEnumeratorCheckpointSerializer() {
+    public SimpleVersionedSerializer<BaseEnumCheckpoint<HttpSplit>> getEnumeratorCheckpointSerializer() {
         return new DefaultCheckpointSerializer<>();
     }
 }
