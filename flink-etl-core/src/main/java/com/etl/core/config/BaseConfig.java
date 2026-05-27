@@ -173,6 +173,16 @@ public abstract class BaseConfig implements Serializable {
     }
 
     /**
+     * 获取配置值
+     *
+     * @param key 配置键
+     * @return 配置值
+     */
+    public Object getObject(String key) {
+        return config != null ? config.get(key) : null;
+    }
+
+    /**
      * 获取映射类型的配置值
      *
      * @param key 配置键

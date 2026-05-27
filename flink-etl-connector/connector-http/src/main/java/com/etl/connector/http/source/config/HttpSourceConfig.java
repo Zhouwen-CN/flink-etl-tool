@@ -21,19 +21,33 @@ import java.util.Map;
 public class HttpSourceConfig implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    /** 请求 URL */
+    /**
+     * 请求 URL
+     */
     private final String url;
-    /** HTTP 方法，GET 或 POST */
+    /**
+     * HTTP 方法，GET 或 POST
+     */
     private final String method;
-    /** 请求头 */
+    /**
+     * 请求头
+     */
     private final Map<String, Object> headers;
-    /** 查询参数 */
+    /**
+     * 查询参数
+     */
     private final Map<String, Object> params;
-    /** 请求体（JSON 对象序列化后的字符串） */
+    /**
+     * 请求体（JSON 对象序列化后的字符串）
+     */
     private final String body;
-    /** JSONPath 表达式，提取数据 */
+    /**
+     * JSONPath 表达式，提取数据
+     */
     private final String dataPath;
-    /** Schema 定义 */
+    /**
+     * Schema 定义
+     */
     private final EtlSchema schema;
 
     public static HttpSourceConfig fromSourceConfig(SourceConfig config) {
@@ -54,9 +68,15 @@ public class HttpSourceConfig implements Serializable {
 
         // 请求体（可选）
         String body = null;
-        Map<String, Object> bodyMap = config.getMap("body");
-        if (bodyMap != null) {
-            body = JsonUtils.writeValueAsString(bodyMap);
+        Object object = config.getObject("body");
+        if (object != null) {
+            if (object instanceof String) {
+                body = (String) object;
+            } else if (object instanceof Map) {
+                body = JsonUtils.writeValueAsString(object);
+            } else {
+                throw new IllegalArgumentException("Body of type " + object.getClass().getName() + " is not supported");
+            }
         }
 
         // JSONPath（可选）
