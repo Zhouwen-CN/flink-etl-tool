@@ -2,20 +2,17 @@ package com.etl.connector.mqtt.source;
 
 import com.etl.connector.mqtt.source.config.MqttSourceConfig;
 import com.etl.core.config.SourceConfig;
-import com.etl.core.source.AbstractSplitReader;
 import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseEnumCheckpoint;
-
+import com.etl.core.source.BaseRecordEmitter;
+import com.etl.core.source.BaseSourceReader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.Boundedness;
 import org.apache.flink.api.connector.source.SourceReader;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.api.connector.source.SplitEnumerator;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
-
 import org.apache.flink.types.Row;
-
-import java.util.function.Supplier;
 
 /**
  * MQTT Source 实现
@@ -57,9 +54,6 @@ public class MqttSource extends AbstractSplitSource<MqttSplit> {
 
     @Override
     public SourceReader<Row, MqttSplit> createReader(SourceReaderContext readerContext) {
-        log.info("创建 SourceReader");
-        Supplier<AbstractSplitReader<Row, MqttSplit>> splitReaderSupplier =
-                MqttSplitReader::new;
-        return new MqttSourceReader(splitReaderSupplier, readerContext);
+        return new BaseSourceReader<>(MqttSplitReader::new, new BaseRecordEmitter<>(readerContext), readerContext);
     }
 }

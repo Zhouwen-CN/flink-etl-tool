@@ -2,10 +2,10 @@ package com.etl.connector.jdbc.source;
 
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import com.etl.core.config.SourceConfig;
-import com.etl.core.source.AbstractSplitReader;
 import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseEnumCheckpoint;
-
+import com.etl.core.source.BaseRecordEmitter;
+import com.etl.core.source.BaseSourceReader;
 import com.etl.core.utils.SqlUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -14,10 +14,7 @@ import org.apache.flink.api.connector.source.SourceReader;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.api.connector.source.SplitEnumerator;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
-
 import org.apache.flink.types.Row;
-
-import java.util.function.Supplier;
 
 /**
  * JDBC Source 实现
@@ -55,9 +52,7 @@ public class JdbcSource extends AbstractSplitSource<JdbcSplit> {
 
     @Override
     public SourceReader<Row, JdbcSplit> createReader(SourceReaderContext readerContext) {
-        log.info("创建 SourceReader");
-        Supplier<AbstractSplitReader<Row, JdbcSplit>> splitReaderSupplier = JdbcSplitReader::new;
-        return new JdbcSourceReader(splitReaderSupplier, readerContext);
+        return new BaseSourceReader<>(JdbcSplitReader::new, new BaseRecordEmitter<>(readerContext), readerContext);
     }
 
     @Override

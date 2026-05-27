@@ -34,7 +34,6 @@ public class JdbcSplitEnumerator extends AbstractSplitEnumerator<JdbcSplit> {
                                JdbcSourceConfig jdbcSourceConfig) {
         super(context, checkpoint);
         this.jdbcSourceConfig = jdbcSourceConfig;
-        log.debug("JDBC SplitEnumerator 从检查点恢复，待处理分片数: {}", getPendingSplitCount());
     }
 
     @Override

@@ -14,7 +14,7 @@ import java.util.Queue;
  * 简化的 SplitReader 实现，子类只需关注数据读取
  *
  * <p>该类基于 Flink 的 SplitReader，提供阻塞式数据读取能力。
- * 配合 {@link AbstractSourceReader} 使用可以大大简化 SourceReader 的实现。
+ * 配合 {@link BaseSourceReader} 使用可以大大简化 SourceReader 的实现。
  *
  * <p>父类提供：
  * <ul>

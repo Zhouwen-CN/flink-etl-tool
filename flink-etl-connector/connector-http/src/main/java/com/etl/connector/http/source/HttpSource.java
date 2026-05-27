@@ -2,9 +2,10 @@ package com.etl.connector.http.source;
 
 import com.etl.connector.http.source.config.HttpSourceConfig;
 import com.etl.core.config.SourceConfig;
-import com.etl.core.source.AbstractSplitReader;
 import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseEnumCheckpoint;
+import com.etl.core.source.BaseRecordEmitter;
+import com.etl.core.source.BaseSourceReader;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.Boundedness;
@@ -14,8 +15,6 @@ import org.apache.flink.api.connector.source.SplitEnumerator;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 
 import org.apache.flink.types.Row;
-
-import java.util.function.Supplier;
 
 /**
  * HTTP Source 实现
@@ -53,8 +52,6 @@ public class HttpSource extends AbstractSplitSource<HttpSplit> {
 
     @Override
     public SourceReader<Row, HttpSplit> createReader(SourceReaderContext readerContext) {
-        log.info("创建 SourceReader");
-        Supplier<AbstractSplitReader<Row, HttpSplit>> splitReaderSupplier = HttpSplitReader::new;
-        return new HttpSourceReader(splitReaderSupplier, readerContext);
+        return new BaseSourceReader<>(HttpSplitReader::new, new BaseRecordEmitter<>(readerContext), readerContext);
     }
 }

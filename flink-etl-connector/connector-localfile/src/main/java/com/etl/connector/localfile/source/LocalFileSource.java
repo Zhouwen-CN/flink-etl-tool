@@ -2,16 +2,17 @@ package com.etl.connector.localfile.source;
 
 import com.etl.connector.localfile.source.config.LocalFileSourceConfig;
 import com.etl.core.config.SourceConfig;
-import com.etl.core.source.AbstractSplitReader;
 import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseEnumCheckpoint;
-
+import com.etl.core.source.BaseRecordEmitter;
+import com.etl.core.source.BaseSourceReader;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.flink.api.connector.source.*;
-
+import org.apache.flink.api.connector.source.Boundedness;
+import org.apache.flink.api.connector.source.SourceReader;
+import org.apache.flink.api.connector.source.SourceReaderContext;
+import org.apache.flink.api.connector.source.SplitEnumerator;
+import org.apache.flink.api.connector.source.SplitEnumeratorContext;
 import org.apache.flink.types.Row;
-
-import java.util.function.Supplier;
 
 /**
  * 本地文件 Source 实现
@@ -20,7 +21,7 @@ import java.util.function.Supplier;
  * <p>使用组件：
  * <ul>
  *   <li>{@link LocalFileSplitEnumerator} - 分片枚举器</li>
- *   <li>{@link LocalFileSourceReader} - 源阅读器</li>
+ *   <li>{@link BaseSourceReader} - 源阅读器</li>
  *   <li>默认序列化器 - 使用 JDK 原生序列化</li>
  *   <li>直接输出 Flink Row 类型</li>
  * </ul>
@@ -59,11 +60,6 @@ public class LocalFileSource extends AbstractSplitSource<LocalFileSplit> {
 
     @Override
     public SourceReader<Row, LocalFileSplit> createReader(SourceReaderContext readerContext) {
-        log.info("创建 SourceReader");
-        Supplier<AbstractSplitReader<Row, LocalFileSplit>> splitReaderSupplier = LocalFileSplitReader::new;
-        return new LocalFileSourceReader(
-                splitReaderSupplier,
-                readerContext
-        );
+        return new BaseSourceReader<>(LocalFileSplitReader::new, new BaseRecordEmitter<>(readerContext), readerContext);
     }
 }

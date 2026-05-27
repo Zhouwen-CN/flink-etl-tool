@@ -2,10 +2,10 @@ package com.etl.connector.mock.source;
 
 import com.etl.connector.mock.source.config.MockSourceConfig;
 import com.etl.core.config.SourceConfig;
-import com.etl.core.source.AbstractSplitReader;
 import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseEnumCheckpoint;
-
+import com.etl.core.source.BaseRecordEmitter;
+import com.etl.core.source.BaseSourceReader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.connector.source.Boundedness;
@@ -13,10 +13,7 @@ import org.apache.flink.api.connector.source.SourceReader;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.api.connector.source.SplitEnumerator;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
-
 import org.apache.flink.types.Row;
-
-import java.util.function.Supplier;
 
 /**
  * Mock Source 主类
@@ -64,10 +61,6 @@ public class MockSource extends AbstractSplitSource<MockSplit> {
 
     @Override
     public SourceReader<Row, MockSplit> createReader(SourceReaderContext readerContext) {
-        log.info("创建 MockSourceReader");
-
-        Supplier<AbstractSplitReader<Row, MockSplit>> splitReaderSupplier = MockSplitReader::new;
-
-        return new MockSourceReader(splitReaderSupplier, readerContext);
+        return new BaseSourceReader<>(MockSplitReader::new, new BaseRecordEmitter<>(readerContext), readerContext);
     }
 }

@@ -2,10 +2,10 @@ package com.etl.connector.modbus.source;
 
 import com.etl.connector.modbus.source.config.ModbusSourceConfig;
 import com.etl.core.config.SourceConfig;
-import com.etl.core.source.AbstractSplitReader;
 import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseEnumCheckpoint;
-
+import com.etl.core.source.BaseRecordEmitter;
+import com.etl.core.source.BaseSourceReader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -15,10 +15,7 @@ import org.apache.flink.api.connector.source.SourceReader;
 import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.api.connector.source.SplitEnumerator;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
-
 import org.apache.flink.types.Row;
-
-import java.util.function.Supplier;
 
 /**
  * Modbus Source 主类
@@ -71,8 +68,6 @@ public class ModbusSource extends AbstractSplitSource<ModbusSplit> {
 
     @Override
     public SourceReader<Row, ModbusSplit> createReader(SourceReaderContext readerContext) {
-        log.info("创建 ModbusSourceReader");
-        Supplier<AbstractSplitReader<Row, ModbusSplit>> splitReaderSupplier = ModbusSplitReader::new;
-        return new ModbusSourceReader(splitReaderSupplier, readerContext);
+        return new BaseSourceReader<>(ModbusSplitReader::new, new BaseRecordEmitter<>(readerContext), readerContext);
     }
 }

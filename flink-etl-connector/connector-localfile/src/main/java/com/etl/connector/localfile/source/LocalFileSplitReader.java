@@ -17,7 +17,7 @@ import java.util.*;
 
 /**
  * 本地文件分片读取器
- * 实现阻塞式数据读取，配合 AbstractSourceReader 使用
+ * 实现阻塞式数据读取，配合 BaseSourceReader 使用
  *
  * <p>设计说明：
  * <ul>
