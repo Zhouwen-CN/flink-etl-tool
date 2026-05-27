@@ -96,8 +96,14 @@ EtlClient.main()
 
 - `AbstractSplitSource<SplitT, CheckpointT>` — Source 基类
 - `AbstractSplitEnumerator` — 分片枚举器（自动处理分片分配和回收）
-- `AbstractSourceReader` — 源阅读器（封装线程模型和状态管理）
-- `AbstractSplitReader<SplitT>` — 分片读取器（阻塞式数据读取）
+- `AbstractSplitReader<SplitT>` — 分片读取器（阻塞式数据读取，子类实现 `fetchNextRecord()`）
+- `BaseSourceReader` — 源阅读器（基于 `SingleThreadMultiplexSourceReaderBase`，封装线程模型和状态管理，连接器直接构造实例无需子类化）
+- `BaseRecordEmitter` — 记录发射器（自动上报 metrics 指标）
+
+分片相关基础类型：
+- `BaseSourceSplit` — 分片接口（`SourceSplit` + `Serializable`）
+- `BaseSplitState<SplitT>` — 分片状态（跟踪读取进度，支持 Checkpoint 恢复）
+- `BaseEnumCheckpoint<SplitT>` — 枚举器检查点（保存待处理分片集合）
 
 所有 Source 输出 `Row` 类型，通过 `ResultTypeQueryable<Row>` 提供类型信息。
 
@@ -125,29 +131,23 @@ EtlClient.main()
 ### 扩展新 Source
 
 1. 在 `flink-etl-connector/` 下创建新模块，依赖 `flink-etl-core`
-2. 包名规范：com.etl.connector.`连接器名称`.source，比如 `com.etl.connector.jdbc.source`
-   - 配置类放在 `config/` 子包，比如 `com.etl.connector.jdbc.source.config.JdbcSourceConfig`
+2. 包名规范：com.etl.connector.`连接器名称`.source，比如 `com.etl.connector.jdbc.source`，配置类放在 `config/` 子包
 3. 实现 `SourcePlugin`，添加 `@AutoService(SourcePlugin.class)` 注解
 4. 继承 `AbstractSplitSource` 实现分片读取
    - 关系型数据库：参考 `connector-jdbc` 模块的 `JdbcSource`，分片逻辑在 Enumerator 的 `start()` 中计算
    - 文件类：参考 `connector-localfile` 模块的 `LocalFileSource`
-5. **架构规则（重要）**：
-   - **配置参数校验分离**：配置类（如 `JdbcSourceConfig`）提供静态方法 `fromSourceConfig(SourceConfig config)`
-     ，在此方法中完成所有参数校验、类型转换和推断逻辑，Source 构造函数只调用该方法
-   - **Split 包含完整数据**：Split 类必须包含 Reader 执行所需的所有信息（连接参数、配置等），Reader 不通过构造函数接收配置，而是从
-     Split 中获取
-6. 在 `flink-etl-client/pom.xml` 添加模块依赖
+5. 配置参数校验分离：配置类（如 `JdbcSourceConfig`）提供静态方法 `fromSourceConfig(SourceConfig config)`，在此方法中完成所有参数校验、类型转换和推断逻辑
+6. Split 包含完整数据：Split 类必须包含 Reader 执行所需的所有信息（连接参数、配置等）
+7. 在 `flink-etl-client/pom.xml` 添加模块依赖
 
 ### 扩展新 Sink
 
 1. 在 `flink-etl-connector/` 下创建新模块，依赖 `flink-etl-core`
-2. 包名规范：com.etl.connector.`连接器名称`.sink，比如 `com.etl.connector.jdbc.sink`
-    - 配置类放在 `config/` 子包，比如 `com.etl.connector.jdbc.sink.config.JdbcSinkConfig`
+2. 包名规范：com.etl.connector.`连接器名称`.sink，比如 `com.etl.connector.jdbc.sink`，配置类放在 `config/` 子包
 3. 实现 `SinkPlugin`，添加 `@AutoService(SinkPlugin.class)` 注解
 4. 继承 `AbstractSink`，实现 `createWriter(InitContext context)`
 5. 继承 `AbstractSinkWriter<ConfigT>` 实现 `write()`、`flush()`、`close()`
-6. 配置参数校验分离，配置类（如 `JdbcSinkConfig`）提供静态方法 `fromSinkConfig(SinkConfig config)`
-   ，在此方法中完成所有参数校验、类型转换和推断逻辑，Sink 构造函数只调用该方法
+6. 配置参数校验分离，配置类（如 `JdbcSinkConfig`）提供静态方法 `fromSinkConfig(SinkConfig config)`，在此方法中完成所有参数校验、类型转换和推断逻辑
 7. 在 `flink-etl-client/pom.xml` 添加模块依赖
 
 ### 扩展新 UDF
@@ -195,4 +195,6 @@ EtlClient.main()
 - Java 1.8
 - Apache Flink 1.15.2（Flink Table API、FLIP-27 Source API）
 - SLF4J + Log4j2
+- Lombok
+- Google AutoService（SPI 注解处理器）
 - Maven
