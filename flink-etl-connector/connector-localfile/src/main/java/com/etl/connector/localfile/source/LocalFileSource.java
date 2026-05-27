@@ -2,8 +2,9 @@ package com.etl.connector.localfile.source;
 
 import com.etl.connector.localfile.source.config.LocalFileSourceConfig;
 import com.etl.core.config.SourceConfig;
-import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.AbstractSplitReader;
+import com.etl.core.source.AbstractSplitSource;
+import com.etl.core.source.BaseEnumCheckpoint;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +29,7 @@ import java.util.function.Supplier;
  * <p>字段名和类型从 source.schema 配置中获取
  */
 @Slf4j
-public class LocalFileSource extends AbstractSplitSource<LocalFileSplit, LocalFileEnumCheckpoint> {
+public class LocalFileSource extends AbstractSplitSource<LocalFileSplit> {
 
     private final LocalFileSourceConfig localFileSourceConfig;
 
@@ -43,16 +44,16 @@ public class LocalFileSource extends AbstractSplitSource<LocalFileSplit, LocalFi
     }
 
     @Override
-    public SplitEnumerator<LocalFileSplit, LocalFileEnumCheckpoint> createEnumerator(
+    public SplitEnumerator<LocalFileSplit, BaseEnumCheckpoint<LocalFileSplit>> createEnumerator(
             SplitEnumeratorContext<LocalFileSplit> enumContext) {
         log.info("创建 SplitEnumerator");
         return new LocalFileSplitEnumerator(enumContext, localFileSourceConfig);
     }
 
     @Override
-    public SplitEnumerator<LocalFileSplit, LocalFileEnumCheckpoint> restoreEnumerator(
+    public SplitEnumerator<LocalFileSplit, BaseEnumCheckpoint<LocalFileSplit>> restoreEnumerator(
             SplitEnumeratorContext<LocalFileSplit> enumContext,
-            LocalFileEnumCheckpoint checkpoint) {
+            BaseEnumCheckpoint<LocalFileSplit> checkpoint) {
         log.info("从检查点恢复 SplitEnumerator");
         return new LocalFileSplitEnumerator(enumContext, checkpoint, localFileSourceConfig);
     }
@@ -60,11 +61,7 @@ public class LocalFileSource extends AbstractSplitSource<LocalFileSplit, LocalFi
     @Override
     public SourceReader<Row, LocalFileSplit> createReader(SourceReaderContext readerContext) {
         log.info("创建 SourceReader");
-
-        // 创建 SplitReader 供应器
         Supplier<AbstractSplitReader<Row, LocalFileSplit>> splitReaderSupplier = LocalFileSplitReader::new;
-
-        // 创建 Reader
         return new LocalFileSourceReader(
                 splitReaderSupplier,
                 readerContext
@@ -73,13 +70,11 @@ public class LocalFileSource extends AbstractSplitSource<LocalFileSplit, LocalFi
 
     @Override
     public SimpleVersionedSerializer<LocalFileSplit> getSplitSerializer() {
-        // 使用默认序列化器，基于 JDK 原生序列化
         return new DefaultSplitSerializer<>();
     }
 
     @Override
-    public SimpleVersionedSerializer<LocalFileEnumCheckpoint> getEnumeratorCheckpointSerializer() {
-        // 使用默认序列化器，基于 JDK 原生序列化
+    public SimpleVersionedSerializer<BaseEnumCheckpoint<LocalFileSplit>> getEnumeratorCheckpointSerializer() {
         return new DefaultCheckpointSerializer<>();
     }
 }
