@@ -11,18 +11,12 @@ import java.util.function.Supplier;
 /**
  * Modbus Source 阅读器
  */
-public class ModbusSourceReader
-        extends AbstractSourceReader<Row, Row, ModbusSplit, ModbusSplitState> {
+public class ModbusSourceReader extends AbstractSourceReader<Row, Row, ModbusSplit> {
 
     public ModbusSourceReader(
             Supplier<AbstractSplitReader<Row, ModbusSplit>> splitReaderSupplier,
             SourceReaderContext context
     ) {
         super(splitReaderSupplier, new BaseRecordEmitter<>(context), context);
-    }
-
-    @Override
-    public ModbusSplitState initializedState(ModbusSplit split) {
-        return new ModbusSplitState(split);
     }
 }
