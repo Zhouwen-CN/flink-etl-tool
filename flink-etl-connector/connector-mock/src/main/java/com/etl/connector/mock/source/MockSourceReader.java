@@ -12,18 +12,12 @@ import java.util.function.Supplier;
  * Mock Source 阅读器
  * 包装 MockSplitReader，处理分片状态
  */
-public class MockSourceReader
-        extends AbstractSourceReader<Row, Row, MockSplit, MockSplitState> {
+public class MockSourceReader extends AbstractSourceReader<Row, Row, MockSplit> {
 
     public MockSourceReader(
             Supplier<AbstractSplitReader<Row, MockSplit>> splitReaderSupplier,
             SourceReaderContext context
     ) {
         super(splitReaderSupplier, new BaseRecordEmitter<>(context), context);
-    }
-
-    @Override
-    public MockSplitState initializedState(MockSplit split) {
-        return new MockSplitState(split);
     }
 }
