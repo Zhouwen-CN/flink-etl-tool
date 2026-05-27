@@ -10,6 +10,7 @@ import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
 import org.apache.flink.types.Row;
 import org.apache.flink.types.RowKind;
 import org.apache.flink.util.Collector;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
 import java.io.IOException;
@@ -19,6 +20,7 @@ import java.util.List;
  * Debezium JSON 反序列化器
  * 解析 Debezium CDC JSON 结构，设置 RowKind，提取业务数据
  */
+@Slf4j
 public class DebeziumJsonDeserializationSchema implements KafkaRecordDeserializationSchema<Row> {
 
     private static final long serialVersionUID = 1L;
@@ -39,7 +41,13 @@ public class DebeziumJsonDeserializationSchema implements KafkaRecordDeserializa
         JsonNode debeziumJson = JsonUtils.readTree(record.value());
 
         // 提取操作类型
-        String op = debeziumJson.get("op").asText();
+        JsonNode opNode = debeziumJson.get("op");
+        if (opNode == null || opNode.isNull()) {
+            log.warn("Debezium 消息缺少 op 字段，跳过该记录: topic={}, partition={}, offset={}",
+                    record.topic(), record.partition(), record.offset());
+            return;
+        }
+        String op = opNode.asText();
         RowKind rowKind = mapOpToRowKind(op);
 
         // 根据操作类型提取数据源
