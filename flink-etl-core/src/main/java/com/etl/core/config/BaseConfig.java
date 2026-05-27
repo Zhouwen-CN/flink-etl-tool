@@ -3,8 +3,11 @@ package com.etl.core.config;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.val;
 
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -36,7 +39,7 @@ public abstract class BaseConfig implements Serializable {
     /**
      * 获取字符串类型的配置值，支持默认值
      *
-     * @param key 配置键
+     * @param key          配置键
      * @param defaultValue 默认值
      * @return 配置值
      */
@@ -72,7 +75,7 @@ public abstract class BaseConfig implements Serializable {
     /**
      * 获取整数类型的配置值，支持默认值
      *
-     * @param key 配置键
+     * @param key          配置键
      * @param defaultValue 默认值
      * @return 配置值
      */
@@ -82,19 +85,9 @@ public abstract class BaseConfig implements Serializable {
     }
 
     /**
-     * 获取配置值
-     *
-     * @param key 配置键
-     * @return 配置值
-     */
-    public Object get(String key) {
-        return config != null ? config.get(key) : null;
-    }
-
-    /**
      * 获取布尔类型的配置值
      *
-     * @param key 配置键
+     * @param key          配置键
      * @param defaultValue 默认值
      * @return 配置值
      */
@@ -113,7 +106,7 @@ public abstract class BaseConfig implements Serializable {
     }
 
 
-    public Long getLong(String key){
+    public Long getLong(String key) {
         if (config == null) {
             return null;
         }
@@ -137,7 +130,7 @@ public abstract class BaseConfig implements Serializable {
     /**
      * 获取长整数类型的配置值，支持默认值
      *
-     * @param key 配置键
+     * @param key          配置键
      * @param defaultValue 默认值
      * @return 配置值
      */
@@ -162,8 +155,8 @@ public abstract class BaseConfig implements Serializable {
      * @param key 配置键
      * @return 配置值列表
      */
-    @SuppressWarnings("unchecked")
     public List<String> getList(String key) {
+
         if (config == null) {
             return null;
         }
@@ -171,8 +164,10 @@ public abstract class BaseConfig implements Serializable {
         if (value == null) {
             return null;
         }
-        if (value instanceof List) {
-            return (List<String>) value;
+        if (value instanceof List<?>) {
+            val list = new ArrayList<String>();
+            ((List<?>) value).forEach(item -> list.add(String.valueOf(item)));
+            return list;
         }
         throw new IllegalArgumentException("配置项 '" + key + "' 不是列表类型");
     }
@@ -183,7 +178,6 @@ public abstract class BaseConfig implements Serializable {
      * @param key 配置键
      * @return 配置值映射
      */
-    @SuppressWarnings("unchecked")
     public Map<String, Object> getMap(String key) {
         if (config == null) {
             return null;
@@ -192,8 +186,10 @@ public abstract class BaseConfig implements Serializable {
         if (value == null) {
             return null;
         }
-        if (value instanceof Map) {
-            return (Map<String, Object>) value;
+        if (value instanceof Map<?, ?>) {
+            Map<String, Object> map = new HashMap<>();
+            ((Map<?, ?>) value).forEach((k, v) -> map.put(String.valueOf(k), v));
+            return map;
         }
         throw new IllegalArgumentException("配置项 '" + key + "' 不是映射类型");
     }

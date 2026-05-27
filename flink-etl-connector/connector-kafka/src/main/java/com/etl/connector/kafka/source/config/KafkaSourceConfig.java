@@ -10,7 +10,6 @@ import lombok.Getter;
 import org.apache.flink.connector.kafka.source.enumerator.initializer.OffsetsInitializer;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -23,21 +22,37 @@ import java.util.Properties;
 public class KafkaSourceConfig implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    /** Kafka 集群地址 */
+    /**
+     * Kafka 集群地址
+     */
     private final String bootstrapServers;
-    /** 消费者组 ID */
+    /**
+     * 消费者组 ID
+     */
     private final String groupId;
-    /** Topic 列表（与 topicPattern 二选一） */
+    /**
+     * Topic 列表（与 topicPattern 二选一）
+     */
     private final List<String> topics;
-    /** Topic 正则表达式（与 topics 二选一） */
+    /**
+     * Topic 正则表达式（与 topics 二选一）
+     */
     private final String topicPattern;
-    /** 启动模式 */
+    /**
+     * 启动模式
+     */
     private final StartupMode startupMode;
-    /** 额外的 Kafka consumer 配置 */
+    /**
+     * 额外的 Kafka consumer 配置
+     */
     private final Properties kafkaProperties;
-    /** Schema 定义 */
+    /**
+     * Schema 定义
+     */
     private final EtlSchema schema;
-    /** 消息格式：json、debezium-json 等 */
+    /**
+     * 消息格式：json、debezium-json 等
+     */
     private final KafkaFormatPlugin formatPlugin;
 
     /**
@@ -56,7 +71,7 @@ public class KafkaSourceConfig implements Serializable {
         }
 
         // 校验 topics 和 topicPattern 至少配置一个
-        List<String> topics = parseTopics(config);
+        List<String> topics = config.getList("topics");
         String topicPattern = config.getString("topicPattern");
         if ((topics == null || topics.isEmpty()) && topicPattern == null) {
             throw new IllegalArgumentException("topics 和 topicPattern 至少需要配置一个");
@@ -83,8 +98,8 @@ public class KafkaSourceConfig implements Serializable {
         if (formatPlugin == null) {
             List<String> supported = KafkaFormatLoader.supportedFormats();
             throw new IllegalArgumentException(
-                String.format("不支持的 Kafka format: '%s'，支持的格式: %s",
-                        format, supported)
+                    String.format("不支持的 Kafka format: '%s'，支持的格式: %s",
+                            format, supported)
             );
         }
 
@@ -101,6 +116,20 @@ public class KafkaSourceConfig implements Serializable {
     }
 
     /**
+     * 解析额外的 Kafka 配置属性
+     */
+    private static Properties parseKafkaProperties(SourceConfig config) {
+        Properties properties = new Properties();
+        Map<String, Object> map = config.getMap("properties");
+        map.forEach((key, value) -> {
+            if (key != null && value != null) {
+                properties.setProperty(key, value.toString());
+            }
+        });
+        return properties;
+    }
+
+    /**
      * 判断是否使用 Topic 列表模式
      */
     public boolean isTopicsMode() {
@@ -113,42 +142,5 @@ public class KafkaSourceConfig implements Serializable {
      */
     public OffsetsInitializer getOffsetsInitializer() {
         return startupMode.toOffsetsInitializer();
-    }
-
-    /**
-     * 解析 topics 列表
-     */
-    private static List<String> parseTopics(SourceConfig config) {
-        Object topicsObj = config.get("topics");
-        if (topicsObj == null) {
-            return null;
-        }
-        if (topicsObj instanceof List) {
-            List<String> result = new ArrayList<>();
-            for (Object item : (List<?>) topicsObj) {
-                if (item != null) {
-                    result.add(item.toString());
-                }
-            }
-            return result;
-        }
-        return null;
-    }
-
-    /**
-     * 解析额外的 Kafka 配置属性
-     */
-    @SuppressWarnings("unchecked")
-    private static Properties parseKafkaProperties(SourceConfig config) {
-        Properties properties = new Properties();
-        Object propsObj = config.get("properties");
-        if (propsObj instanceof Map) {
-            ((Map<String, Object>) propsObj).forEach((key, value) -> {
-                if (key != null && value != null) {
-                    properties.setProperty(key, value.toString());
-                }
-            });
-        }
-        return properties;
     }
 }

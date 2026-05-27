@@ -16,13 +16,21 @@ import java.util.Properties;
 public class KafkaSinkConfig implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    /** Kafka 集群地址 */
+    /**
+     * Kafka 集群地址
+     */
     private final String bootstrapServers;
-    /** 目标 Topic */
+    /**
+     * 目标 Topic
+     */
     private final String topic;
-    /** Key 字段名（可选） */
+    /**
+     * Key 字段名（可选）
+     */
     private final String keyField;
-    /** Kafka Producer 配置 */
+    /**
+     * Kafka Producer 配置
+     */
     private final Properties kafkaProperties;
 
     /**
@@ -57,17 +65,14 @@ public class KafkaSinkConfig implements Serializable {
     /**
      * 解析额外的 Kafka 配置属性
      */
-    @SuppressWarnings("unchecked")
     private static Properties parseKafkaProperties(SinkConfig config) {
         Properties properties = new Properties();
-        Object propsObj = config.get("properties");
-        if (propsObj instanceof Map) {
-            ((Map<String, Object>) propsObj).forEach((key, value) -> {
-                if (key != null && value != null) {
-                    properties.setProperty(key, value.toString());
-                }
-            });
-        }
+        Map<String, Object> map = config.getMap("properties");
+        map.forEach((key, value) -> {
+            if (key != null && value != null) {
+                properties.setProperty(key, value.toString());
+            }
+        });
         return properties;
     }
 }

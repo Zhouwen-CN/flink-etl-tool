@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+import java.util.Map;
+
 /**
  * Source 配置类
  * 定义数据源的基本配置
@@ -26,7 +28,7 @@ public class SourceConfig extends BaseConfig {
      * @return EtlSchema 对象，如果未配置则返回 null
      */
     public EtlSchema getSchema() {
-        Object schemaConfig = get("schema");
+        Map<String,Object> schemaConfig = getMap("schema");
         if (schemaConfig == null) {
             return null;
         }

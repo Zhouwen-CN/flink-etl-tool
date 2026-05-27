@@ -28,30 +28,14 @@ import java.util.Map;
  */
 public class SchemaParser {
 
-    @SuppressWarnings("unchecked")
-    public static EtlSchema parse(Object schemaConfig) {
-        if (schemaConfig == null) {
-            return null;
-        }
-
-        if (!(schemaConfig instanceof Map)) {
-            throw new SchemaConfigException("schema 必须是对象格式 {fieldName: fieldType}");
-        }
-
-        return parseObjectFormat((Map<String, Object>) schemaConfig);
-    }
-
-    /**
-     * 解析对象格式：{ "fieldName": "TYPE" | { ... } | [...] }
-     */
-    private static EtlSchema parseObjectFormat(Map<String, Object> schemaConfig) {
+    public static EtlSchema parse(Map<String,Object> schemaConfig) {
         List<String> names = new ArrayList<>();
         List<TypeInformation<?>> types = new ArrayList<>();
 
         // 保持字段顺序
         Map<String, Object> orderedConfig = schemaConfig instanceof LinkedHashMap
-            ? schemaConfig
-            : new LinkedHashMap<>(schemaConfig);
+                ? schemaConfig
+                : new LinkedHashMap<>(schemaConfig);
 
         for (Map.Entry<String, Object> entry : orderedConfig.entrySet()) {
             String fieldName = entry.getKey();
@@ -63,8 +47,8 @@ public class SchemaParser {
         }
 
         return new EtlSchema(
-            names.toArray(new String[0]),
-            types.toArray(new TypeInformation<?>[0])
+                names.toArray(new String[0]),
+                types.toArray(new TypeInformation<?>[0])
         );
     }
 
