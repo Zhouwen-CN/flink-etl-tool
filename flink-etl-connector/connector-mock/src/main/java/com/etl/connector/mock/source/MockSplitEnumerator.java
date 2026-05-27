@@ -1,20 +1,17 @@
 package com.etl.connector.mock.source;
 
-import com.etl.core.source.AbstractSplitEnumerator;
 import com.etl.connector.mock.source.config.MockSourceConfig;
+import com.etl.core.source.AbstractSplitEnumerator;
+import com.etl.core.source.BaseEnumCheckpoint;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SplitEnumeratorContext;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Mock Source 分片枚举器
  * 在 start() 时创建单个 MockSplit 并分配到队列
  */
 @Slf4j
-public class MockSplitEnumerator
-        extends AbstractSplitEnumerator<MockSplit, MockEnumCheckpoint> {
+public class MockSplitEnumerator extends AbstractSplitEnumerator<MockSplit> {
 
     private final MockSourceConfig mockConfig;
 
@@ -27,7 +24,7 @@ public class MockSplitEnumerator
 
     public MockSplitEnumerator(
             SplitEnumeratorContext<MockSplit> context,
-            MockEnumCheckpoint checkpoint,
+            BaseEnumCheckpoint<MockSplit> checkpoint,
             MockSourceConfig mockConfig) {
         super(context, checkpoint);
         this.mockConfig = mockConfig;
@@ -35,19 +32,9 @@ public class MockSplitEnumerator
 
     @Override
     public void start() {
-        // 创建固定的单分片
         MockSplit split = new MockSplit(mockConfig);
-
-        // 添加到待分配队列
         pendingSplits.add(split);
-
         log.info("Mock Source 创建单分片: {}", split.splitId());
-    }
-
-    @Override
-    public MockEnumCheckpoint snapshotState(long checkpointId) {
-        List<MockSplit> pending = new ArrayList<>(pendingSplits);
-        return new MockEnumCheckpoint(pending);
     }
 
     @Override

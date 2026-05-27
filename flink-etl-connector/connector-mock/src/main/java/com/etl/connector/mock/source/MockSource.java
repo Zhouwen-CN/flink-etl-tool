@@ -1,11 +1,12 @@
 package com.etl.connector.mock.source;
 
+import com.etl.connector.mock.source.config.MockSourceConfig;
 import com.etl.core.config.SourceConfig;
-import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.AbstractSplitReader;
+import com.etl.core.source.AbstractSplitSource;
+import com.etl.core.source.BaseEnumCheckpoint;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
-import com.etl.connector.mock.source.config.MockSourceConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.api.connector.source.Boundedness;
@@ -28,7 +29,7 @@ import java.util.function.Supplier;
  * </ul>
  */
 @Slf4j
-public class MockSource extends AbstractSplitSource<MockSplit, MockEnumCheckpoint> {
+public class MockSource extends AbstractSplitSource<MockSplit> {
 
     private final MockSourceConfig mockConfig;
     private final boolean bounded;
@@ -48,16 +49,16 @@ public class MockSource extends AbstractSplitSource<MockSplit, MockEnumCheckpoin
     }
 
     @Override
-    public SplitEnumerator<MockSplit, MockEnumCheckpoint> createEnumerator(
+    public SplitEnumerator<MockSplit, BaseEnumCheckpoint<MockSplit>> createEnumerator(
             SplitEnumeratorContext<MockSplit> enumContext) {
         log.info("创建 MockSplitEnumerator");
         return new MockSplitEnumerator(enumContext, mockConfig);
     }
 
     @Override
-    public SplitEnumerator<MockSplit, MockEnumCheckpoint> restoreEnumerator(
+    public SplitEnumerator<MockSplit, BaseEnumCheckpoint<MockSplit>> restoreEnumerator(
             SplitEnumeratorContext<MockSplit> enumContext,
-            MockEnumCheckpoint checkpoint) {
+            BaseEnumCheckpoint<MockSplit> checkpoint) {
         log.info("从检查点恢复 MockSplitEnumerator");
         return new MockSplitEnumerator(enumContext, checkpoint, mockConfig);
     }
@@ -77,7 +78,7 @@ public class MockSource extends AbstractSplitSource<MockSplit, MockEnumCheckpoin
     }
 
     @Override
-    public SimpleVersionedSerializer<MockEnumCheckpoint> getEnumeratorCheckpointSerializer() {
+    public SimpleVersionedSerializer<BaseEnumCheckpoint<MockSplit>> getEnumeratorCheckpointSerializer() {
         return new DefaultCheckpointSerializer<>();
     }
 }
