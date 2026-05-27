@@ -14,7 +14,7 @@
         "topics": [
           "test-topic"
         ],
-        "startingOffsets": "earliest",
+        "startupMode": "earliest",
         "schema": {
           "id": "LONG",
           "name": "STRING",

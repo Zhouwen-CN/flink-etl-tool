@@ -12,7 +12,7 @@
         "bootstrapServers": "127.0.0.1:9092",
         "groupId": "flink-etl-tool",
         "topicPattern": "test-.*",
-        "startingOffsets": "earliest",
+        "startupMode": "earliest",
         "schema": {
           "id": "LONG",
           "name": "STRING",

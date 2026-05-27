@@ -31,7 +31,7 @@ public class DefaultCheckpointSerializer<SplitT extends BaseSourceSplit>
     @Override
     @SuppressWarnings("unchecked")
     public BaseEnumCheckpoint<SplitT> deserialize(int version, byte[] serialized) throws IOException {
-        if (version != VERSION) {
+        if (version > VERSION) {
             throw new IOException("无法读取未来版本的数据，当前版本: " + VERSION + "，数据版本: " + version);
         }
         return (BaseEnumCheckpoint<SplitT>) SerializerUtils.deserialize(serialized);

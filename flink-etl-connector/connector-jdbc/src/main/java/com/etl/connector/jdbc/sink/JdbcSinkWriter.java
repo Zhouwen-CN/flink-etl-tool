@@ -21,6 +21,7 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
 
     private final transient Connection connection;
     private transient JdbcOutputFormat outputFormat;
+    private String[] columns;
 
     public JdbcSinkWriter(Sink.InitContext context, JdbcSinkConfig config) throws IOException {
         super(context, config);
@@ -46,8 +47,9 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
         try {
             // 首次写入时缓存列名
             if (outputFormat == null) {
-                String[] columns = row.getFieldNames(true).toArray(new String[0]);
-
+                if(columns == null){
+                    columns = row.getFieldNames(true).toArray(new String[0]);
+                }
                 log.debug("JDBC Sink 写入字段: {}", Arrays.toString(columns));
 
                 // 延迟创建 OutputFormat（等 columns 确定后再 build）
