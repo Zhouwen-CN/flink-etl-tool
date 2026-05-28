@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.text.StrSubstitutor;
 import org.apache.flink.api.java.utils.ParameterTool;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -97,12 +96,8 @@ public class CliArgumentParser {
         }
 
         Path path = Paths.get(filePath);
-        if (!Files.exists(path)) {
-            throw new IllegalArgumentException("配置文件不存在: " + filePath);
-        }
-
-        if (!new File(filePath).isFile()) {
-            throw new IllegalArgumentException("路径不是文件: " + filePath);
+        if (!Files.isRegularFile(path)) {
+            throw new IllegalArgumentException("文件不存在: " + filePath);
         }
 
         log.info("从文件加载配置: {}", filePath);

@@ -75,7 +75,7 @@ public abstract class ChunkSplitter {
         if (table != null) {
             return "SELECT * FROM " + dialect.quoteIdentifier(table);
         } else {
-            return "SELECT * FROM (" + sql + ") AS t";
+            return "SELECT * FROM (" + sql + ") t";
         }
     }
 }

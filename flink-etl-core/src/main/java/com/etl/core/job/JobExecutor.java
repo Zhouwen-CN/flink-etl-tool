@@ -61,7 +61,7 @@ public class JobExecutor {
         Integer parallelism = jobConfig.getParallelism();
         if (parallelism != null) {
             configuration.set(CoreOptions.DEFAULT_PARALLELISM, parallelism);
-            // 本地执行环境需要配置足够的 slot 数量
+            // 本地执行环境需要配置足够的 slot 数量，生产环境需要注释掉
             configuration.set(TaskManagerOptions.NUM_TASK_SLOTS, parallelism);
             log.info("设置 Job 并行度：{}, TaskManager slots: {}", parallelism, parallelism);
         }
@@ -71,8 +71,8 @@ public class JobExecutor {
 
         // steaming 模式下才开启检查点
         if (runtimeMode == RuntimeExecutionMode.STREAMING) {
-            long checkpointInterval = jobConfig.getCheckpointInterval();
-            long checkpointTimeout = jobConfig.getCheckpointTimeout();
+            Long checkpointInterval = jobConfig.getCheckpointInterval();
+            Long checkpointTimeout = jobConfig.getCheckpointTimeout();
             log.info("开启检查点：interval={}ms, timeout={}ms", checkpointInterval, checkpointTimeout);
             // 检查点间隔
             env.enableCheckpointing(checkpointInterval, CheckpointingMode.AT_LEAST_ONCE);

@@ -121,6 +121,9 @@ public class KafkaSourceConfig implements Serializable {
     private static Properties parseKafkaProperties(SourceConfig config) {
         Properties properties = new Properties();
         Map<String, Object> map = config.getMap("properties");
+        if (map == null) {
+            return properties;
+        }
         map.forEach((key, value) -> {
             if (key != null && value != null) {
                 properties.setProperty(key, value.toString());

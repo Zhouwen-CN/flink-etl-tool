@@ -59,7 +59,7 @@ public class JobBuilder {
 
             // DataStream<Row> -> Table
             String sourceOutputTable = sourceConfig.getOutputTable();
-            stEnv.createTemporaryView(sourceOutputTable, fromDataStream(stEnv, sourceStream, runtimeMode));
+            stEnv.createTemporaryView(sourceOutputTable, toTable(stEnv, sourceStream, runtimeMode));
             log.info("注册 Table: {}", sourceOutputTable);
         }
 
@@ -92,12 +92,6 @@ public class JobBuilder {
             String sinkType = sinkConfig.getType();
             SinkPlugin sinkPlugin = PluginLoader.loadSinkPlugin(sinkType);
             Sink<Row> sink = sinkPlugin.createSink(sinkConfig);
-
-            if (sink == null) {
-                throw new IllegalArgumentException(
-                        String.format("Sink 插件 '%s' 未实现新 API，请检查插件是否已迁移", sinkType));
-            }
-
             resultStream.sinkTo(sink).name(sinkType + " sink");
             log.info("Sink 创建成功: {}", sinkType);
         }
@@ -106,9 +100,9 @@ public class JobBuilder {
     }
 
     /**
-     * datastream 转 table
+     * datastream 转 table，batch如果使用changelog会报错
      */
-    private static Table fromDataStream(StreamTableEnvironment stEnv, DataStream<Row> dataStream, RuntimeExecutionMode runtimeMode) {
+    private static Table toTable(StreamTableEnvironment stEnv, DataStream<Row> dataStream, RuntimeExecutionMode runtimeMode) {
         if (runtimeMode == RuntimeExecutionMode.BATCH) {
             return stEnv.fromDataStream(dataStream);
         }
@@ -117,7 +111,7 @@ public class JobBuilder {
     }
 
     /**
-     * table 转 datastream
+     * table 转 datastream，batch如果使用changelog会报错
      */
     private static DataStream<Row> toDataStream(StreamTableEnvironment stEnv, Table table, RuntimeExecutionMode runtimeMode) {
         if (runtimeMode == RuntimeExecutionMode.BATCH) {

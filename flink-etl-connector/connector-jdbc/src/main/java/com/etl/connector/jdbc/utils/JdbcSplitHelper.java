@@ -20,10 +20,6 @@ import java.util.Map;
 @Slf4j
 public final class JdbcSplitHelper {
 
-    private JdbcSplitHelper() {
-        // 工具类不允许实例化
-    }
-
     private static final Map<Integer, String> JDBC_TYPE_NAMES = new HashMap<>();
 
     static {
@@ -48,6 +44,9 @@ public final class JdbcSplitHelper {
         JDBC_TYPE_NAMES.put(Types.TIMESTAMP, "TIMESTAMP");
     }
 
+    private JdbcSplitHelper() {
+        // 工具类不允许实例化
+    }
 
     /**
      * 获取指定列的 JDBC 类型
@@ -66,7 +65,7 @@ public final class JdbcSplitHelper {
         // 构建查询语句
         String sampleQuery;
         if (table != null) {
-            sampleQuery = "SELECT " + dialect.quoteIdentifier(columnName) + " FROM " + table + " WHERE 1=0";
+            sampleQuery = "SELECT " + dialect.quoteIdentifier(columnName) + " FROM " + dialect.quoteIdentifier(table) + " WHERE 1=0";
         } else {
             sampleQuery = "SELECT " + dialect.quoteIdentifier(columnName) + " FROM (" + sql + ") AS t WHERE 1=0";
         }

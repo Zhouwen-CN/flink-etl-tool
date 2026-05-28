@@ -6,10 +6,14 @@ import com.etl.core.utils.JsonUtils;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.util.Preconditions;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * HTTP Source 配置
@@ -20,6 +24,9 @@ import java.util.Map;
 @Slf4j
 public class HttpSourceConfig implements Serializable {
     private static final long serialVersionUID = 1L;
+
+    /** 支持的 format 类型 */
+    private static final Set<String> SUPPORTED_FORMATS = new HashSet<>(Arrays.asList("json", "xml", "raw"));
 
     /**
      * 请求 URL
@@ -42,9 +49,17 @@ public class HttpSourceConfig implements Serializable {
      */
     private final String body;
     /**
-     * JSONPath 表达式，提取数据
+     * 响应格式：json / xml / raw（默认 json）
      */
-    private final String dataPath;
+    private final String format;
+    /**
+     * JSONPath 表达式，提取 JSON 数据节点
+     */
+    private final String jsonPath;
+    /**
+     * XPath 表达式，提取 XML 数据节点集合
+     */
+    private final String xmlPath;
     /**
      * Schema 定义
      */
@@ -79,14 +94,29 @@ public class HttpSourceConfig implements Serializable {
             }
         }
 
-        // JSONPath（可选）
-        String dataPath = config.getString("dataPath");
+        // 格式（可选，默认 json）
+        String format = config.getString("format", "json");
+        Preconditions.checkArgument(SUPPORTED_FORMATS.contains(format),
+                "format must be one of " + SUPPORTED_FORMATS + ", but got: " + format);
+
+        // 路径配置（按 format 取对应字段）
+        String jsonPath = config.getString("jsonPath");
+        String xmlPath = config.getString("xmlPath");
 
         // Schema（必填）
         EtlSchema schema = config.getSchema();
         Preconditions.checkNotNull(schema, "schema is null");
 
-        log.info("创建 HttpSource: url={}, method={}, dataPath={}", url, method, dataPath);
+        // raw 格式：schema 必须只有 1 个 STRING 字段
+        if ("raw".equals(format)) {
+            Preconditions.checkArgument(schema.getFieldCount() == 1,
+                    "raw format requires schema with exactly 1 field, but got " + schema.getFieldCount());
+            Preconditions.checkArgument(Types.STRING.equals(schema.getFieldType(0)),
+                    "raw format requires schema field type to be STRING, but got " + schema.getFieldType(0));
+        }
+
+        log.info("创建 HttpSource: url={}, method={}, format={}, jsonPath={}, xmlPath={}",
+                url, method, format, jsonPath, xmlPath);
 
         // 封装配置
         return HttpSourceConfig.builder()
@@ -95,7 +125,9 @@ public class HttpSourceConfig implements Serializable {
                 .headers(headers)
                 .params(params)
                 .body(body)
-                .dataPath(dataPath)
+                .format(format)
+                .jsonPath(jsonPath)
+                .xmlPath(xmlPath)
                 .schema(schema)
                 .build();
     }

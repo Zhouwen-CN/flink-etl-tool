@@ -1,14 +1,12 @@
 package com.etl.connector.http.source;
 
 import com.etl.connector.http.source.config.HttpSourceConfig;
-import com.etl.core.schema.JsonToRowConverter;
+import com.etl.connector.http.source.format.HttpFormat;
+import com.etl.connector.http.source.format.HttpFormatLoader;
 import com.etl.core.source.AbstractSplitReader;
-import com.etl.core.utils.JsonUtils;
-import com.jayway.jsonpath.PathNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
 import org.apache.flink.connector.base.source.reader.RecordsWithSplitIds;
-import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
 import org.apache.flink.types.Row;
 
 import java.io.BufferedReader;
@@ -26,7 +24,7 @@ import java.util.Set;
 
 /**
  * HTTP 分片读取器
- * 执行 HTTP 请求并将响应转换为 Row
+ * 执行 HTTP 请求并通过 Format SPI 将响应解析为 Row
  */
 @Slf4j
 public class HttpSplitReader extends AbstractSplitReader<Row, HttpSplit> {
@@ -46,22 +44,16 @@ public class HttpSplitReader extends AbstractSplitReader<Row, HttpSplit> {
             return builder.build();
         }
 
+        HttpSourceConfig config = split.getConfig();
         try {
             // 执行 HTTP 请求
-            String jsonResponse = executeRequest(split.getConfig());
+            String rawResponse = executeRequest(config);
 
-            // 通过 JSONPath 提取数据
-            JsonNode rootNode;
-            try {
-                rootNode = JsonUtils.getByJsonPath(jsonResponse, split.getConfig().getDataPath());
-            } catch (PathNotFoundException e) {
-                throw new IllegalArgumentException("JSONPath 提取失败: " + split.getConfig().getDataPath(), e);
-            }
+            // 通过 Format SPI 解析响应
+            HttpFormat format = HttpFormatLoader.load(config.getFormat());
+            List<Row> rows = format.parse(rawResponse, config);
 
-            // 转换为 Row 列表
-            List<Row> rows = JsonToRowConverter.convertJsonToRows(rootNode, split.getConfig().getSchema());
-
-            log.info("HTTP 请求完成，获取 {} 条记录", rows.size());
+            log.info("HTTP 请求完成，format={}，获取 {} 条记录", config.getFormat(), rows.size());
 
             // 添加记录
             for (Row row : rows) {
@@ -70,12 +62,11 @@ public class HttpSplitReader extends AbstractSplitReader<Row, HttpSplit> {
 
             // 标记分片完成
             finishedSplits.add(split.splitId());
-
         } catch (IOException | IllegalArgumentException e) {
             log.error("HTTP 请求失败: {}", e.getMessage(), e);
             throw new RuntimeException("HTTP 请求失败: " + e.getMessage(), e);
         } catch (Exception e) {
-            // 捕获其他未预期的异常（如 JsonToRowConverter 中的异常）
+            // 捕获其他未预期的异常（如 Format 解析中的异常）
             log.error("数据转换失败: {}", e.getMessage(), e);
             throw new RuntimeException("数据转换失败: " + e.getMessage(), e);
         }
@@ -110,8 +101,14 @@ public class HttpSplitReader extends AbstractSplitReader<Row, HttpSplit> {
             connection.setConnectTimeout(CONNECT_TIMEOUT);
             connection.setReadTimeout(READ_TIMEOUT);
 
-            // 设置请求头
-            connection.setRequestProperty("Accept", "application/json");
+            // 设置默认请求头，自定义设置会覆盖默认设置
+            if ("xml".equalsIgnoreCase(config.getFormat())) {
+                connection.setRequestProperty("Accept", "text/xml");
+                connection.setRequestProperty("Content-Type", "text/xml");
+            }else{
+                connection.setRequestProperty("Accept", "application/json");
+                connection.setRequestProperty("Content-Type", "application/json");
+            }
             if (config.getHeaders() != null) {
                 for (Map.Entry<String, Object> entry : config.getHeaders().entrySet()) {
                     connection.setRequestProperty(entry.getKey(), String.valueOf(entry.getValue()));
@@ -121,7 +118,6 @@ public class HttpSplitReader extends AbstractSplitReader<Row, HttpSplit> {
             // POST 请求体
             if ("POST".equalsIgnoreCase(config.getMethod()) && config.getBody() != null) {
                 connection.setDoOutput(true);
-                connection.setRequestProperty("Content-Type", "application/json");
                 try (OutputStream os = connection.getOutputStream()) {
                     byte[] input = config.getBody().getBytes(StandardCharsets.UTF_8);
                     os.write(input, 0, input.length);

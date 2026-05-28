@@ -1,0 +1,33 @@
+{
+  "job": {
+    "name": "batch-http-xml2console",
+    "mode": "batch",
+    "parallelism": 1
+  },
+  "sources": [
+    {
+      "type": "http",
+      "outputTable": "source_table",
+      "config": {
+        "url": "https://httpbin.org/xml",
+        "method": "get",
+        "format": "xml",
+        "xmlPath": "//slide",
+        "schema": {
+          "title": "STRING",
+          "item": [
+            {
+              "em": "STRING"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "sinks": [
+    {
+      "type": "console",
+      "inputTable": "source_table"
+    }
+  ]
+}

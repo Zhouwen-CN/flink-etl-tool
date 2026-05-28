@@ -1,6 +1,6 @@
 package com.etl.core.schema;
 
-import lombok.Data;
+import lombok.Getter;
 import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.typeutils.ObjectArrayTypeInfo;
@@ -15,7 +15,7 @@ import java.util.List;
  * ETL Schema 定义
  * 直接存储字段名和 Flink TypeInformation，消除中间转换层
  */
-@Data
+@Getter
 public class EtlSchema implements Serializable {
 
     /**

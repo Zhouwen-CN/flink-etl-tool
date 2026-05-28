@@ -19,6 +19,7 @@ import org.apache.kafka.connect.storage.ConverterConfig;
 import org.apache.kafka.connect.storage.ConverterType;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -64,7 +65,7 @@ public class MySqlCdcDeserializer implements DebeziumDeserializationSchema<Row> 
         );
 
         // 解析 JSON 字符串
-        String jsonString = new String(valueBytes);
+        String jsonString = new String(valueBytes, StandardCharsets.UTF_8);
         JsonNode jsonNode = JsonUtils.readTree(jsonString);
 
         // 验证必需字段 'op'

@@ -24,9 +24,6 @@ public enum ExecutionMode {
 
     @JsonCreator
     public static ExecutionMode fromValue(String value) {
-        if (value == null) {
-            return null;
-        }
         for (ExecutionMode mode : ExecutionMode.values()) {
             if (mode.value.equalsIgnoreCase(value)) {
                 return mode;

@@ -31,6 +31,8 @@
         <json-path.version>2.9.0</json-path.version>
         <org.eclipse.paho.client.mqttv3.version>1.2.5</org.eclipse.paho.client.mqttv3.version>
         <modbus4j.version>3.1.0</modbus4j.version>
+        <dom4j.version>2.1.4</dom4j.version>
+        <jaxen.version>1.2.0</jaxen.version>
 
         <junit.version>5.9.1</junit.version>
         <mockito-core.version>4.11.0</mockito-core.version>
@@ -73,6 +75,19 @@
                 <groupId>com.infiniteautomation</groupId>
                 <artifactId>modbus4j</artifactId>
                 <version>${modbus4j.version}</version>
+            </dependency>
+
+            <!-- XML 解析 -->
+            <dependency>
+                <groupId>org.dom4j</groupId>
+                <artifactId>dom4j</artifactId>
+                <version>${dom4j.version}</version>
+            </dependency>
+            <!-- dom4j XPath 依赖 -->
+            <dependency>
+                <groupId>jaxen</groupId>
+                <artifactId>jaxen</artifactId>
+                <version>${jaxen.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

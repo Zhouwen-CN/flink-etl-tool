@@ -15,4 +15,17 @@
 
     <name>Flink ETL Connector - HTTP</name>
     <description>HTTP 连接器（Source）</description>
+
+    <dependencies>
+        <!-- XML 解析（XmlFormat 使用） -->
+        <dependency>
+            <groupId>org.dom4j</groupId>
+            <artifactId>dom4j</artifactId>
+        </dependency>
+        <!-- dom4j XPath 依赖 -->
+        <dependency>
+            <groupId>jaxen</groupId>
+            <artifactId>jaxen</artifactId>
+        </dependency>
+    </dependencies>
 </project>

@@ -12,7 +12,6 @@ import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
 import org.apache.flink.util.Preconditions;
 
 import java.io.Serializable;
-import java.util.Map;
 
 /**
  * Mock Source 配置封装类
@@ -90,7 +89,7 @@ public class MockSourceConfig implements Serializable {
             return null;
         }
 
-        Map<String,Object> dataObj = config.getMap("data");
+        Object dataObj = config.getObject("data");
         JsonNode data = JsonUtils.valueToTree(dataObj);
         if (!data.isArray()) {
             throw new IllegalArgumentException("配置项 'data' 必须是数组类型");

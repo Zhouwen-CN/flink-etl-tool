@@ -522,21 +522,27 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 
 ### HTTP Source
 
-从 HTTP API 获取 JSON 数据，支持 GET 和 POST 请求。
+从 HTTP API 获取数据，支持 GET 和 POST 请求。通过 format 配置选择响应格式解析方式，默认 JSON。
 
 #### 配置参数
 
-| 参数         | 必填 | 默认值    | 说明                      |
-|------------|:--:|--------|-------------------------|
-| `url`      | 是  | -      | 请求 URL                  |
-| `method`   | 否  | `GET`  | HTTP 方法，支持 `GET`、`POST` |
-| `headers`  | 否  | `{}`   | 请求头，键值对形式               |
-| `params`   | 否  | `{}`   | 查询参数，键值对形式              |
-| `body`     | 否  | `null` | 请求体，字符串 或者 JSON对象形式     |
-| `dataPath` | 否  | `null` | JSONPath 表达式，提取数据       |
-| `schema`   | 是  | -      | Schema 定义，描述单条记录结构      |
+| 参数         | 必填 | 默认值    | 说明                              |
+|------------|:--:|--------|----------------------------------|
+| `url`      | 是  | -      | 请求 URL                          |
+| `method`   | 否  | `GET`  | HTTP 方法，支持 `GET`、`POST`          |
+| `headers`  | 否  | `{}`   | 请求头，键值对形式                       |
+| `params`   | 否  | `{}`   | 查询参数，键值对形式                       |
+| `body`     | 否  | `null` | 请求体，字符串 或者 JSON对象形式             |
+| `format`   | 否  | `json` | 响应格式：`json`、`xml`、`raw`          |
+| `jsonPath` | 否  | `null` | `format=json` 时使用的 JSONPath 表达式  |
+| `xmlPath`  | 否  | `null` | `format=xml` 时使用的 XPath 表达式      |
+| `schema`   | 是  | -      | Schema 定义，描述单条记录结构               |
 
-#### dataPath 结果处理
+#### 格式说明
+
+**JSON（format=json）**
+
+默认格式，使用 JSONPath 提取数据节点：
 
 | 提取结果类型     | 处理方式              |
 |------------|-------------------|
@@ -544,9 +550,27 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 | JSONObject | 作为单行数据发送          |
 | 其他类型       | 抛出异常，提示数据格式错误     |
 
+- 未配置 `jsonPath` 时，使用整个响应体作为数据源
+- 配置 `jsonPath` 后，使用 JSONPath 提取结果作为数据源
+- 支持复杂类型：`["简单类型"]`（数组）和 `OBJECT`（嵌套结构）
+
+**XML（format=xml）**
+
+使用 dom4j 解析 XML，XPath 语法定位数据节点：
+
+- 未配置 `xmlPath` 时，根元素本身作为唯一记录
+- 配置 `xmlPath` 后，XPath 匹配的每个 Element 生成一行记录
+- 取字段值时优先匹配子元素文本，回退到同名属性值
+
+**Raw（format=raw）**
+
+整个响应体作为单字段 STRING Row 返回：
+
+- Schema 必须只定义一个 STRING 类型字段，违反时抛出异常
+
 #### 配置示例
 
-**GET 请求，直接返回数组：**
+**GET 请求，JSON 格式直接返回数组：**
 
 ```json
 {
@@ -565,7 +589,7 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 }
 ```
 
-**POST 请求，带请求体和 JSONPath 提取：**
+**POST 请求，JSON 格式带 JSONPath 提取：**
 
 ```json
 {
@@ -581,7 +605,8 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
       "body": {
         "status": "active"
       },
-      "dataPath": "$.data.items",
+      "format": "json",
+      "jsonPath": "$.data.items",
       "schema": {
         "id": "LONG",
         "name": "STRING",
@@ -598,12 +623,43 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 }
 ```
 
-#### 数据解析说明
+**XML 格式，XPath 提取节点集合：**
 
-- 未配置 `dataPath` 时，使用整个响应体作为数据源
-- 配置 `dataPath` 后，使用 JSONPath 提取结果作为数据源
-- Schema 始终描述单条记录的结构
-- 支持复杂类型：`["简单类型"]`（数组）和 `OBJECT`（嵌套结构）
+```json
+{
+  "source": {
+    "type": "http",
+    "outputTable": "items",
+    "config": {
+      "url": "https://api.example.com/list.xml",
+      "format": "xml",
+      "xmlPath": "/response/items/item",
+      "schema": {
+        "id": "INT",
+        "name": "STRING"
+      }
+    }
+  }
+}
+```
+
+**Raw 格式，整个响应体作为字符串字段：**
+
+```json
+{
+  "source": {
+    "type": "http",
+    "outputTable": "raw_data",
+    "config": {
+      "url": "https://api.example.com/text",
+      "format": "raw",
+      "schema": {
+        "body": "STRING"
+      }
+    }
+  }
+}
+```
 
 ---
 
