@@ -1,0 +1,29 @@
+{
+  "job": {
+    "name": "kafka-raw-to-console",
+    "mode": "streaming",
+    "parallelism": 1
+  },
+  "sources": [
+    {
+      "type": "kafka",
+      "outputTable": "raw_data",
+      "config": {
+        "bootstrapServers": "127.0.0.1:9092",
+        "groupId": "flink-etl-tool",
+        "topics": ["raw-topic"],
+        "startupMode": "earliest",
+        "format": "raw",
+        "schema": {
+          "message": "STRING"
+        }
+      }
+    }
+  ],
+  "sinks": [
+    {
+      "type": "console",
+      "inputTable": "raw_data"
+    }
+  ]
+}

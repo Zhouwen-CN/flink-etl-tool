@@ -652,7 +652,7 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 | `topics`           | 条件必填 | -          | Topic 列表，与 `topicPattern` 二选一                                      |
 | `topicPattern`     | 条件必填 | -          | Topic 正则表达式，与 `topics` 二选一                                         |
 | `startupMode`      |  否   | `earliest` | 启动模式：`earliest`（从最早开始）、`latest`（从最新开始）、`committed`（从已提交 offset 开始） |
-| `format`           |  否   | `json`     | 消息格式：`json`（标准 JSON）、`debezium-json`（Debezium CDC JSON）            |
+| `format`           |  否   | `json`     | 消息格式：`json`（标准 JSON）、`debezium-json`（Debezium CDC JSON）、`raw`（原始文本）            |
 | `properties`       |  否   | `{}`       | 额外的 Kafka consumer 配置                                              |
 | `schema`           |  是   | -          | 消息体字段定义                                                            |
 
@@ -752,6 +752,39 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 - 支持 JSON 对象和 JSON 数组两种消息格式
 - JSON 数组会展开为多条 Row 记录
 - Schema 始终描述单条记录的结构
+
+#### Raw 格式配置示例
+
+**Kafka Source Raw 格式：**
+
+```json
+{
+  "source": {
+    "type": "kafka",
+    "outputTable": "raw_data",
+    "config": {
+      "bootstrapServers": "localhost:9092",
+      "groupId": "raw-consumer",
+      "topics": [
+        "raw-topic"
+      ],
+      "startupMode": "earliest",
+      "format": "raw",
+      "schema": {
+        "message": "STRING"
+      }
+    }
+  }
+}
+```
+
+**说明：**
+
+- `format: "raw"` 启用原始文本模式，不做任何结构化解析
+- `schema` 必须配置为单个 STRING 类型字段，字段名由用户自定义（如 `message`、`content`、`value` 等）
+- Kafka 消息的 value 以 UTF-8 编码转为 String，作为该字段的值输出
+- Kafka key 被忽略
+- 消息 value 为 null 时，输出字段值为 null
 
 #### 运行模式
 
