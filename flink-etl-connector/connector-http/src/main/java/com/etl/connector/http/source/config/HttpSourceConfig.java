@@ -6,7 +6,7 @@ import com.etl.core.utils.JsonUtils;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.flink.api.common.typeinfo.Types;
+
 import org.apache.flink.util.Preconditions;
 
 import java.io.Serializable;
@@ -26,7 +26,7 @@ public class HttpSourceConfig implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /** 支持的 format 类型 */
-    private static final Set<String> SUPPORTED_FORMATS = new HashSet<>(Arrays.asList("json", "xml", "raw"));
+    private static final Set<String> SUPPORTED_FORMATS = new HashSet<>(Arrays.asList("json", "xml"));
 
     /**
      * 请求 URL
@@ -49,7 +49,7 @@ public class HttpSourceConfig implements Serializable {
      */
     private final String body;
     /**
-     * 响应格式：json / xml / raw（默认 json）
+     * 响应格式：json / xml（默认 json）
      */
     private final String format;
     /**
@@ -106,14 +106,6 @@ public class HttpSourceConfig implements Serializable {
         // Schema（必填）
         EtlSchema schema = config.getSchema();
         Preconditions.checkNotNull(schema, "schema is null");
-
-        // raw 格式：schema 必须只有 1 个 STRING 字段
-        if ("raw".equals(format)) {
-            Preconditions.checkArgument(schema.getFieldCount() == 1,
-                    "raw format requires schema with exactly 1 field, but got " + schema.getFieldCount());
-            Preconditions.checkArgument(Types.STRING.equals(schema.getFieldType(0)),
-                    "raw format requires schema field type to be STRING, but got " + schema.getFieldType(0));
-        }
 
         log.info("创建 HttpSource: url={}, method={}, format={}, jsonPath={}, xmlPath={}",
                 url, method, format, jsonPath, xmlPath);

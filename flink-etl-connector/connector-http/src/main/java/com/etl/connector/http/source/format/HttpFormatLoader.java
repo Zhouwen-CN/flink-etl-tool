@@ -28,7 +28,7 @@ public final class HttpFormatLoader {
     /**
      * 按格式标识加载 HttpFormat 实现
      *
-     * @param identifier 格式标识（json / xml / raw）
+     * @param identifier 格式标识（json / xml）
      * @return HttpFormat 实例
      */
     public static HttpFormat load(String identifier) {

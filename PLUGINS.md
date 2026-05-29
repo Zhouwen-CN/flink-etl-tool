@@ -533,7 +533,7 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 | `headers`  | 否  | `{}`   | 请求头，键值对形式                       |
 | `params`   | 否  | `{}`   | 查询参数，键值对形式                       |
 | `body`     | 否  | `null` | 请求体，字符串 或者 JSON对象形式             |
-| `format`   | 否  | `json` | 响应格式：`json`、`xml`、`raw`          |
+| `format`   | 否  | `json` | 响应格式：`json`、`xml`                    |
 | `jsonPath` | 否  | `null` | `format=json` 时使用的 JSONPath 表达式  |
 | `xmlPath`  | 否  | `null` | `format=xml` 时使用的 XPath 表达式      |
 | `schema`   | 是  | -      | Schema 定义，描述单条记录结构               |
@@ -561,12 +561,6 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 - 未配置 `xmlPath` 时，根元素本身作为唯一记录
 - 配置 `xmlPath` 后，XPath 匹配的每个 Element 生成一行记录
 - 取字段值时优先匹配子元素文本，回退到同名属性值
-
-**Raw（format=raw）**
-
-整个响应体作为单字段 STRING Row 返回：
-
-- Schema 必须只定义一个 STRING 类型字段，违反时抛出异常
 
 #### 配置示例
 
@@ -637,24 +631,6 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
       "schema": {
         "id": "INT",
         "name": "STRING"
-      }
-    }
-  }
-}
-```
-
-**Raw 格式，整个响应体作为字符串字段：**
-
-```json
-{
-  "source": {
-    "type": "http",
-    "outputTable": "raw_data",
-    "config": {
-      "url": "https://api.example.com/text",
-      "format": "raw",
-      "schema": {
-        "body": "STRING"
       }
     }
   }

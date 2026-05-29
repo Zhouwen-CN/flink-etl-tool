@@ -14,7 +14,7 @@ public interface HttpFormat {
     /**
      * 格式标识
      *
-     * @return 格式标识（json / xml / raw）
+     * @return 格式标识（json / xml）
      */
     String identifier();
 
