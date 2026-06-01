@@ -198,6 +198,12 @@
             <version>${log4j2.version}</version>
             <scope>provided</scope>
         </dependency>
+        <!-- Commons Logging → Log4j2 桥接，让 modbus4j 的日志走 Log4j2 -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-jcl</artifactId>
+            <version>${log4j2.version}</version>
+        </dependency>
 
         <!-- Lombok -->
         <dependency>

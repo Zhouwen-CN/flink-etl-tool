@@ -527,16 +527,16 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 #### 配置参数
 
 | 参数         | 必填 | 默认值    | 说明                              |
-|------------|:--:|--------|----------------------------------|
+|------------|:--:|--------|---------------------------------|
 | `url`      | 是  | -      | 请求 URL                          |
-| `method`   | 否  | `GET`  | HTTP 方法，支持 `GET`、`POST`          |
+| `method`   | 否  | `GET`  | HTTP 方法，支持 `GET`、`POST`         |
 | `headers`  | 否  | `{}`   | 请求头，键值对形式                       |
-| `params`   | 否  | `{}`   | 查询参数，键值对形式                       |
+| `params`   | 否  | `{}`   | 查询参数，键值对形式                      |
 | `body`     | 否  | `null` | 请求体，字符串 或者 JSON对象形式             |
-| `format`   | 否  | `json` | 响应格式：`json`、`xml`                    |
-| `jsonPath` | 否  | `null` | `format=json` 时使用的 JSONPath 表达式  |
-| `xmlPath`  | 否  | `null` | `format=xml` 时使用的 XPath 表达式      |
-| `schema`   | 是  | -      | Schema 定义，描述单条记录结构               |
+| `format`   | 否  | `json` | 响应格式：`json`、`xml`               |
+| `jsonPath` | 否  | `null` | `format=json` 时使用的 JSONPath 表达式 |
+| `xmlPath`  | 否  | `null` | `format=xml` 时使用的 XPath 表达式     |
+| `schema`   | 是  | -      | Schema 定义，描述单条记录结构              |
 
 #### 格式说明
 
@@ -645,16 +645,16 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 
 #### 配置参数
 
-| 参数                 |  必填  | 默认值        | 说明                                                                 |
-|--------------------|:----:|------------|--------------------------------------------------------------------|
-| `bootstrapServers` |  是   | -          | Kafka 集群地址，如 `localhost:9092`                                      |
-| `groupId`          |  是   | -          | 消费者组 ID                                                            |
-| `topics`           | 条件必填 | -          | Topic 列表，与 `topicPattern` 二选一                                      |
-| `topicPattern`     | 条件必填 | -          | Topic 正则表达式，与 `topics` 二选一                                         |
-| `startupMode`      |  否   | `earliest` | 启动模式：`earliest`（从最早开始）、`latest`（从最新开始）、`committed`（从已提交 offset 开始） |
-| `format`           |  否   | `json`     | 消息格式：`json`（标准 JSON）、`debezium-json`（Debezium CDC JSON）、`raw`（原始文本）            |
-| `properties`       |  否   | `{}`       | 额外的 Kafka consumer 配置                                              |
-| `schema`           |  是   | -          | 消息体字段定义                                                            |
+| 参数                 |  必填  | 默认值        | 说明                                                                  |
+|--------------------|:----:|------------|---------------------------------------------------------------------|
+| `bootstrapServers` |  是   | -          | Kafka 集群地址，如 `localhost:9092`                                       |
+| `groupId`          |  是   | -          | 消费者组 ID                                                             |
+| `topics`           | 条件必填 | -          | Topic 列表，与 `topicPattern` 二选一                                       |
+| `topicPattern`     | 条件必填 | -          | Topic 正则表达式，与 `topics` 二选一                                          |
+| `startupMode`      |  否   | `earliest` | 启动模式：`earliest`（从最早开始）、`latest`（从最新开始）、`committed`（从已提交 offset 开始）  |
+| `format`           |  否   | `json`     | 消息格式：`json`（标准 JSON）、`debezium-json`（Debezium CDC JSON）、`raw`（原始文本） |
+| `properties`       |  否   | `{}`       | 额外的 Kafka consumer 配置                                               |
+| `schema`           |  是   | -          | 消息体字段定义                                                             |
 
 #### 配置示例
 
@@ -1183,37 +1183,40 @@ MySQL 数据库需满足以下条件:
 
 #### 配置参数
 
-| 参数           | 必填 | 默认值    | 说明                                  |
-|--------------|:--:|--------|-------------------------------------|
-| `host`       | 是  | -      | Modbus TCP 地址，格式 `ip:port`          |
-| `deviceId`   | 否  | `1`    | 从站地址（Device ID），范围 1-247            |
-| `address`    | 是  | -      | 寄存器起始地址（0-based）                    |
-| `count`      | 是  | -      | 读取寄存器数量，`address + count` 不超过 65536 |
-| `intervalMs` | 否  | `1000` | 流处理模式下的轮询间隔（毫秒）                     |
+| 参数           | 必填 | 默认值    | 说明                                                                        |
+|--------------|:--:|--------|---------------------------------------------------------------------------|
+| `host`       | 是  | -      | Modbus TCP 地址，格式 `ip:port`                                                |
+| `deviceId`   | 否  | `1`    | 从站地址（Device ID），范围 1-247                                                  |
+| `address`    | 是  | -      | 寄存器起始地址（0-based）                                                          |
+| `count`      | 是  | -      | 读取寄存器数量，`address + count` 不超过 65536                                       |
+| `wordSize`   | 否  | `1`    | 几个寄存器组成一个数据值，可选 `1`（16bit）或 `2`（32bit，高位寄存器在前）；`count` 必须能被 `wordSize` 整除 |
+| `intervalMs` | 否  | `1000` | 流处理模式下的轮询间隔（毫秒）                                                           |
 
 **输出 Schema（固定，无需配置）：**
 
-| 列名        | 类型  | 说明                            |
-|-----------|-----|-------------------------------|
-| `address` | INT | 设备手册地址，从 `40001 + address` 开始 |
-| `value`   | INT | 寄存器值（有符号，范围 -32768~32767）     |
+| 列名        | 类型  | 说明                                                            |
+|-----------|-----|---------------------------------------------------------------|
+| `address` | INT | 首寄存器地址                                                        |
+| `value`   | INT | 寄存器值（`wordSize=1` 范围 -32768~32767；`wordSize=2` 为 32bit 有符号整数） |
 
-每次读取产生 `count` 行数据，每行对应一个寄存器。
+每次读取产生 `count / wordSize` 行数据。
 
 **示例输出（`address=0, count=5`）：**
 
 ```
-address=40001, value=123
-address=40002, value=-456
-address=40003, value=0
-address=40004, value=32767
-address=40005, value=-1
+address=0, value=123
+address=1, value=-456
+address=2, value=0
+address=3, value=32767
+address=4, value=-1
 ```
 
 **运行模式说明：**
 
 - **Batch 模式**：读取一次所有寄存器后程序退出
 - **Streaming 模式**：按 `intervalMs` 间隔持续轮询寄存器
+
+**分批读取：** 当 `count` 超过 32 时，自动分批请求，每批最多读取 32 个寄存器，兼容存在单次读取数量限制的 Modbus 设备。分批对用户透明，输出数据与一次性读取完全一致。
 
 #### 配置示例
 

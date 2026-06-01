@@ -7,7 +7,10 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ModbusSourceConfigTest {
 
@@ -156,6 +159,72 @@ class ModbusSourceConfigTest {
         configMap.put("host", "192.168.1.100:502");
         configMap.put("address", 0);
         configMap.put("count", 0);
+
+        assertThrows(IllegalArgumentException.class, () ->
+                ModbusSourceConfig.fromSourceConfig(
+                        createSourceConfig(configMap), RuntimeExecutionMode.BATCH));
+    }
+
+    @Test
+    void testDefaultWordSize() {
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("host", "192.168.1.100:502");
+        configMap.put("address", 0);
+        configMap.put("count", 10);
+
+        ModbusSourceConfig result = ModbusSourceConfig.fromSourceConfig(
+                createSourceConfig(configMap), RuntimeExecutionMode.BATCH);
+
+        assertEquals(1, result.getWordSize());
+    }
+
+    @Test
+    void testWordSizeTwo() {
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("host", "192.168.1.100:502");
+        configMap.put("address", 0);
+        configMap.put("count", 10);
+        configMap.put("wordSize", 2);
+
+        ModbusSourceConfig result = ModbusSourceConfig.fromSourceConfig(
+                createSourceConfig(configMap), RuntimeExecutionMode.BATCH);
+
+        assertEquals(2, result.getWordSize());
+    }
+
+    @Test
+    void testWordSizeTwoCountOdd() {
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("host", "192.168.1.100:502");
+        configMap.put("address", 0);
+        configMap.put("count", 5);
+        configMap.put("wordSize", 2);
+
+        assertThrows(IllegalArgumentException.class, () ->
+                ModbusSourceConfig.fromSourceConfig(
+                        createSourceConfig(configMap), RuntimeExecutionMode.BATCH));
+    }
+
+    @Test
+    void testWordSizeInvalidThree() {
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("host", "192.168.1.100:502");
+        configMap.put("address", 0);
+        configMap.put("count", 6);
+        configMap.put("wordSize", 3);
+
+        assertThrows(IllegalArgumentException.class, () ->
+                ModbusSourceConfig.fromSourceConfig(
+                        createSourceConfig(configMap), RuntimeExecutionMode.BATCH));
+    }
+
+    @Test
+    void testWordSizeInvalidZero() {
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("host", "192.168.1.100:502");
+        configMap.put("address", 0);
+        configMap.put("count", 10);
+        configMap.put("wordSize", 0);
 
         assertThrows(IllegalArgumentException.class, () ->
                 ModbusSourceConfig.fromSourceConfig(
