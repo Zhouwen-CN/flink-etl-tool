@@ -32,8 +32,10 @@ import java.util.Set;
 @Slf4j
 public class ModbusSplitReader extends AbstractSplitReader<Row, ModbusSplit> {
 
-    /** Modbus 保持寄存器的手册地址起始偏移 */
-    private static final int HOLDING_REGISTER_OFFSET = 40001;
+    /**
+     * 单次请求最大读取寄存器数量，兼容存在读取数量限制的 Modbus 设备
+     */
+    private static final int MAX_READ_SIZE = 32;
 
     private final Set<String> finishedSplits = new HashSet<>();
 
@@ -80,6 +82,34 @@ public class ModbusSplitReader extends AbstractSplitReader<Row, ModbusSplit> {
     }
 
     /**
+     * 处理寄存器数据并生成 Row 记录
+     *
+     * @param data       寄存器原始数据
+     * @param startAddr  当前批次的起始地址
+     * @param wordSize   每个数据值占用的寄存器数
+     * @param builder    记录构建器
+     */
+    private void processRegisterData(short[] data, int startAddr, int wordSize, RecordsBySplits.Builder<Row> builder) {
+        for (int i = 0; i < data.length; i += wordSize) {
+            int registerAddress = startAddr + i;
+            int value;
+            if (wordSize == 1) {
+                value = data[i];
+            } else {
+                // 2 个寄存器组合为 32bit：高位寄存器在前（大端）
+                value = (data[i] << 16) | (data[i + 1] & 0xFFFF);
+            }
+            Row row = Row.withPositions(RowKind.INSERT, 2);
+            row.setField(0, registerAddress);
+            row.setField(1, value);
+
+            builder.add(currentSplit.splitId(), row);
+            readCount++;
+            log.debug("读取寄存器: address={}, value={}", registerAddress, value);
+        }
+    }
+
+    /**
      * 读取所有寄存器并生成 Row 数据
      * 使用单个 ReadHoldingRegistersRequest 一次性读取所有寄存器，仅一次 TCP 往返
      */
@@ -90,6 +120,7 @@ public class ModbusSplitReader extends AbstractSplitReader<Row, ModbusSplit> {
             int deviceId = currentConfig.getDeviceId();
             int address = currentConfig.getAddress();
             int count = currentConfig.getCount();
+            int wordSize = currentConfig.getWordSize();
 
             ReadHoldingRegistersRequest request = new ReadHoldingRegistersRequest(deviceId, address, count);
             ModbusResponse response = master.send(request);
@@ -102,16 +133,7 @@ public class ModbusSplitReader extends AbstractSplitReader<Row, ModbusSplit> {
                 throw new IOException(String.format("Modbus 响应数据不足: 期望 %d 个寄存器, 实际 %s",
                         count, data == null ? "null" : data.length));
             }
-            for (int i = 0; i < count; i++) {
-                int registerAddress = HOLDING_REGISTER_OFFSET + address + i;
-                Row row = Row.withPositions(RowKind.INSERT, 2);
-                row.setField(0, registerAddress);
-                row.setField(1, (int) data[i]);
-
-                builder.add(currentSplit.splitId(), row);
-                readCount++;
-                log.debug("读取寄存器: address={}, value={}", registerAddress, (int) data[i]);
-            }
+            processRegisterData(data, address, wordSize, builder);
         } catch (Exception e) {
             throw new IOException("读取 Modbus 寄存器失败", e);
         }
