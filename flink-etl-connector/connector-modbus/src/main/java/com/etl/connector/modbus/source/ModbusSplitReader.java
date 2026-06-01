@@ -110,8 +110,8 @@ public class ModbusSplitReader extends AbstractSplitReader<Row, ModbusSplit> {
     }
 
     /**
-     * 读取所有寄存器并生成 Row 数据
-     * 使用单个 ReadHoldingRegistersRequest 一次性读取所有寄存器，仅一次 TCP 往返
+     * 分批读取寄存器并生成 Row 数据
+     * 每次请求最多读取 MAX_READ_SIZE 个寄存器，循环读取直到所有寄存器读完
      */
     private RecordsWithSplitIds<Row> readRegisters() throws IOException {
         RecordsBySplits.Builder<Row> builder = new RecordsBySplits.Builder<>();
@@ -122,18 +122,28 @@ public class ModbusSplitReader extends AbstractSplitReader<Row, ModbusSplit> {
             int count = currentConfig.getCount();
             int wordSize = currentConfig.getWordSize();
 
-            ReadHoldingRegistersRequest request = new ReadHoldingRegistersRequest(deviceId, address, count);
-            ModbusResponse response = master.send(request);
-            if (response.isException()) {
-                throw new IOException("Modbus 异常响应: " + response.getExceptionMessage());
-            }
+            int remaining = count;
+            int currentAddress = address;
+            while (remaining > 0) {
+                int batchSize = Math.min(remaining, MAX_READ_SIZE);
 
-            short[] data = ((ReadHoldingRegistersResponse) response).getShortData();
-            if (data == null || data.length < count) {
-                throw new IOException(String.format("Modbus 响应数据不足: 期望 %d 个寄存器, 实际 %s",
-                        count, data == null ? "null" : data.length));
+                ReadHoldingRegistersRequest request = new ReadHoldingRegistersRequest(deviceId, currentAddress, batchSize);
+                ModbusResponse response = master.send(request);
+                if (response.isException()) {
+                    throw new IOException("Modbus 异常响应: " + response.getExceptionMessage());
+                }
+
+                short[] data = ((ReadHoldingRegistersResponse) response).getShortData();
+                if (data == null || data.length < batchSize) {
+                    throw new IOException(String.format("Modbus 响应数据不足: 期望 %d 个寄存器, 实际 %s",
+                            batchSize, data == null ? "null" : data.length));
+                }
+
+                processRegisterData(data, currentAddress, wordSize, builder);
+
+                currentAddress += batchSize;
+                remaining -= batchSize;
             }
-            processRegisterData(data, address, wordSize, builder);
         } catch (Exception e) {
             throw new IOException("读取 Modbus 寄存器失败", e);
         }
