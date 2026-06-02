@@ -1,18 +1,24 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
+  },
   "permissions": {
     "allow": [
       "Bash",
+      "PowerShell",
       "Read",
       "WebFetch",
-      "WebSearch"
+      "WebSearch",
+      "mcp__codegraph",
+      "mcp__plugin_context-mode.*"
     ],
     "ask": [
       "Bash(git push *)",
-      "Bash(rm *)"
+      "Bash(rm *)",
+      "PowerShell(git push *)",
+      "PowerShell(Remove-Item *)"
     ]
   },
-  "env": {
-    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
-  }
+  "enabledPlugins": {}
 }

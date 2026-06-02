@@ -23,3 +23,4 @@ dependency-reduced-pom.xml
 logs
 docs/examples/provided
 */.lck
+.codegraph/
