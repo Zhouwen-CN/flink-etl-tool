@@ -47,31 +47,31 @@ public class JdbcSourceConfig implements Serializable {
     private final JdbcDialect dialect;
 
     public static JdbcSourceConfig fromSourceConfig(SourceConfig config, int defaultBatchSize) {
-        String url = Preconditions.checkNotNull(config.getString("url"), "url is null");
+        String url = Preconditions.checkNotNull(config.get("url", String.class), "url is null");
 
         // 支持显式配置 dialect
-        String dialectName = config.getString("dialect");
+        String dialectName = config.get("dialect", String.class);
         JdbcDialect dialect = JdbcDialectLoader.get(dialectName, url);
 
         // 使用 Dialect 包装 URL
         url = dialect.wrapUrl(url);
 
-        String username = config.getString("username");
-        String password = config.getString("password");
+        String username = config.get("username", String.class);
+        String password = config.get("password", String.class);
 
-        String table = config.getString("table");
-        String sql = config.getString("sql");
+        String table = config.get("table", String.class);
+        String sql = config.get("sql", String.class);
 
         // 自动推断 splitKey 和 splitStrategy
         Pair<String, SplitStrategy> inferred = inferSplitKey(
-                config.getString("splitKey"), table, sql, url, username, password, dialect);
+                config.get("splitKey", String.class), table, sql, url, username, password, dialect);
         String splitKey = inferred.getLeft();
         SplitStrategy splitStrategy = inferred.getRight();
 
-        Integer batchSize = config.getInteger("batchSize", defaultBatchSize);
+        Integer batchSize = config.get("batchSize", Integer.class, defaultBatchSize);
         Preconditions.checkArgument(batchSize > 0, "batchSize must be greater than 0");
 
-        Integer queryTimeout = config.getInteger("queryTimeout");
+        Integer queryTimeout = config.get("queryTimeout", Integer.class);
 
         log.info("创建 JdbcSource: url={}, dialect={}, table={}, sql={}, splitKey={}, splitStrategy={}, batchSize={}, queryTimeout={}",
                     url,

@@ -28,7 +28,7 @@ public class SourceConfig extends BaseConfig {
      * @return EtlSchema 对象，如果未配置则返回 null
      */
     public EtlSchema getSchema() {
-        Map<String,Object> schemaConfig = getMap("schema");
+        Map<String,Object> schemaConfig = get("schema", Map.class);
         if (schemaConfig == null) {
             return null;
         }

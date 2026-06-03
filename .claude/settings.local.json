@@ -11,13 +11,14 @@
       "WebFetch",
       "WebSearch",
       "mcp__codegraph",
-      "mcp__plugin_context-mode.*"
+      "mcp__plugin_context-mode_context-mode"
     ],
     "ask": [
       "Bash(git push *)",
       "Bash(rm *)",
       "PowerShell(git push *)",
-      "PowerShell(Remove-Item *)"
+      "PowerShell(Remove-Item *)",
+      "mcp__plugin_context-mode_context-mode__ctx_purge"
     ]
   },
   "enabledPlugins": {}

@@ -38,31 +38,31 @@ public class MySqlCdcConfig implements Serializable {
     public static MySqlCdcConfig fromSourceConfig(SourceConfig config) {
 
         // 解析 URL
-        String url = config.getString("url");
+        String url = config.get("url", String.class);
         UrlParseResult urlResult = parseUrl(url);
 
         // 解析其他参数
-        String username = config.getString("username");
+        String username = config.get("username", String.class);
         Preconditions.checkNotNull(username, "username 参数不能为空");
 
-        String password = config.getString("password");
+        String password = config.get("password", String.class);
         Preconditions.checkNotNull(password, "password 参数不能为空");
 
-        String table = config.getString("table");
+        String table = config.get("table", String.class);
         Preconditions.checkNotNull(table, "table 参数不能为空");
 
         // 解析启动模式
-        String startupModeStr = config.getString("startupMode", "latest");
+        String startupModeStr = config.get("startupMode", String.class, "latest");
         StartupMode startupMode = StartupMode.of(startupModeStr.toUpperCase());
 
         // serverId（可选）
-        Integer serverId = config.getInteger("serverId", generateAutoServerId());
+        Integer serverId = config.get("serverId", Integer.class, generateAutoServerId());
 
         // serverTimeZone（可选，默认为空）
-        String serverTimeZone = config.getString("serverTimeZone");
+        String serverTimeZone = config.get("serverTimeZone", String.class);
 
         // splitKey（可选，未配置时尝试从数据库获取主键）
-        String splitKey = config.getString("splitKey");
+        String splitKey = config.get("splitKey", String.class);
         if (splitKey == null) {
             try {
                 // 尝试从数据库获取主键

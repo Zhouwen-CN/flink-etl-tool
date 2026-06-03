@@ -39,23 +39,23 @@ public class MqttSourceConfig implements Serializable {
      */
     public static MqttSourceConfig fromSourceConfig(SourceConfig config) {
         // 校验必填参数
-        String broker = config.getString("broker");
+        String broker = config.get("broker", String.class);
         Preconditions.checkArgument(broker != null && !broker.isEmpty(),
                 "broker 不能为空");
 
-        String topic = config.getString("topic");
+        String topic = config.get("topic", String.class);
         Preconditions.checkArgument(topic != null && !topic.isEmpty(),
                 "topic 不能为空");
 
         // clientId（可选，默认自动生成）
-        String clientId = config.getString("clientId");
+        String clientId = config.get("clientId", String.class);
         if (clientId == null || clientId.isEmpty()) {
             clientId = "mqtt-source-" + UUID.randomUUID().toString().substring(0, 8);
         }
 
         // username/password（可选）
-        String username = config.getString("username");
-        String password = config.getString("password");
+        String username = config.get("username", String.class);
+        String password = config.get("password", String.class);
 
         // schema（必填）
         EtlSchema schema = config.getSchema();

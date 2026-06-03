@@ -55,22 +55,22 @@ public class LocalFileSourceConfig implements Serializable {
      */
     public static LocalFileSourceConfig fromSourceConfig(SourceConfig config, int defaultBatchSize) {
         // 路径
-        String pathPattern = config.getString("path");
+        String pathPattern = config.get("path", String.class);
         Preconditions.checkArgument(StringUtils.isNotBlank(pathPattern), "path is null");
 
         // 格式
-        String format = config.getString("format");
+        String format = config.get("format", String.class);
         Preconditions.checkArgument(StringUtils.isNotBlank(format), "format is null");
 
         // 加载格式插件
         FileFormatPlugin formatPlugin = loadFormatPlugin(format);
 
         // 批次大小
-        Integer batchSize = config.getInteger("batchSize", defaultBatchSize);
+        Integer batchSize = config.get("batchSize", Integer.class, defaultBatchSize);
         Preconditions.checkArgument(batchSize > 0, "batchSize must be greater than 0");
 
         // 是否递归
-        boolean recursive = config.getBoolean("recursive", false);
+        boolean recursive = config.get("recursive", Boolean.class, false);
 
         // schema
         EtlSchema schema = config.getSchema();
@@ -82,13 +82,13 @@ public class LocalFileSourceConfig implements Serializable {
         }
 
         // 编码
-        String encoding = config.getString("encoding", "utf-8");
+        String encoding = config.get("encoding", String.class, "utf-8");
 
         // 分隔符
-        String delimiter = config.getString("delimiter", ",");
+        String delimiter = config.get("delimiter", String.class, ",");
 
         // 是否跳过首行
-        boolean skipHeader = config.getBoolean("skipHeader", true);
+        boolean skipHeader = config.get("skipHeader", Boolean.class, true);
 
         log.info("创建 LocalFileSource: pathPattern={}, format={}, recursive={}, batchSize={}, encoding={}, delimiter={}, skipHeader={}",
                 pathPattern,

@@ -22,7 +22,7 @@ public class SqlTransformPlugin implements TransformPlugin {
 
     @Override
     public Table transform(TransformConfig config, StreamTableEnvironment stEnv) {
-        String sql = config.getString("sql");
+        String sql = config.get("sql", String.class);
 
         // 参数校验
         if (sql == null || sql.trim().isEmpty()) {

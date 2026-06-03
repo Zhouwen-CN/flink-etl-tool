@@ -30,7 +30,7 @@ public class ModbusSourceConfig implements Serializable {
         boolean bounded = runtimeMode == RuntimeExecutionMode.BATCH;
 
         // 1. 校验并拆分 host
-        String host = config.getString("host");
+        String host = config.get("host", String.class);
         Preconditions.checkArgument(host != null && !host.isEmpty(), "配置项 'host' 不能为空");
 
         String[] parts = host.split(":");
@@ -47,18 +47,18 @@ public class ModbusSourceConfig implements Serializable {
                 "配置项 'host' 中的端口范围必须为 1-65535，当前值: %s", port);
 
         // 2. 校验 deviceId
-        int deviceId = config.getInteger("deviceId", 1);
+        int deviceId = config.get("deviceId", Integer.class, 1);
         Preconditions.checkArgument(deviceId >= 1 && deviceId <= 247,
                 "配置项 'deviceId' 范围必须为 1-247，当前值: %s", deviceId);
 
         // 3. 校验 address
-        Integer address = config.getInteger("address");
+        Integer address = config.get("address", Integer.class);
         Preconditions.checkNotNull(address, "配置项 'address' 不能为空");
         Preconditions.checkArgument(address >= 0,
                 "配置项 'address' 必须 >= 0，当前值: %s", address);
 
         // 4. 校验 count
-        Integer count = config.getInteger("count");
+        Integer count = config.get("count", Integer.class);
         Preconditions.checkNotNull(count, "配置项 'count' 不能为空");
         Preconditions.checkArgument(count > 0,
                 "配置项 'count' 必须 > 0，当前值: %s", count);
@@ -66,14 +66,14 @@ public class ModbusSourceConfig implements Serializable {
                 "address(%s) + count(%s) 不能超过 65536", address, count);
 
         // 5. 校验 wordSize
-        int wordSize = config.getInteger("wordSize", 1);
+        int wordSize = config.get("wordSize", Integer.class, 1);
         Preconditions.checkArgument(wordSize == 1 || wordSize == 2,
                 "配置项 'wordSize' 只能为 1 或 2，当前值: %s", wordSize);
         Preconditions.checkArgument(count % wordSize == 0,
                 "配置项 'count'(%s) 必须能被 'wordSize'(%s) 整除", count, wordSize);
 
         // 6. 校验 intervalMs
-        long intervalMs = config.getLong("intervalMs", 1000L);
+        long intervalMs = config.get("intervalMs", Long.class, 1000L);
         Preconditions.checkArgument(intervalMs > 0,
                 "配置项 'intervalMs' 必须 > 0，当前值: %s", intervalMs);
 

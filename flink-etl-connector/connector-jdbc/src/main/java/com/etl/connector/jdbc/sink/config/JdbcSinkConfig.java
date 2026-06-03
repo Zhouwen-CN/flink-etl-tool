@@ -50,20 +50,20 @@ public class JdbcSinkConfig implements Serializable {
      * 从 SinkConfig 创建 JdbcSinkConfig，在此完成所有参数校验和推断
      */
     public static JdbcSinkConfig fromSinkConfig(SinkConfig config, int defaultBatchSize) {
-        String url = Preconditions.checkNotNull(config.getString("url"), "url is null");
-        String username = config.getString("username");
-        String password = config.getString("password");
+        String url = Preconditions.checkNotNull(config.get("url", String.class), "url is null");
+        String username = config.get("username", String.class);
+        String password = config.get("password", String.class);
 
         // 支持显式配置 dialect
-        String dialectName = config.getString("dialect");
+        String dialectName = config.get("dialect", String.class);
         JdbcDialect dialect = JdbcDialectLoader.get(dialectName, url);
 
-        String table = config.getString("table");
-        String sql = config.getString("sql");
-        String modeStr = config.getString("mode", "UPSERT");
+        String table = config.get("table", String.class);
+        String sql = config.get("sql", String.class);
+        String modeStr = config.get("mode", String.class, "UPSERT");
         WriteMode mode = WriteMode.valueOf(modeStr.toUpperCase());
 
-        List<String> keyFields = config.getList("keyFields");
+        List<String> keyFields = config.get("keyFields", List.class);
 
         // 根据写入模式进行校验和配置
         validateAndConfigureMode(mode, table, sql, keyFields);
@@ -87,10 +87,10 @@ public class JdbcSinkConfig implements Serializable {
             log.info("JDBC Sink {} 模式自动获取主键: table={}, keyFields={}", mode, table, keyFields);
         }
 
-        Integer batchSize = config.getInteger("batchSize", defaultBatchSize);
+        Integer batchSize = config.get("batchSize", Integer.class, defaultBatchSize);
         Preconditions.checkArgument(batchSize != null && batchSize > 0, "batchSize must be greater than 0");
 
-        Long batchIntervalMs = config.getLong("batchIntervalMs", 0L);
+        Long batchIntervalMs = config.get("batchIntervalMs", Long.class, 0L);
 
         log.info("创建 JdbcSink: url={}, dialect={}, table={}, sql={}, mode={}, keyFields={}, batchSize={}, batchIntervalMs={}",
                 dialect.wrapUrl(url),

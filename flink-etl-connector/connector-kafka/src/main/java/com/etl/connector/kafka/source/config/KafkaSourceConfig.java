@@ -60,25 +60,25 @@ public class KafkaSourceConfig implements Serializable {
      */
     public static KafkaSourceConfig fromSourceConfig(SourceConfig config) {
         // 校验必填参数
-        String bootstrapServers = config.getString("bootstrapServers");
+        String bootstrapServers = config.get("bootstrapServers", String.class);
         if (bootstrapServers == null) {
             throw new IllegalArgumentException("bootstrapServers 不能为空");
         }
 
-        String groupId = config.getString("groupId");
+        String groupId = config.get("groupId", String.class);
         if (groupId == null) {
             throw new IllegalArgumentException("groupId 不能为空");
         }
 
         // 校验 topics 和 topicPattern 至少配置一个
-        List<String> topics = config.getList("topics");
-        String topicPattern = config.getString("topicPattern");
+        List<String> topics = config.get("topics", List.class);
+        String topicPattern = config.get("topicPattern", String.class);
         if ((topics == null || topics.isEmpty()) && topicPattern == null) {
             throw new IllegalArgumentException("topics 和 topicPattern 至少需要配置一个");
         }
 
         // 解析 startupMode
-        String startupModeValue = config.getString("startupMode", "earliest");
+        String startupModeValue = config.get("startupMode", String.class, "earliest");
         StartupMode startupMode = StartupMode.fromConfigValue(startupModeValue);
 
         // 校验 schema
@@ -91,7 +91,7 @@ public class KafkaSourceConfig implements Serializable {
         Properties kafkaProperties = parseKafkaProperties(config);
 
         // 解析 format（默认 "json"）
-        String format = config.getString("format", "json");
+        String format = config.get("format", String.class, "json");
 
         // 校验 format 是否支持
         KafkaFormatPlugin formatPlugin = KafkaFormatLoader.getFormatPlugin(format);
@@ -120,7 +120,7 @@ public class KafkaSourceConfig implements Serializable {
      */
     private static Properties parseKafkaProperties(SourceConfig config) {
         Properties properties = new Properties();
-        Map<String, Object> map = config.getMap("properties");
+        Map<String, Object> map = config.get("properties", Map.class);
         if (map == null) {
             return properties;
         }

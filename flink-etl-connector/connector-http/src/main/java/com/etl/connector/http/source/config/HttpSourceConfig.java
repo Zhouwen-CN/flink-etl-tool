@@ -67,23 +67,23 @@ public class HttpSourceConfig implements Serializable {
 
     public static HttpSourceConfig fromSourceConfig(SourceConfig config) {
         // URL（必填）
-        String url = config.getString("url");
+        String url = config.get("url", String.class);
         Preconditions.checkArgument(url != null && !url.isEmpty(), "url is null or empty");
 
         // HTTP 方法（可选，默认 GET）
-        String method = config.getString("method", "GET");
+        String method = config.get("method", String.class, "GET");
         Preconditions.checkArgument("GET".equalsIgnoreCase(method) || "POST".equalsIgnoreCase(method),
                 "method must be GET or POST");
 
         // 请求头（可选）
-        Map<String, Object> headers = config.getMap("headers");
+        Map<String, Object> headers = config.get("headers", Map.class);
 
         // 查询参数（可选）
-        Map<String, Object> params = config.getMap("params");
+        Map<String, Object> params = config.get("params", Map.class);
 
         // 请求体（可选）
         String body = null;
-        Object object = config.getObject("body");
+        Object object = config.get("body");
         if (object != null) {
             if (object instanceof String) {
                 body = (String) object;
@@ -95,13 +95,13 @@ public class HttpSourceConfig implements Serializable {
         }
 
         // 格式（可选，默认 json）
-        String format = config.getString("format", "json");
+        String format = config.get("format", String.class, "json");
         Preconditions.checkArgument(SUPPORTED_FORMATS.contains(format),
                 "format must be one of " + SUPPORTED_FORMATS + ", but got: " + format);
 
         // 路径配置（按 format 取对应字段）
-        String jsonPath = config.getString("jsonPath");
-        String xmlPath = config.getString("xmlPath");
+        String jsonPath = config.get("jsonPath", String.class);
+        String xmlPath = config.get("xmlPath", String.class);
 
         // Schema（必填）
         EtlSchema schema = config.getSchema();

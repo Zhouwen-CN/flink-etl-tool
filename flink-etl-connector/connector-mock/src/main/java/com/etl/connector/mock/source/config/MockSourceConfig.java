@@ -62,8 +62,8 @@ public class MockSourceConfig implements Serializable {
 
         // 3. 解析用户配置
         JsonNode data = parseDataConfig(config);
-        Integer numRows = config.getInteger("numRows", 10);
-        Long intervalMs = config.getLong("intervalMs", 1000L);
+        Integer numRows = config.get("numRows", Integer.class, 10);
+        Long intervalMs = config.get("intervalMs", Long.class, 1000L);
 
         log.info("创建 MockSource: bounded={}, data={}, numRows={}, intervalMs={}",
                 bounded,
@@ -89,7 +89,7 @@ public class MockSourceConfig implements Serializable {
             return null;
         }
 
-        Object dataObj = config.getObject("data");
+        Object dataObj = config.get("data");
         JsonNode data = JsonUtils.valueToTree(dataObj);
         if (!data.isArray()) {
             throw new IllegalArgumentException("配置项 'data' 必须是数组类型");
