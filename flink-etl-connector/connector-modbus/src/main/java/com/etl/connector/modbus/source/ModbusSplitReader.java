@@ -2,12 +2,6 @@ package com.etl.connector.modbus.source;
 
 import com.etl.connector.modbus.source.config.ModbusSourceConfig;
 import com.etl.core.source.AbstractSplitReader;
-import com.serotonin.modbus4j.ModbusFactory;
-import com.serotonin.modbus4j.ModbusMaster;
-import com.serotonin.modbus4j.ip.IpParameters;
-import com.serotonin.modbus4j.msg.ModbusResponse;
-import com.serotonin.modbus4j.msg.ReadHoldingRegistersRequest;
-import com.serotonin.modbus4j.msg.ReadHoldingRegistersResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
 import org.apache.flink.connector.base.source.reader.RecordsWithSplitIds;
@@ -41,7 +35,7 @@ public class ModbusSplitReader extends AbstractSplitReader<Row, ModbusSplit> {
 
     private ModbusSplit currentSplit;
     private ModbusSourceConfig currentConfig;
-    private ModbusMaster master;
+    private ModbusTcpClient client;
     private long readCount = 0;
 
     @Override
@@ -56,7 +50,7 @@ public class ModbusSplitReader extends AbstractSplitReader<Row, ModbusSplit> {
 
             currentSplit = split;
             currentConfig = split.getModbusConfig();
-            initMaster();
+            initClient();
             log.info("开始读取分片: {}", split.splitId());
         }
 
@@ -66,19 +60,13 @@ public class ModbusSplitReader extends AbstractSplitReader<Row, ModbusSplit> {
     /**
      * 初始化 Modbus TCP 连接
      */
-    private void initMaster() throws IOException {
-        IpParameters params = new IpParameters();
-        params.setHost(currentConfig.getIp());
-        params.setPort(currentConfig.getPort());
-
-        ModbusFactory factory = new ModbusFactory();
-        master = factory.createTcpMaster(params, false);
-        try {
-            master.init();
-            log.info("Modbus TCP 连接成功: {}:{}", currentConfig.getIp(), currentConfig.getPort());
-        } catch (Exception e) {
-            throw new IOException("Modbus TCP 连接失败: " + currentConfig.getIp() + ":" + currentConfig.getPort(), e);
-        }
+    private void initClient() throws IOException {
+        client = new ModbusTcpClient(
+                currentConfig.getIp(),
+                currentConfig.getPort(),
+                currentConfig.getDeviceId(),
+                (int) currentConfig.getTimeoutMs());
+        client.connect();
     }
 
     /**
@@ -117,7 +105,6 @@ public class ModbusSplitReader extends AbstractSplitReader<Row, ModbusSplit> {
         RecordsBySplits.Builder<Row> builder = new RecordsBySplits.Builder<>();
 
         try {
-            int deviceId = currentConfig.getDeviceId();
             int address = currentConfig.getAddress();
             int count = currentConfig.getCount();
             int wordSize = currentConfig.getWordSize();
@@ -127,17 +114,7 @@ public class ModbusSplitReader extends AbstractSplitReader<Row, ModbusSplit> {
             while (remaining > 0) {
                 int batchSize = Math.min(remaining, MAX_READ_SIZE);
 
-                ReadHoldingRegistersRequest request = new ReadHoldingRegistersRequest(deviceId, currentAddress, batchSize);
-                ModbusResponse response = master.send(request);
-                if (response.isException()) {
-                    throw new IOException("Modbus 异常响应: " + response.getExceptionMessage());
-                }
-
-                short[] data = ((ReadHoldingRegistersResponse) response).getShortData();
-                if (data == null || data.length < batchSize) {
-                    throw new IOException(String.format("Modbus 响应数据不足: 期望 %d 个寄存器, 实际 %s",
-                            batchSize, data == null ? "null" : data.length));
-                }
+                short[] data = client.readHoldingRegisters(currentAddress, batchSize);
 
                 processRegisterData(data, currentAddress, wordSize, builder);
 
@@ -151,7 +128,7 @@ public class ModbusSplitReader extends AbstractSplitReader<Row, ModbusSplit> {
         if (currentConfig.isBounded()) {
             finishedSplits.add(currentSplit.splitId());
             log.info("批处理模式数据读取完毕，共 {} 行", readCount);
-            destroyMaster();
+            destroyClient();
             currentSplit = null;
             currentConfig = null;
         } else {
@@ -165,17 +142,16 @@ public class ModbusSplitReader extends AbstractSplitReader<Row, ModbusSplit> {
         return builder.build();
     }
 
-    private void destroyMaster() {
-        if (master != null) {
-            master.destroy();
-            master = null;
-            log.info("Modbus TCP 连接已释放");
+    private void destroyClient() {
+        if (client != null) {
+            client.close();
+            client = null;
         }
     }
 
     @Override
     public void close() throws Exception {
-        destroyMaster();
+        destroyClient();
         log.info("ModbusSplitReader 关闭，共读取 {} 行数据", readCount);
     }
 }
