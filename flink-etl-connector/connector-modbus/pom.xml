@@ -15,11 +15,4 @@
 
     <name>Flink ETL Connector - Modbus</name>
     <description>Modbus TCP 连接器（Source，读取 Holding Registers）</description>
-
-    <dependencies>
-        <dependency>
-            <groupId>com.infiniteautomation</groupId>
-            <artifactId>modbus4j</artifactId>
-        </dependency>
-    </dependencies>
 </project>
