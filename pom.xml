@@ -30,7 +30,6 @@
         <commons-csv.version>1.10.0</commons-csv.version>
         <json-path.version>2.9.0</json-path.version>
         <org.eclipse.paho.client.mqttv3.version>1.2.5</org.eclipse.paho.client.mqttv3.version>
-        <modbus4j.version>3.1.0</modbus4j.version>
         <dom4j.version>2.1.4</dom4j.version>
         <jaxen.version>1.2.0</jaxen.version>
 
@@ -70,13 +69,6 @@
                 <version>${json-path.version}</version>
             </dependency>
 
-            <!-- Modbus 通信 -->
-            <dependency>
-                <groupId>com.infiniteautomation</groupId>
-                <artifactId>modbus4j</artifactId>
-                <version>${modbus4j.version}</version>
-            </dependency>
-
             <!-- XML 解析 -->
             <dependency>
                 <groupId>org.dom4j</groupId>
@@ -91,20 +83,6 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <repositories>
-        <!--
-            Modbus4j 仓库
-            settings.xml 中的 mirrorOf 不能是 *
-            可以是 central 或者 *,!ias-releases
-            不然无法下载 modbus4j
-        -->
-        <repository>
-            <id>ias-releases</id>
-            <name>Infinite Automation Release Repository</name>
-            <url>https://maven.mangoautomation.net/repository/ias-release/</url>
-        </repository>
-    </repositories>
 
     <dependencies>
         <!-- Flink 依赖 -->
@@ -198,13 +176,6 @@
             <version>${log4j2.version}</version>
             <scope>provided</scope>
         </dependency>
-        <!-- Commons Logging → Log4j2 桥接，让 modbus4j 的日志走 Log4j2 -->
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-jcl</artifactId>
-            <version>${log4j2.version}</version>
-        </dependency>
-
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
