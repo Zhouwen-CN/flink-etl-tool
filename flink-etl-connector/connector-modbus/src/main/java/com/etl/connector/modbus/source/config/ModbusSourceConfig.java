@@ -25,6 +25,7 @@ public class ModbusSourceConfig implements Serializable {
     private final int count;
     private final int wordSize;
     private final long intervalMs;
+    private final long timeoutMs;
 
     public static ModbusSourceConfig fromSourceConfig(SourceConfig config, RuntimeExecutionMode runtimeMode) {
         boolean bounded = runtimeMode == RuntimeExecutionMode.BATCH;
@@ -77,8 +78,13 @@ public class ModbusSourceConfig implements Serializable {
         Preconditions.checkArgument(intervalMs > 0,
                 "配置项 'intervalMs' 必须 > 0，当前值: %s", intervalMs);
 
-        log.info("创建 ModbusSource: bounded={}, host={}:{}, deviceId={}, address={}, count={}, wordSize={}, intervalMs={}",
-                bounded, ip, port, deviceId, address, count, wordSize, intervalMs);
+        // 7. 校验 timeoutMs（连接与读取共用，默认 3000ms）
+        long timeoutMs = config.get("timeoutMs", Long.class, 3000L);
+        Preconditions.checkArgument(timeoutMs > 0,
+                "配置项 'timeoutMs' 必须 > 0，当前值: %s", timeoutMs);
+
+        log.info("创建 ModbusSource: bounded={}, host={}:{}, deviceId={}, address={}, count={}, wordSize={}, intervalMs={}, timeoutMs={}",
+                bounded, ip, port, deviceId, address, count, wordSize, intervalMs, timeoutMs);
 
         return ModbusSourceConfig.builder()
                 .bounded(bounded)
@@ -89,6 +95,7 @@ public class ModbusSourceConfig implements Serializable {
                 .count(count)
                 .wordSize(wordSize)
                 .intervalMs(intervalMs)
+                .timeoutMs(timeoutMs)
                 .build();
     }
 }
