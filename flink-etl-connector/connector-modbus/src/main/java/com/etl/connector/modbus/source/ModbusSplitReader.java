@@ -65,7 +65,8 @@ public class ModbusSplitReader extends AbstractSplitReader<Row, ModbusSplit> {
                 currentConfig.getIp(),
                 currentConfig.getPort(),
                 currentConfig.getDeviceId(),
-                (int) currentConfig.getTimeoutMs());
+                currentConfig.getTimeoutMs()
+        );
         client.connect();
     }
 
@@ -128,7 +129,7 @@ public class ModbusSplitReader extends AbstractSplitReader<Row, ModbusSplit> {
         if (currentConfig.isBounded()) {
             finishedSplits.add(currentSplit.splitId());
             log.info("批处理模式数据读取完毕，共 {} 行", readCount);
-            destroyClient();
+            this.close();
             currentSplit = null;
             currentConfig = null;
         } else {
@@ -142,16 +143,12 @@ public class ModbusSplitReader extends AbstractSplitReader<Row, ModbusSplit> {
         return builder.build();
     }
 
-    private void destroyClient() {
+    @Override
+    public void close() {
         if (client != null) {
             client.close();
             client = null;
         }
-    }
-
-    @Override
-    public void close() throws Exception {
-        destroyClient();
         log.info("ModbusSplitReader 关闭，共读取 {} 行数据", readCount);
     }
 }

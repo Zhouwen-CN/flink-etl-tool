@@ -8,7 +8,6 @@ import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMap
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
-import java.io.File;
 import java.io.IOException;
 
 /**
@@ -108,23 +107,6 @@ public final class JsonUtils {
         try {
             return MAPPER.readValue(json, clazz);
         } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException("JSON 反序列化失败: " + e.getMessage(), e);
-        }
-    }
-
-    /**
-     * JSON 文件转对象
-     *
-     * @param file  JSON 文件
-     * @param clazz 目标类型
-     * @param <T>   泛型
-     * @return 对象
-     * @throws IllegalArgumentException 反序列化失败时抛出
-     */
-    public static <T> T fromFile(File file, Class<T> clazz) {
-        try {
-            return MAPPER.readValue(file, clazz);
-        } catch (IOException e) {
             throw new IllegalArgumentException("JSON 反序列化失败: " + e.getMessage(), e);
         }
     }

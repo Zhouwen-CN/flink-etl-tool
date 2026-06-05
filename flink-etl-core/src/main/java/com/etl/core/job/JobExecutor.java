@@ -61,7 +61,7 @@ public class JobExecutor {
         Integer parallelism = jobConfig.getParallelism();
         if (parallelism != null) {
             configuration.set(CoreOptions.DEFAULT_PARALLELISM, parallelism);
-            // 本地执行环境需要配置足够的 slot 数量，生产环境需要注释掉
+            // todo: 本地执行环境需要配置足够的 slot 数量，生产环境需要注释掉
             configuration.set(TaskManagerOptions.NUM_TASK_SLOTS, parallelism);
             log.info("设置 Job 并行度：{}, TaskManager slots: {}", parallelism, parallelism);
         }

@@ -10,16 +10,17 @@
       "Read",
       "WebFetch",
       "WebSearch",
-      "mcp__codegraph",
-      "mcp__plugin_context-mode_context-mode"
+      "mcp__codegraph"
     ],
     "ask": [
       "Bash(git push *)",
       "Bash(rm *)",
       "PowerShell(git push *)",
-      "PowerShell(Remove-Item *)",
-      "mcp__plugin_context-mode_context-mode__ctx_purge"
+      "PowerShell(Remove-Item *)"
     ]
   },
-  "enabledPlugins": {}
+  "enabledPlugins": {
+    "superpowers@superpowers-marketplace": true,
+    "caveman@caveman": true
+  }
 }

@@ -1179,7 +1179,7 @@ MySQL 数据库需满足以下条件:
 
 ### Modbus Source
 
-通过 Modbus TCP 协议读取 Holding Registers（功能码 03），支持批处理和流处理模式。
+通过 Modbus TCP 协议读取 Holding Registers（功能码 03），支持批处理和流处理模式。基于 Java 原生 Socket 自实现 Modbus TCP 协议，无第三方 Modbus 库依赖。
 
 #### 配置参数
 
@@ -1191,6 +1191,7 @@ MySQL 数据库需满足以下条件:
 | `count`      | 是  | -      | 读取寄存器数量，`address + count` 不超过 65536                                       |
 | `wordSize`   | 否  | `1`    | 几个寄存器组成一个数据值，可选 `1`（16bit）或 `2`（32bit，高位寄存器在前）；`count` 必须能被 `wordSize` 整除 |
 | `intervalMs` | 否  | `1000` | 流处理模式下的轮询间隔（毫秒）                                                           |
+| `timeoutMs`  | 否  | `3000` | TCP 连接与读取超时（毫秒），超时抛出异常由 Flink 从 checkpoint 重试                            |
 
 **输出 Schema（固定，无需配置）：**
 

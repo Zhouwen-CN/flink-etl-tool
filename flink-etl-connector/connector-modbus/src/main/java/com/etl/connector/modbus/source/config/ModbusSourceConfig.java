@@ -25,7 +25,7 @@ public class ModbusSourceConfig implements Serializable {
     private final int count;
     private final int wordSize;
     private final long intervalMs;
-    private final long timeoutMs;
+    private final int timeoutMs;
 
     public static ModbusSourceConfig fromSourceConfig(SourceConfig config, RuntimeExecutionMode runtimeMode) {
         boolean bounded = runtimeMode == RuntimeExecutionMode.BATCH;
@@ -79,7 +79,7 @@ public class ModbusSourceConfig implements Serializable {
                 "配置项 'intervalMs' 必须 > 0，当前值: %s", intervalMs);
 
         // 7. 校验 timeoutMs（连接与读取共用，默认 3000ms）
-        long timeoutMs = config.get("timeoutMs", Long.class, 3000L);
+        int timeoutMs = config.get("timeoutMs", Integer.class, 3000);
         Preconditions.checkArgument(timeoutMs > 0,
                 "配置项 'timeoutMs' 必须 > 0，当前值: %s", timeoutMs);
 
