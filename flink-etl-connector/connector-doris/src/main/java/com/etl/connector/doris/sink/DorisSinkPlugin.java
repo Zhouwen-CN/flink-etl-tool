@@ -1,8 +1,7 @@
 package com.etl.connector.doris.sink;
 
 import com.etl.connector.doris.sink.config.DorisSinkConfig;
-import com.etl.connector.doris.sink.format.DorisFormatLoader;
-import com.etl.connector.doris.sink.format.DorisFormatPlugin;
+import com.etl.connector.doris.sink.format.RowToDorisJsonSerializer;
 import com.etl.core.config.SinkConfig;
 import com.etl.core.spi.SinkPlugin;
 import com.google.auto.service.AutoService;
@@ -31,43 +30,30 @@ public class DorisSinkPlugin implements SinkPlugin {
     public Sink<Row> createSink(SinkConfig config) {
         DorisSinkConfig cfg = DorisSinkConfig.fromSinkConfig(config);
 
-        // SPI 加载序列化格式
-        DorisFormatPlugin fmt = DorisFormatLoader.getFormatPlugin(cfg.getFormat());
-        if (fmt == null) {
-            throw new IllegalArgumentException(
-                    "不支持的 format: " + cfg.getFormat()
-                            + "，支持: " + DorisFormatLoader.supportedFormats());
-        }
-
         // Doris 连接配置
         DorisOptions dorisOptions = DorisOptions.builder()
                 .setFenodes(cfg.getFenodes())
-                .setTableIdentifier(cfg.getTableIdentifier())
+                .setTableIdentifier(cfg.getTable())
                 .setUsername(cfg.getUsername())
                 .setPassword(cfg.getPassword())
                 .build();
 
-        // 执行配置：batch 模式（at-least-once，非 2PC）+ format 的 Stream Load 属性
-        DorisExecutionOptions.Builder execBuilder = DorisExecutionOptions.builder()
+        // 执行配置：batch 模式 + 禁用 2PC（at-least-once）+ format 的 Stream Load 属性
+        DorisExecutionOptions.Builder execBuilder = DorisExecutionOptions.builderDefaults()
+                .setLabelPrefix(cfg.getLabelPrefix())
+                .setBufferFlushMaxRows(cfg.getBatchSize())
+                .setBufferFlushIntervalMs(cfg.getBatchIntervalMs())
                 .setBatchMode(true)
-                .setStreamLoadProp(fmt.streamLoadProperties());
-        if (cfg.getLabelPrefix() != null) {
-            execBuilder.setLabelPrefix(cfg.getLabelPrefix());
-        }
-        if (cfg.getBatchSize() != null) {
-            execBuilder.setBufferFlushMaxRows(cfg.getBatchSize());
-        }
-        DorisExecutionOptions execOptions = execBuilder.build();
+                .disable2PC();
 
-        log.info("创建 Doris Sink: fenodes={}, table={}, format={}, labelPrefix={}, batchSize={}",
-                cfg.getFenodes(), cfg.getTableIdentifier(), cfg.getFormat(),
-                cfg.getLabelPrefix(), cfg.getBatchSize());
+        log.info("创建 Doris Sink: fenodes={}, table={}, labelPrefix={}, batchSize={}, batchIntervalMs={}",
+                cfg.getFenodes(), cfg.getTable(), cfg.getLabelPrefix(), cfg.getBatchSize(), cfg.getBatchIntervalMs());
 
         return DorisSink.<Row>builder()
                 .setDorisOptions(dorisOptions)
                 .setDorisReadOptions(DorisReadOptions.builder().build())
-                .setDorisExecutionOptions(execOptions)
-                .setSerializer(fmt.createSerializer(cfg))
+                .setDorisExecutionOptions(execBuilder.build())
+                .setSerializer(new RowToDorisJsonSerializer())
                 .build();
     }
 }

@@ -42,13 +42,12 @@
     {
       "type": "doris",
       "inputTable": "source_table",
-      "fenodes": "127.0.0.1:8030",
-      "tableIdentifier": "test_db.test_tbl",
-      "username": "root",
-      "password": "",
-      "format": "json",
-      "labelPrefix": "etl-doris",
-      "batchSize": 10000
+      "config": {
+        "fenodes": "127.0.0.1:8030",
+        "table": "test_db.test_tbl",
+        "username": "root",
+        "password": "123"
+      }
     }
   ]
 }

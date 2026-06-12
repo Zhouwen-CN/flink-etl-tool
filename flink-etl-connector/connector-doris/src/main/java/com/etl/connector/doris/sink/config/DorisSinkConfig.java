@@ -14,21 +14,34 @@ import java.io.Serializable;
 @Builder
 public class DorisSinkConfig implements Serializable {
     private static final long serialVersionUID = 1L;
-
-    /** Doris FE 节点，host:port */
+    /**
+     * Doris FE 节点，host:port
+     */
     private final String fenodes;
-    /** 目标表标识，db.table */
-    private final String tableIdentifier;
-    /** 用户名 */
+    /**
+     * 目标表标识，db.table
+     */
+    private final String table;
+    /**
+     * 用户名
+     */
     private final String username;
-    /** 密码 */
+    /**
+     * 密码
+     */
     private final String password;
-    /** Stream Load label 前缀（可选） */
+    /**
+     * Stream Load label 前缀（可选）
+     */
     private final String labelPrefix;
-    /** 批量缓冲条数（可选） */
+    /**
+     * 批量缓冲条数（可选）
+     */
     private final Integer batchSize;
-    /** 序列化格式，默认 json */
-    private final String format;
+    /**
+     * 批量刷写间隔（毫秒）
+     */
+    private final Long batchIntervalMs;
 
     /**
      * 从 SinkConfig 解析并校验
@@ -37,11 +50,11 @@ public class DorisSinkConfig implements Serializable {
         String fenodes = config.get("fenodes", String.class);
         Preconditions.checkArgument(fenodes != null && !fenodes.trim().isEmpty(), "fenodes 不能为空");
 
-        String tableIdentifier = config.get("tableIdentifier", String.class);
-        Preconditions.checkArgument(tableIdentifier != null && !tableIdentifier.trim().isEmpty(),
-                "tableIdentifier 不能为空");
-        Preconditions.checkArgument(tableIdentifier.contains("."),
-                "tableIdentifier 必须为 db.table 格式: " + tableIdentifier);
+        String table = config.get("table", String.class);
+        Preconditions.checkArgument(table != null && !table.trim().isEmpty(),
+                "table 不能为空");
+        Preconditions.checkArgument(table.matches("^[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+$"),
+                "table 必须为 db.table 格式: " + table);
 
         String username = config.get("username", String.class);
         Preconditions.checkArgument(username != null && !username.trim().isEmpty(), "username 不能为空");
@@ -50,18 +63,20 @@ public class DorisSinkConfig implements Serializable {
         String password = config.get("password", String.class);
         Preconditions.checkArgument(password != null, "password 不能为 null");
 
-        String labelPrefix = config.get("labelPrefix", String.class);
-        Integer batchSize = config.get("batchSize", Integer.class);
-        String format = config.get("format", String.class, "json");
+        String labelPrefix = config.get("labelPrefix", String.class, "doris-sink");
+        Integer batchSize = config.get("batchSize", Integer.class, 50000);
+        Preconditions.checkArgument(batchSize > 0, "batchSize 需要大于0");
+        Long batchIntervalMs = config.get("batchIntervalMs", Long.class, 10000L);
+        Preconditions.checkArgument(batchIntervalMs > 0, "batchIntervalMs 需要大于0");
 
         return DorisSinkConfig.builder()
                 .fenodes(fenodes)
-                .tableIdentifier(tableIdentifier)
+                .table(table)
                 .username(username)
                 .password(password)
                 .labelPrefix(labelPrefix)
                 .batchSize(batchSize)
-                .format(format)
+                .batchIntervalMs(batchIntervalMs)
                 .build();
     }
 }

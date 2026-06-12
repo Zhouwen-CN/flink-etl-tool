@@ -6,7 +6,9 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class DorisSinkConfigTest {
 
@@ -30,10 +32,9 @@ class DorisSinkConfigTest {
     void fromSinkConfig_allRequiredPresent_parsesAndDefaultsFormatJson() {
         DorisSinkConfig cfg = DorisSinkConfig.fromSinkConfig(sinkConfig(validProps()));
         assertEquals("127.0.0.1:8030", cfg.getFenodes());
-        assertEquals("test_db.test_tbl", cfg.getTableIdentifier());
+        assertEquals("test_db.test_tbl", cfg.getTable());
         assertEquals("root", cfg.getUsername());
         assertEquals("", cfg.getPassword());
-        assertEquals("json", cfg.getFormat());
         assertNull(cfg.getLabelPrefix());
         assertNull(cfg.getBatchSize());
     }

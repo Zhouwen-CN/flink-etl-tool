@@ -1,12 +1,13 @@
 package com.etl.connector.doris.sink.format;
 
-import com.etl.connector.doris.sink.config.DorisSinkConfig;
 import com.etl.core.schema.RowToJsonConverter;
 import com.etl.core.utils.JsonUtils;
 import org.apache.doris.flink.sink.writer.serializer.DorisRecord;
 import org.apache.doris.flink.sink.writer.serializer.DorisRecordSerializer;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.flink.types.Row;
+import org.apache.flink.types.RowKind;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -18,21 +19,18 @@ import java.nio.charset.StandardCharsets;
 public class RowToDorisJsonSerializer implements DorisRecordSerializer<Row> {
 
     private static final long serialVersionUID = 1L;
+    private static final String DORIS_DELETE_SIGN = "__DORIS_DELETE_SIGN__";
 
-    private final String database;
-    private final String table;
-
-    public RowToDorisJsonSerializer(DorisSinkConfig config) {
-        String[] parts = config.getTableIdentifier().split("\\.", 2);
-        this.database = parts[0];
-        this.table = parts[1];
-    }
 
     @Override
     public DorisRecord serialize(Row row) throws IOException {
+        int sign = row.getKind() == RowKind.DELETE ? 1 : 0;
         JsonNode node = RowToJsonConverter.convertRowToJsonNode(row);
+        if (node.isObject()) {
+            ObjectNode objectNode = (ObjectNode) node;
+            objectNode.put(DORIS_DELETE_SIGN, sign);
+        }
         String json = JsonUtils.writeValueAsString(node);
-        byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
-        return DorisRecord.of(database, table, bytes);
+        return DorisRecord.of(json.getBytes(StandardCharsets.UTF_8));
     }
 }

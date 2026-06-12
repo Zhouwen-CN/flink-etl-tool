@@ -21,6 +21,7 @@
         <flink.version>1.15.2</flink.version>
         <flink-connector-kafka.version>1.15.2</flink-connector-kafka.version>
         <flink-connector-mysql-cdc.version>2.3.0</flink-connector-mysql-cdc.version>
+        <flink-doris-connector.version>1.5.2</flink-doris-connector.version>
 
         <slf4j.version>1.7.36</slf4j.version>
         <log4j2.version>2.20.0</log4j2.version>
@@ -152,6 +153,12 @@
             <groupId>com.ververica</groupId>
             <artifactId>flink-connector-mysql-cdc</artifactId>
             <version>${flink-connector-mysql-cdc.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.doris</groupId>
+            <artifactId>flink-doris-connector-1.15</artifactId>
+            <version>${flink-doris-connector.version}</version>
             <scope>provided</scope>
         </dependency>
 

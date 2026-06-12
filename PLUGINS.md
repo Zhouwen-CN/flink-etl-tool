@@ -19,7 +19,7 @@
     - [Console Sink](#console-sink)
     - [JDBC Sink](#jdbc-sink)
     - [Kafka Sink](#kafka-sink)
-- [Doris Sink](#doris-sink)
+  - [Doris Sink](#doris-sink)
 - [Transform 插件](#transform-插件)
     - [SQL Transform](#sql-transform)
 - [UDF 插件](#udf-插件)
@@ -1180,7 +1180,8 @@ MySQL 数据库需满足以下条件:
 
 ### Modbus Source
 
-通过 Modbus TCP 协议读取 Holding Registers（功能码 03），支持批处理和流处理模式。基于 Java 原生 Socket 自实现 Modbus TCP 协议，无第三方 Modbus 库依赖。
+通过 Modbus TCP 协议读取 Holding Registers（功能码 03），支持批处理和流处理模式。基于 Java 原生 Socket 自实现 Modbus TCP
+协议，无第三方 Modbus 库依赖。
 
 #### 配置参数
 
@@ -1192,7 +1193,7 @@ MySQL 数据库需满足以下条件:
 | `count`      | 是  | -      | 读取寄存器数量，`address + count` 不超过 65536                                       |
 | `wordSize`   | 否  | `1`    | 几个寄存器组成一个数据值，可选 `1`（16bit）或 `2`（32bit，高位寄存器在前）；`count` 必须能被 `wordSize` 整除 |
 | `intervalMs` | 否  | `1000` | 流处理模式下的轮询间隔（毫秒）                                                           |
-| `timeoutMs`  | 否  | `3000` | TCP 连接与读取超时（毫秒），超时抛出异常由 Flink 从 checkpoint 重试                            |
+| `timeoutMs`  | 否  | `3000` | TCP 连接与读取超时（毫秒），超时抛出异常由 Flink 从 checkpoint 重试                             |
 
 **输出 Schema（固定，无需配置）：**
 
@@ -1218,7 +1219,8 @@ address=4, value=-1
 - **Batch 模式**：读取一次所有寄存器后程序退出
 - **Streaming 模式**：按 `intervalMs` 间隔持续轮询寄存器
 
-**分批读取：** 当 `count` 超过 32 时，自动分批请求，每批最多读取 32 个寄存器，兼容存在单次读取数量限制的 Modbus 设备。分批对用户透明，输出数据与一次性读取完全一致。
+**分批读取：** 当 `count` 超过 32 时，自动分批请求，每批最多读取 32 个寄存器，兼容存在单次读取数量限制的 Modbus
+设备。分批对用户透明，输出数据与一次性读取完全一致。
 
 #### 配置示例
 
@@ -1811,15 +1813,15 @@ Kafka Sink 与 Kafka Source 可以形成完整的数据流转链路：
 
 #### 配置参数
 
-| 参数               | 必填 | 默认值      | 说明                                        |
-|------------------|:--:|----------|-------------------------------------------|
-| `fenodes`        | 是  | -        | Doris FE 节点地址，如 `127.0.0.1:8030`          |
-| `tableIdentifier` | 是  | -        | 目标表标识，格式 `db.table`                        |
-| `username`       | 是  | -        | Doris 用户名                                |
-| `password`       | 是  | -        | Doris 密码（可为空字符串）                          |
-| `labelPrefix`    | 否  | `etl-doris` | Stream Load label 前缀，用于去重和追踪              |
-| `batchSize`      | 否  | `10000`  | 单次 Stream Load 批量写入行数                      |
-| `format`         | 否  | `json`   | 序列化格式，当前支持 `json`，可通过 `DorisFormatPlugin` SPI 扩展 |
+| 参数                | 必填 | 默认值        | 说明                               |
+|-------------------|:--:|------------|----------------------------------|
+| `fenodes`         | 是  | -          | Doris FE 节点地址，如 `127.0.0.1:8030` |
+| `table`           | 是  | -          | 目标表标识，格式 `db.table`              |
+| `username`        | 是  | -          | Doris 用户名                        |
+| `password`        | 是  | -          | Doris 密码（可为空字符串）                 |
+| `labelPrefix`     | 否  | doris-sink | Stream Load 导入使用的 label 前缀       |
+| `batchSize`       | 否  | 50000      | 攒批模式下，单个批次最多写入的数据行数              |
+| `batchIntervalMs` | 否  | 10000      | 攒批模式下，异步刷新缓存的间隔                  |
 
 #### 配置示例
 
@@ -1830,29 +1832,12 @@ Kafka Sink 与 Kafka Source 可以形成完整的数据流转链路：
   "sink": {
     "type": "doris",
     "inputTable": "output_data",
-    "fenodes": "127.0.0.1:8030",
-    "tableIdentifier": "test_db.test_tbl",
-    "username": "root",
-    "password": "",
-    "format": "json",
-    "labelPrefix": "etl-doris",
-    "batchSize": 10000
-  }
-}
-```
-
-**带变量替换配置：**
-
-```json
-{
-  "sink": {
-    "type": "doris",
-    "inputTable": "output_data",
-    "fenodes": "${doris_fenodes:-127.0.0.1:8030}",
-    "tableIdentifier": "${doris_db}.${doris_table}",
-    "username": "${doris_user}",
-    "password": "${doris_password}",
-    "batchSize": 5000
+    "config": {
+      "fenodes": "127.0.0.1:8030",
+      "tableIdentifier": "test_db.test_tbl",
+      "username": "root",
+      "password": "123456"
+    }
   }
 }
 ```
@@ -1862,10 +1847,6 @@ Kafka Sink 与 Kafka Source 可以形成完整的数据流转链路：
 - at-least-once（batch 模式）
 - Stream Load label 由 `labelPrefix` + subtaskId 自动生成，保证唯一性
 - 写入失败时抛出异常，Flink 从 checkpoint 重试
-
-#### format SPI 扩展
-
-当前仅支持 `json` 格式，可通过实现 `DorisFormatPlugin` 接口 + `@AutoService(DorisFormatPlugin.class)` 注解扩展新的序列化格式。实现后无需修改任何代码，运行时通过 `format` 配置项自动加载。
 
 ---
 
