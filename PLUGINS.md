@@ -19,6 +19,7 @@
     - [Console Sink](#console-sink)
     - [JDBC Sink](#jdbc-sink)
     - [Kafka Sink](#kafka-sink)
+- [Doris Sink](#doris-sink)
 - [Transform 插件](#transform-插件)
     - [SQL Transform](#sql-transform)
 - [UDF 插件](#udf-插件)
@@ -1801,6 +1802,70 @@ Kafka Sink 与 Kafka Source 可以形成完整的数据流转链路：
 - 流式写入，数据实时发送到 Kafka（`mode: "streaming"`）
 - 支持 checkpoint 时确认消息写入成功
 - at-least-once 语义，故障恢复时可能产生重复消息
+
+---
+
+### Doris Sink
+
+通过 Stream Load 写入 Apache Doris，基于 flink-doris-connector-1.15 实现。序列化格式通过 SPI 加载（当前仅 json）。
+
+#### 配置参数
+
+| 参数               | 必填 | 默认值      | 说明                                        |
+|------------------|:--:|----------|-------------------------------------------|
+| `fenodes`        | 是  | -        | Doris FE 节点地址，如 `127.0.0.1:8030`          |
+| `tableIdentifier` | 是  | -        | 目标表标识，格式 `db.table`                        |
+| `username`       | 是  | -        | Doris 用户名                                |
+| `password`       | 是  | -        | Doris 密码（可为空字符串）                          |
+| `labelPrefix`    | 否  | `etl-doris` | Stream Load label 前缀，用于去重和追踪              |
+| `batchSize`      | 否  | `10000`  | 单次 Stream Load 批量写入行数                      |
+| `format`         | 否  | `json`   | 序列化格式，当前支持 `json`，可通过 `DorisFormatPlugin` SPI 扩展 |
+
+#### 配置示例
+
+**基础配置：**
+
+```json
+{
+  "sink": {
+    "type": "doris",
+    "inputTable": "output_data",
+    "fenodes": "127.0.0.1:8030",
+    "tableIdentifier": "test_db.test_tbl",
+    "username": "root",
+    "password": "",
+    "format": "json",
+    "labelPrefix": "etl-doris",
+    "batchSize": 10000
+  }
+}
+```
+
+**带变量替换配置：**
+
+```json
+{
+  "sink": {
+    "type": "doris",
+    "inputTable": "output_data",
+    "fenodes": "${doris_fenodes:-127.0.0.1:8030}",
+    "tableIdentifier": "${doris_db}.${doris_table}",
+    "username": "${doris_user}",
+    "password": "${doris_password}",
+    "batchSize": 5000
+  }
+}
+```
+
+#### 语义
+
+- at-least-once（batch 模式）
+- Stream Load label 由 `labelPrefix` + subtaskId 自动生成，保证唯一性
+- 写入失败时抛出异常，Flink 从 checkpoint 重试
+
+#### format SPI 扩展
+
+当前仅支持 `json` 格式，可通过实现 `DorisFormatPlugin` 接口 + `@AutoService(DorisFormatPlugin.class)` 注解扩展新的序列化格式。实现后无需修改任何代码，运行时通过 `format` 配置项自动加载。
 
 ---
 
