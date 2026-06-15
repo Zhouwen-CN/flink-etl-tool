@@ -5,7 +5,6 @@ import org.apache.doris.flink.sink.writer.serializer.DorisRecordSerializer;
 import org.apache.flink.types.Row;
 
 import java.io.Serializable;
-import java.util.Properties;
 
 /**
  * Doris Sink 序列化格式 SPI 接口

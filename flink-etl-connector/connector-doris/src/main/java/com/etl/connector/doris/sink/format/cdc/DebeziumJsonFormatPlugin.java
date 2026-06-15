@@ -2,7 +2,6 @@ package com.etl.connector.doris.sink.format.cdc;
 
 import com.etl.connector.doris.sink.config.DorisSinkConfig;
 import com.etl.connector.doris.sink.format.DorisFormatPlugin;
-import com.etl.connector.doris.sink.format.json.RowToJsonSerializer;
 import com.google.auto.service.AutoService;
 import org.apache.doris.flink.sink.writer.serializer.DorisRecordSerializer;
 import org.apache.flink.types.Row;

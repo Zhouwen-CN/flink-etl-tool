@@ -27,7 +27,6 @@ public class OggJsonSerializerImpl extends AbstractCdcJsonSerializer {
     protected ObjectNode toDebeziumJson(ObjectNode objectNode) {
         JsonNode opType = objectNode.remove("op_type");
 
-        // op type 检查
         if (opType == null) {
             log.warn("op_type is null: {}", objectNode);
             return null;
