@@ -1,7 +1,8 @@
 package com.etl.connector.doris.sink;
 
 import com.etl.connector.doris.sink.config.DorisSinkConfig;
-import com.etl.connector.doris.sink.format.RowToDorisJsonSerializer;
+
+import com.etl.connector.doris.sink.format.json.RowToJsonSerializer;
 import com.etl.core.config.SinkConfig;
 import com.etl.core.spi.SinkPlugin;
 import com.google.auto.service.AutoService;
@@ -43,6 +44,7 @@ public class DorisSinkPlugin implements SinkPlugin {
                 .setLabelPrefix(cfg.getLabelPrefix())
                 .setBufferFlushMaxRows(cfg.getBatchSize())
                 .setBufferFlushIntervalMs(cfg.getBatchIntervalMs())
+                .setIgnoreUpdateBefore(true)
                 .setBatchMode(true)
                 .disable2PC();
 
@@ -53,7 +55,7 @@ public class DorisSinkPlugin implements SinkPlugin {
                 .setDorisOptions(dorisOptions)
                 .setDorisReadOptions(DorisReadOptions.builder().build())
                 .setDorisExecutionOptions(execBuilder.build())
-                .setSerializer(new RowToDorisJsonSerializer())
+                .setSerializer(new RowToJsonSerializer())
                 .build();
     }
 }

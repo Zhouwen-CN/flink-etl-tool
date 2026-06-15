@@ -6,6 +6,7 @@ import lombok.Getter;
 import org.apache.flink.util.Preconditions;
 
 import java.io.Serializable;
+import java.util.Map;
 
 /**
  * Doris Sink 配置
@@ -42,6 +43,10 @@ public class DorisSinkConfig implements Serializable {
      * 批量刷写间隔（毫秒）
      */
     private final Long batchIntervalMs;
+
+    private String format;
+
+    private Map<String,String> tableMapping;
 
     /**
      * 从 SinkConfig 解析并校验
