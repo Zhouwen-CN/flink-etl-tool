@@ -1,5 +1,6 @@
-package com.etl.core.config;
+package com.etl.client.parser;
 
+import com.etl.core.config.JobConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.text.StrSubstitutor;
 import org.apache.flink.api.java.utils.ParameterTool;
@@ -49,7 +50,6 @@ public class CliArgumentParser {
         } else if (params.has("config")) {
             json = loadFromString(params.get("config"));
         } else {
-            printUsage();
             throw new IllegalArgumentException("缺少必要参数：请指定 --file 或 --config");
         }
 

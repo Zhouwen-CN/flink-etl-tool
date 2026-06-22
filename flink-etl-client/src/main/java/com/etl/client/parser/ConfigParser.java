@@ -1,6 +1,10 @@
-package com.etl.core.config;
+package com.etl.client.parser;
 
 
+import com.etl.core.config.JobConfig;
+import com.etl.core.config.SinkConfig;
+import com.etl.core.config.SourceConfig;
+import com.etl.core.config.TransformConfig;
 import com.etl.core.utils.JsonUtils;
 import lombok.extern.slf4j.Slf4j;
 

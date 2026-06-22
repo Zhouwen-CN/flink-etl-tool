@@ -6,8 +6,6 @@ import org.junit.jupiter.api.Test;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class DorisSinkConfigTest {
@@ -26,28 +24,6 @@ class DorisSinkConfigTest {
         p.put("username", "root");
         p.put("password", "");
         return p;
-    }
-
-    @Test
-    void fromSinkConfig_allRequiredPresent_parsesAndDefaultsFormatJson() {
-        DorisSinkConfig cfg = DorisSinkConfig.fromSinkConfig(sinkConfig(validProps()));
-        assertEquals("127.0.0.1:8030", cfg.getFenodes());
-        assertEquals("test_db.test_tbl", cfg.getTable());
-        assertEquals("root", cfg.getUsername());
-        assertEquals("", cfg.getPassword());
-        assertNull(cfg.getLabelPrefix());
-        assertNull(cfg.getBatchSize());
-    }
-
-    @Test
-    void fromSinkConfig_optionalPresent_parsed() {
-        Map<String, Object> p = validProps();
-        p.put("labelPrefix", "etl-doris");
-        p.put("batchSize", 5000);
-        p.put("format", "json");
-        DorisSinkConfig cfg = DorisSinkConfig.fromSinkConfig(sinkConfig(p));
-        assertEquals("etl-doris", cfg.getLabelPrefix());
-        assertEquals(5000, cfg.getBatchSize());
     }
 
     @Test

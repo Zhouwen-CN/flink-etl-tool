@@ -1,6 +1,6 @@
 package com.etl.client;
 
-import com.etl.core.config.CliArgumentParser;
+import com.etl.client.parser.CliArgumentParser;
 import com.etl.core.config.JobConfig;
 import com.etl.core.job.JobExecutor;
 import lombok.extern.slf4j.Slf4j;
