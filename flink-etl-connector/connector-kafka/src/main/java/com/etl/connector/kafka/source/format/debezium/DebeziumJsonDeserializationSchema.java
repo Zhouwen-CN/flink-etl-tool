@@ -1,8 +1,11 @@
-package com.etl.connector.kafka.source.format;
+package com.etl.connector.kafka.source.format.debezium;
 
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.JsonToRowConverter;
-import com.etl.core.utils.JsonUtils;
+import com.etl.core.util.JsonUtil;
+import com.etl.core.util.MetadataUtil;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDeserializationSchema;
@@ -10,11 +13,12 @@ import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
 import org.apache.flink.types.Row;
 import org.apache.flink.types.RowKind;
 import org.apache.flink.util.Collector;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.StringJoiner;
 
 /**
  * Debezium JSON 反序列化器
@@ -38,7 +42,7 @@ public class DebeziumJsonDeserializationSchema implements KafkaRecordDeserializa
         }
 
         // 解析 Debezium JSON
-        JsonNode debeziumJson = JsonUtils.readTree(record.value());
+        JsonNode debeziumJson = JsonUtil.readTree(record.value());
 
         // 提取操作类型
         JsonNode opNode = debeziumJson.get("op");
@@ -63,17 +67,31 @@ public class DebeziumJsonDeserializationSchema implements KafkaRecordDeserializa
             return;
         }
 
-        // 转换为 Row
-        List<Row> rows = JsonToRowConverter.convertJsonToRows(dataNode, schema);
-        if (rows.isEmpty()) {
-            return;
-        }
-        // cdc before/after 节点不会是array类型
-        Row row = rows.get(0);
-
+        // 添加source到row
+        String source = this.getSourceFromJsonNode(debeziumJson);
+        Row row = JsonToRowConverter.convertJsonToRow(dataNode, schema, Collections.singletonList(source));
         row.setKind(rowKind);
         out.collect(row);
     }
+
+    public String getSourceFromJsonNode(JsonNode jsonNode) {
+        StringJoiner identifier = new StringJoiner(".");
+        JsonNode source = jsonNode.get("source");
+        if (source == null) {
+            return null;
+        }
+
+        Optional.ofNullable(source.get("db")).ifPresent(item -> identifier.add(item.asText()));
+        Optional.ofNullable(source.get("schema")).ifPresent(item -> identifier.add(item.asText()));
+        Optional.ofNullable(source.get("table")).ifPresent(item -> identifier.add(item.asText()));
+
+        String result = identifier.toString();
+        if (StringUtils.isEmpty(result)) {
+            return null;
+        }
+        return result;
+    }
+
 
     /**
      * Debezium op 字段映射到 Flink RowKind
@@ -89,7 +107,7 @@ public class DebeziumJsonDeserializationSchema implements KafkaRecordDeserializa
                 return RowKind.DELETE;
             default:
                 throw new IllegalArgumentException(
-                    String.format("未知的 Debezium op 类型: '%s'，支持的操作: c, r, u, d", op)
+                        String.format("未知的 Debezium op 类型: '%s'，支持的操作: c, r, u, d", op)
                 );
         }
     }
@@ -97,6 +115,7 @@ public class DebeziumJsonDeserializationSchema implements KafkaRecordDeserializa
     @Override
     public TypeInformation<Row> getProducedType() {
         // 返回业务数据 Row 的类型信息
-        return Types.ROW_NAMED(schema.getFieldNames(), schema.getFieldTypes());
+        EtlSchema etlSchema = MetadataUtil.addSourceToSchema(schema);
+        return Types.ROW_NAMED(etlSchema.getFieldNames(), etlSchema.getFieldTypes());
     }
 }

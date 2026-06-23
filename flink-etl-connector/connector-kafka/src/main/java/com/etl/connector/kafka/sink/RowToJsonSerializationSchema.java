@@ -2,7 +2,7 @@ package com.etl.connector.kafka.sink;
 
 import com.etl.connector.kafka.sink.config.KafkaSinkConfig;
 import com.etl.core.schema.RowToJsonConverter;
-import com.etl.core.utils.JsonUtils;
+import com.etl.core.util.JsonUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
@@ -66,7 +66,7 @@ public class RowToJsonSerializationSchema implements KafkaRecordSerializationSch
         JsonNode jsonNode = RowToJsonConverter.convertRowToJsonNode(row);
 
         // JsonNode -> JSON 字符串（JsonUtils 内部已处理 JsonProcessingException）
-        String jsonString = JsonUtils.writeValueAsString(jsonNode);
+        String jsonString = JsonUtil.writeValueAsString(jsonNode);
 
         // 转为 bytes
         return jsonString.getBytes(StandardCharsets.UTF_8);

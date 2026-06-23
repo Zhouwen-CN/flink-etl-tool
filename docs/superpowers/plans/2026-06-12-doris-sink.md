@@ -369,7 +369,8 @@ git commit -m "feat: 新增 DorisFormatPlugin SPI 接口"
 - Create: `flink-etl-connector/connector-doris/src/main/java/com/etl/connector/doris/sink/format/RowToDorisJsonSerializer.java`
 - Test: `flink-etl-connector/connector-doris/src/test/java/com/etl/connector/doris/sink/format/RowToDorisJsonSerializerTest.java`
 
-复用 `com.etl.core.schema.RowToJsonConverter.convertRowToJsonNode(Row)` 和 `com.etl.core.utils.JsonUtils.writeValueAsString(Object)`。`DorisRecord.of(db, table, byte[])`。
+复用 `com.etl.core.schema.RowToJsonConverter.convertRowToJsonNode(Row)` 和
+`com.etl.core.util.JsonUtil.writeValueAsString(Object)`。`DorisRecord.of(db, table, byte[])`。
 
 - [ ] **Step 1: 写失败测试**
 
@@ -436,7 +437,7 @@ package com.etl.connector.doris.sink.format;
 
 import com.etl.connector.doris.sink.config.DorisSinkConfig;
 import com.etl.core.schema.RowToJsonConverter;
-import com.etl.core.utils.JsonUtils;
+import com.etl.core.util.JsonUtil;
 import org.apache.doris.flink.sink.writer.serializer.DorisRecord;
 import org.apache.doris.flink.sink.writer.serializer.DorisRecordSerializer;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;

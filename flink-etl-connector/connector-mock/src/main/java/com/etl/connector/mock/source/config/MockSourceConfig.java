@@ -3,7 +3,7 @@ package com.etl.connector.mock.source.config;
 import com.etl.core.config.SourceConfig;
 import com.etl.core.exception.SchemaConfigException;
 import com.etl.core.schema.EtlSchema;
-import com.etl.core.utils.JsonUtils;
+import com.etl.core.util.JsonUtil;
 import lombok.Builder;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -90,7 +90,7 @@ public class MockSourceConfig implements Serializable {
         }
 
         Object dataObj = config.get("data");
-        JsonNode data = JsonUtils.valueToTree(dataObj);
+        JsonNode data = JsonUtil.valueToTree(dataObj);
         if (!data.isArray()) {
             throw new IllegalArgumentException("配置项 'data' 必须是数组类型");
         }

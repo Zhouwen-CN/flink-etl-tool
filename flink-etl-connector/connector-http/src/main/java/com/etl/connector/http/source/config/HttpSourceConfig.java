@@ -2,11 +2,10 @@ package com.etl.connector.http.source.config;
 
 import com.etl.core.config.SourceConfig;
 import com.etl.core.schema.EtlSchema;
-import com.etl.core.utils.JsonUtils;
+import com.etl.core.util.JsonUtil;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-
 import org.apache.flink.util.Preconditions;
 
 import java.io.Serializable;
@@ -88,7 +87,7 @@ public class HttpSourceConfig implements Serializable {
             if (object instanceof String) {
                 body = (String) object;
             } else if (object instanceof Map) {
-                body = JsonUtils.writeValueAsString(object);
+                body = JsonUtil.writeValueAsString(object);
             } else {
                 throw new IllegalArgumentException("Body of type " + object.getClass().getName() + " is not supported");
             }

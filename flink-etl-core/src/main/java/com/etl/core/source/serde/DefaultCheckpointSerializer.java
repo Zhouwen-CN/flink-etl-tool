@@ -2,7 +2,7 @@ package com.etl.core.source.serde;
 
 import com.etl.core.source.BaseEnumCheckpoint;
 import com.etl.core.source.BaseSourceSplit;
-import com.etl.core.utils.SerializerUtils;
+import com.etl.core.util.SerializerUtil;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
 
 import java.io.IOException;
@@ -25,7 +25,7 @@ public class DefaultCheckpointSerializer<SplitT extends BaseSourceSplit>
 
     @Override
     public byte[] serialize(BaseEnumCheckpoint<SplitT> checkpoint) throws IOException {
-        return SerializerUtils.serialize(checkpoint);
+        return SerializerUtil.serialize(checkpoint);
     }
 
     @Override
@@ -34,6 +34,6 @@ public class DefaultCheckpointSerializer<SplitT extends BaseSourceSplit>
         if (version > VERSION) {
             throw new IOException("无法读取未来版本的数据，当前版本: " + VERSION + "，数据版本: " + version);
         }
-        return (BaseEnumCheckpoint<SplitT>) SerializerUtils.deserialize(serialized);
+        return (BaseEnumCheckpoint<SplitT>) SerializerUtil.deserialize(serialized);
     }
 }

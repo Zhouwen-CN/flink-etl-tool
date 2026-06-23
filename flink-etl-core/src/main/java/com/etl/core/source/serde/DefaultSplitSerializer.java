@@ -1,7 +1,7 @@
 package com.etl.core.source.serde;
 
 import com.etl.core.source.BaseSourceSplit;
-import com.etl.core.utils.SerializerUtils;
+import com.etl.core.util.SerializerUtil;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
 
 import java.io.IOException;
@@ -23,7 +23,7 @@ public class DefaultSplitSerializer<SplitT extends BaseSourceSplit> implements S
 
     @Override
     public byte[] serialize(SplitT split) throws IOException {
-        return SerializerUtils.serialize(split);
+        return SerializerUtil.serialize(split);
     }
 
     @Override
@@ -33,6 +33,6 @@ public class DefaultSplitSerializer<SplitT extends BaseSourceSplit> implements S
             throw new IOException("无法读取未来版本的数据，当前版本: " + VERSION + "，数据版本: " + version);
         }
 
-        return (SplitT) SerializerUtils.deserialize(serialized);
+        return (SplitT) SerializerUtil.deserialize(serialized);
     }
 }

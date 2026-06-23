@@ -302,7 +302,7 @@ package com.etl.core.source.serde;
 
 import com.etl.core.source.BaseEnumCheckpoint;
 import com.etl.core.source.BaseSourceSplit;
-import com.etl.core.utils.SerializerUtils;
+import com.etl.core.util.SerializerUtil;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
 
 import java.io.IOException;
@@ -403,7 +403,7 @@ import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseEnumCheckpoint;
 import com.etl.core.source.serde.DefaultCheckpointSerializer;
 import com.etl.core.source.serde.DefaultSplitSerializer;
-import com.etl.core.utils.SqlUtils;
+import com.etl.core.util.SqlUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.connector.source.Boundedness;

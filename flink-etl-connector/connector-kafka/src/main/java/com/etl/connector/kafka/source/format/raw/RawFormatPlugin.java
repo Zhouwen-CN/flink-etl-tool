@@ -1,5 +1,6 @@
-package com.etl.connector.kafka.source.format;
+package com.etl.connector.kafka.source.format.raw;
 
+import com.etl.connector.kafka.source.format.KafkaFormatPlugin;
 import com.etl.core.schema.EtlSchema;
 import com.google.auto.service.AutoService;
 import org.apache.flink.api.common.typeinfo.Types;

@@ -1,10 +1,14 @@
 package com.etl.connector.kafka.source.format;
 
+import com.etl.connector.kafka.source.format.raw.RawFormatPlugin;
 import com.etl.core.schema.EtlSchema;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RawFormatPluginTest {
 

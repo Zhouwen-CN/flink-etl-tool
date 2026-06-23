@@ -687,7 +687,7 @@ git commit -m "test: 添加 RowToJsonSerializationSchema 测试用例"
 package com.etl.sink.kafka;
 
 import com.etl.core.schema.TypeConverter;
-import com.etl.core.utils.JsonUtils;
+import com.etl.core.util.JsonUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
 import org.apache.flink.connector.kafka.sink.KafkaRecordSinkContext;
@@ -724,7 +724,7 @@ public class RowToJsonSerializationSchema implements KafkaRecordSerializationSch
         this.objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
         log.info("Kafka Sink 序列化器已初始化: topic={}, keyField={}",
-                 config.getTopic(), config.getKeyField());
+                config.getTopic(), config.getKeyField());
     }
 
     @Override

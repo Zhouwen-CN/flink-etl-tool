@@ -1,6 +1,7 @@
 package com.etl.core.schema;
 
-import com.etl.core.constants.SchemaConstants;
+import com.etl.core.constants.DateFormatConstants;
+import lombok.val;
 import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
@@ -26,10 +27,14 @@ public class JsonToRowConverter {
 
     // region JsonNode 转换器映射
 
-    /** JsonNode 转换器映射 */
+    /**
+     * JsonNode 转换器映射
+     */
     private static final Map<TypeInformation<?>, Function<JsonNode, Object>> JSON_NODE_CONVERTERS = new HashMap<>();
 
-    /** JsonNode 数组元素转换器映射 */
+    /**
+     * JsonNode 数组元素转换器映射
+     */
     private static final Map<TypeInformation<?>, Function<JsonNode, Object>> JSON_ARRAY_ELEMENT_CONVERTERS = new HashMap<>();
 
     static {
@@ -40,7 +45,7 @@ public class JsonToRowConverter {
         JSON_NODE_CONVERTERS.put(Types.DOUBLE, JsonNode::asDouble);
         JSON_NODE_CONVERTERS.put(Types.BOOLEAN, JsonNode::asBoolean);
         JSON_NODE_CONVERTERS.put(Types.BIG_DEC, node -> new BigDecimal(node.asText()));
-        JSON_NODE_CONVERTERS.put(Types.LOCAL_DATE_TIME, node -> LocalDateTime.parse(node.asText(), SchemaConstants.DEFAULT_TIMESTAMP_FORMAT));
+        JSON_NODE_CONVERTERS.put(Types.LOCAL_DATE_TIME, node -> LocalDateTime.parse(node.asText(), DateFormatConstants.DEFAULT_TIMESTAMP_FORMAT));
 
         // 初始化 JsonNode 数组元素转换器（处理 null 情况）
         JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.STRING, node -> node.isNull() ? null : node.asText());
@@ -49,7 +54,7 @@ public class JsonToRowConverter {
         JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.DOUBLE, node -> node.isNull() ? null : node.asDouble());
         JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.BOOLEAN, node -> node.isNull() ? null : node.asBoolean());
         JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.BIG_DEC, node -> node.isNull() ? null : new BigDecimal(node.asText()));
-        JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.LOCAL_DATE_TIME, node -> node.isNull() ? null : LocalDateTime.parse(node.asText(), SchemaConstants.DEFAULT_TIMESTAMP_FORMAT));
+        JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.LOCAL_DATE_TIME, node -> node.isNull() ? null : LocalDateTime.parse(node.asText(), DateFormatConstants.DEFAULT_TIMESTAMP_FORMAT));
     }
     // endregion
 
@@ -92,7 +97,7 @@ public class JsonToRowConverter {
     /**
      * 将 JsonNode 转换为 Flink Row（基于 RowTypeInfo）
      *
-     * @param node JsonNode 节点
+     * @param node        JsonNode 节点
      * @param rowTypeInfo Row 类型信息
      * @return Row 对象
      */
@@ -123,12 +128,26 @@ public class JsonToRowConverter {
      * @return Row 对象
      */
     public static Row convertJsonToRow(JsonNode node, EtlSchema schema) {
+        return convertJsonToRow(node, schema, null);
+    }
+
+    /**
+     * 将 JsonNode 转换为 Flink Row（基于 EtlSchema）
+     *
+     * @param node   JsonNode 节点
+     * @param schema Schema 定义
+     * @param extra  额外的字段，比如元数据
+     * @return Row 对象
+     */
+    public static Row convertJsonToRow(JsonNode node, EtlSchema schema, List<Object> extra) {
         if (node == null || !node.isObject()) {
             throw new IllegalArgumentException("期望对象类型，但得到: " + (node == null ? "null" : node.getNodeType()));
         }
 
-        int fieldCount = schema.getFieldCount();
-        Row row = Row.withPositions(fieldCount);
+        val fieldCount = schema.getFieldCount();
+        boolean hasExtra = extra != null && !extra.isEmpty();
+        int arity = hasExtra ? fieldCount + extra.size() : fieldCount;
+        Row row = Row.withPositions(arity);
 
         for (int i = 0; i < fieldCount; i++) {
             String fieldName = schema.getFieldName(i);
@@ -137,13 +156,20 @@ public class JsonToRowConverter {
             row.setField(i, value);
         }
 
+        if (hasExtra) {
+            for (int i = 0; i < extra.size(); i++) {
+                val position = fieldCount + i;
+                row.setField(position, extra.get(i));
+            }
+        }
+
         return row;
     }
 
     /**
      * 将 JsonNode 转换为目标类型
      *
-     * @param node JsonNode 节点
+     * @param node       JsonNode 节点
      * @param targetType 目标类型（Flink TypeInformation）
      * @return 转换后的值
      */
@@ -171,7 +197,7 @@ public class JsonToRowConverter {
     /**
      * 将 JsonNode 数组转换为包装类型数组
      *
-     * @param node JsonNode 数组节点
+     * @param node      JsonNode 数组节点
      * @param arrayType 数组类型信息
      * @return 包装类型数组（Integer[], Long[], String[], Row[] 等）
      */

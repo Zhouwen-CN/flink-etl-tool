@@ -1,4 +1,4 @@
-package com.etl.core.utils;
+package com.etl.core.util;
 
 import com.jayway.jsonpath.JsonPath;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.core.JsonProcessingException;
@@ -14,7 +14,7 @@ import java.io.IOException;
  * JSON 工具类
  * 封装 Jackson ObjectMapper 的常用操作
  */
-public final class JsonUtils {
+public final class JsonUtil {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
@@ -27,7 +27,7 @@ public final class JsonUtils {
         MAPPER.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 
-    private JsonUtils() {
+    private JsonUtil() {
         // 私有构造函数，防止实例化
     }
 

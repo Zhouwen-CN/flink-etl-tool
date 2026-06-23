@@ -246,7 +246,7 @@ package com.etl.kafka.source.format;
 
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.JsonToRowConverter;
-import com.etl.core.utils.JsonUtils;
+import com.etl.core.util.JsonUtil;
 import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDeserializationSchema;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
 import org.apache.flink.types.Row;

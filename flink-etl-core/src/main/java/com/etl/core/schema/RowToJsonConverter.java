@@ -1,7 +1,7 @@
 package com.etl.core.schema;
 
-import com.etl.core.constants.SchemaConstants;
-import com.etl.core.utils.JsonUtils;
+import com.etl.core.constants.DateFormatConstants;
+import com.etl.core.util.JsonUtil;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.node.ArrayNode;
@@ -35,7 +35,7 @@ public class RowToJsonConverter {
         }
 
         // 使用 JsonUtils.MAPPER 创建 ObjectNode
-        ObjectMapper mapper = JsonUtils.getMapper();
+        ObjectMapper mapper = JsonUtil.getMapper();
         ObjectNode objectNode = mapper.createObjectNode();
 
         // 获取字段名
@@ -75,7 +75,7 @@ public class RowToJsonConverter {
 
         // LocalDateTime 使用固定格式
         if (value instanceof LocalDateTime) {
-            String formatted = ((LocalDateTime) value).format(SchemaConstants.DEFAULT_TIMESTAMP_FORMAT);
+            String formatted = ((LocalDateTime) value).format(DateFormatConstants.DEFAULT_TIMESTAMP_FORMAT);
             return mapper.getNodeFactory().textNode(formatted);
         }
 

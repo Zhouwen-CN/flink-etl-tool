@@ -5,7 +5,7 @@ import com.etl.core.config.JobConfig;
 import com.etl.core.config.SinkConfig;
 import com.etl.core.config.SourceConfig;
 import com.etl.core.config.TransformConfig;
-import com.etl.core.utils.JsonUtils;
+import com.etl.core.util.JsonUtil;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashSet;
@@ -27,7 +27,7 @@ public class ConfigParser {
         log.info("从字符串解析配置");
 
         try {
-            JobConfig config = JsonUtils.fromJson(json, JobConfig.class);
+            JobConfig config = JsonUtil.fromJson(json, JobConfig.class);
             validate(config);
             log.info("配置解析成功");
             return config;

@@ -793,7 +793,7 @@ Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>"
 package com.etl.connector.mqtt.source;
 
 import com.etl.core.schema.JsonToRowConverter;
-import com.etl.core.utils.JsonUtils;
+import com.etl.core.util.JsonUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.source.SourceOutput;
 import org.apache.flink.connector.base.source.reader.RecordEmitter;

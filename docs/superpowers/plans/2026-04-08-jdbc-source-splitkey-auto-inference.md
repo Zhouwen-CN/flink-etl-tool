@@ -209,7 +209,7 @@ import com.etl.core.config.SourceConfig;
 import com.etl.core.dialect.JdbcDialect;
 import com.etl.core.dialect.JdbcDialectLoader;
 import com.etl.core.exception.NoPrimaryKeyException;
-import com.etl.core.utils.SqlUtils;
+import com.etl.core.util.SqlUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.MockedStatic;
@@ -248,7 +248,7 @@ class JdbcSourceSplitKeyTest {
         when(config.getString("splitKey")).thenReturn("id");
         when(config.getString("table")).thenReturn("users");
         when(dialect.getColumnType(anyString(), anyString(), isNull(), eq("id"), anyString(), anyString()))
-            .thenReturn(Types.BIGINT);
+                .thenReturn(Types.BIGINT);
 
         try (MockedStatic<JdbcDialectLoader> loaderMock = mockStatic(JdbcDialectLoader.class)) {
             loaderMock.when(() -> JdbcDialectLoader.get(isNull(), anyString())).thenReturn(dialect);
@@ -265,14 +265,14 @@ class JdbcSourceSplitKeyTest {
         when(config.getString("splitKey")).thenReturn("name");
         when(config.getString("table")).thenReturn("users");
         when(dialect.getColumnType(anyString(), anyString(), isNull(), eq("name"), anyString(), anyString()))
-            .thenReturn(Types.VARCHAR);
+                .thenReturn(Types.VARCHAR);
 
         try (MockedStatic<JdbcDialectLoader> loaderMock = mockStatic(JdbcDialectLoader.class)) {
             loaderMock.when(() -> JdbcDialectLoader.get(isNull(), anyString())).thenReturn(dialect);
 
             IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> new JdbcSource(config)
+                    IllegalArgumentException.class,
+                    () -> new JdbcSource(config)
             );
             assertTrue(exception.getMessage().contains("不支持分片"));
         }
@@ -293,7 +293,7 @@ class JdbcSourceSplitKeyTest {
 
             loaderMock.when(() -> JdbcDialectLoader.get(isNull(), anyString())).thenReturn(dialect);
             sqlUtilsMock.when(() -> SqlUtils.getPrimaryKey(anyString(), eq("users"), anyString(), anyString()))
-                .thenReturn(primaryKeys);
+                    .thenReturn(primaryKeys);
 
             JdbcSource source = new JdbcSource(config);
             assertNotNull(source);
@@ -317,7 +317,7 @@ class JdbcSourceSplitKeyTest {
 
             loaderMock.when(() -> JdbcDialectLoader.get(isNull(), anyString())).thenReturn(dialect);
             sqlUtilsMock.when(() -> SqlUtils.getPrimaryKey(anyString(), eq("orders"), anyString(), anyString()))
-                .thenReturn(primaryKeys);
+                    .thenReturn(primaryKeys);
 
             JdbcSource source = new JdbcSource(config);
             assertNotNull(source);
@@ -340,7 +340,7 @@ class JdbcSourceSplitKeyTest {
 
             loaderMock.when(() -> JdbcDialectLoader.get(isNull(), anyString())).thenReturn(dialect);
             sqlUtilsMock.when(() -> SqlUtils.getPrimaryKey(anyString(), eq("logs"), anyString(), anyString()))
-                .thenReturn(primaryKeys);
+                    .thenReturn(primaryKeys);
 
             JdbcSource source = new JdbcSource(config);
             assertNotNull(source);
@@ -360,11 +360,11 @@ class JdbcSourceSplitKeyTest {
 
             loaderMock.when(() -> JdbcDialectLoader.get(isNull(), anyString())).thenReturn(dialect);
             sqlUtilsMock.when(() -> SqlUtils.getPrimaryKey(anyString(), eq("temp"), anyString(), anyString()))
-                .thenThrow(new NoPrimaryKeyException("temp"));
+                    .thenThrow(new NoPrimaryKeyException("temp"));
 
             RuntimeException exception = assertThrows(
-                RuntimeException.class,
-                () -> new JdbcSource(config)
+                    RuntimeException.class,
+                    () -> new JdbcSource(config)
             );
             assertTrue(exception.getMessage().contains("无法自动推断 splitKey"));
         }
@@ -393,7 +393,7 @@ class JdbcSourceSplitKeyTest {
         when(config.getString("table")).thenReturn(null);
         when(config.getString("sql")).thenReturn("SELECT id, name FROM users WHERE status = 1");
         when(dialect.getColumnType(anyString(), isNull(), anyString(), eq("id"), anyString(), anyString()))
-            .thenReturn(Types.BIGINT);
+                .thenReturn(Types.BIGINT);
 
         try (MockedStatic<JdbcDialectLoader> loaderMock = mockStatic(JdbcDialectLoader.class)) {
             loaderMock.when(() -> JdbcDialectLoader.get(isNull(), anyString())).thenReturn(dialect);
@@ -415,8 +415,8 @@ class JdbcSourceSplitKeyTest {
             loaderMock.when(() -> JdbcDialectLoader.get(isNull(), anyString())).thenReturn(dialect);
 
             IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
-                () -> new JdbcSource(config)
+                    IllegalArgumentException.class,
+                    () -> new JdbcSource(config)
             );
             assertTrue(exception.getMessage().contains("table 和 sql 至少配置一个"));
         }

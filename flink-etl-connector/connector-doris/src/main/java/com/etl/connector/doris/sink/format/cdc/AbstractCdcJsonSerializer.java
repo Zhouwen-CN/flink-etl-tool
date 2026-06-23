@@ -1,7 +1,7 @@
 package com.etl.connector.doris.sink.format.cdc;
 
 import com.etl.connector.doris.sink.config.DorisSinkConfig;
-import com.etl.core.utils.JsonUtils;
+import com.etl.core.util.JsonUtil;
 import lombok.val;
 import org.apache.doris.flink.cfg.DorisOptions;
 import org.apache.doris.flink.sink.writer.serializer.DorisRecord;
@@ -50,7 +50,7 @@ public abstract class AbstractCdcJsonSerializer implements DorisRecordSerializer
         val json = (String) field;
         JsonNode jsonNode;
         try {
-            jsonNode = JsonUtils.readTree(json);
+            jsonNode = JsonUtil.readTree(json);
         }catch (Exception e){
             throw new IOException("Parse error");
         }

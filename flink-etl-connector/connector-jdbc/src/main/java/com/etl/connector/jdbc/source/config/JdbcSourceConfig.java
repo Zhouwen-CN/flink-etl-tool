@@ -6,7 +6,7 @@ import com.etl.connector.jdbc.source.enums.SplitStrategy;
 import com.etl.connector.jdbc.utils.JdbcSplitHelper;
 import com.etl.core.config.SourceConfig;
 import com.etl.core.exception.NoPrimaryKeyException;
-import com.etl.core.utils.SqlUtils;
+import com.etl.core.util.SqlUtil;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -135,7 +135,7 @@ public class JdbcSourceConfig implements Serializable {
         // 2. 配置了 table → 自动从主键推断
         if (table != null) {
             try {
-                List<Pair<String, Integer>> primaryKeys = SqlUtils.getPrimaryKey(url, table, username, password);
+                List<Pair<String, Integer>> primaryKeys = SqlUtil.getPrimaryKey(url, table, username, password);
 
                 // 最左前缀原则
                 Pair<String, Integer> pair = primaryKeys.get(0);

@@ -1,7 +1,7 @@
 package com.etl.connector.doris.sink.format.cdc;
 
 import com.etl.connector.doris.sink.config.DorisSinkConfig;
-import com.etl.core.utils.JsonUtils;
+import com.etl.core.util.JsonUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.node.ObjectNode;
@@ -44,7 +44,7 @@ public class OggJsonSerializerImpl extends AbstractCdcJsonSerializer {
             return null;
         }
 
-        ObjectNode source = JsonUtils.getMapper().createObjectNode();
+        ObjectNode source = JsonUtil.getMapper().createObjectNode();
         source.put("table", table.asText());
         objectNode.set("source", source);
 

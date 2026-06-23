@@ -1,7 +1,7 @@
 package com.etl.connector.doris.sink.format.json;
 
 import com.etl.core.schema.RowToJsonConverter;
-import com.etl.core.utils.JsonUtils;
+import com.etl.core.util.JsonUtil;
 import org.apache.doris.flink.sink.writer.LoadConstants;
 import org.apache.doris.flink.sink.writer.serializer.DorisRecord;
 import org.apache.doris.flink.sink.writer.serializer.DorisRecordSerializer;
@@ -29,7 +29,7 @@ public class RowToJsonSerializer implements DorisRecordSerializer<Row> {
             ObjectNode objectNode = (ObjectNode) node;
             objectNode.put(LoadConstants.DORIS_DELETE_SIGN, sign);
         }
-        String json = JsonUtils.writeValueAsString(node);
+        String json = JsonUtil.writeValueAsString(node);
         return DorisRecord.of(json.getBytes(StandardCharsets.UTF_8));
     }
 }

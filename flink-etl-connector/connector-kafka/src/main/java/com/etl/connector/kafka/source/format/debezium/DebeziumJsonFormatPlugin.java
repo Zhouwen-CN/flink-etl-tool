@@ -1,26 +1,27 @@
-package com.etl.connector.kafka.source.format;
+package com.etl.connector.kafka.source.format.debezium;
 
+import com.etl.connector.kafka.source.format.KafkaFormatPlugin;
 import com.etl.core.schema.EtlSchema;
 import com.google.auto.service.AutoService;
 import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDeserializationSchema;
 import org.apache.flink.types.Row;
 
 /**
- * 标准 JSON 格式反序列化器插件
- * 将 Kafka 消息 JSON 直接解析为 Row，RowKind 默认为 INSERT
+ * Debezium CDC JSON 格式反序列化器插件
+ * 解析 Debezium JSON 结构，设置 RowKind，提取 after/before 数据
  */
 @AutoService(KafkaFormatPlugin.class)
-public class JsonFormatPlugin implements KafkaFormatPlugin {
+public class DebeziumJsonFormatPlugin implements KafkaFormatPlugin {
 
     private static final long serialVersionUID = 1L;
 
     @Override
     public String identifier() {
-        return "json";
+        return "debezium-json";
     }
 
     @Override
     public KafkaRecordDeserializationSchema<Row> createDeserializer(EtlSchema schema) {
-        return new JsonToRowDeserializationSchema(schema);
+        return new DebeziumJsonDeserializationSchema(schema);
     }
 }

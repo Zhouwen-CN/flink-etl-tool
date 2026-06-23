@@ -1,4 +1,4 @@
-package com.etl.connector.kafka.source.format;
+package com.etl.connector.kafka.source.format.raw;
 
 import com.etl.core.schema.EtlSchema;
 import org.apache.flink.api.common.typeinfo.TypeInformation;

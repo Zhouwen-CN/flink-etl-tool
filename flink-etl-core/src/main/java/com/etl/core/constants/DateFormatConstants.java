@@ -5,9 +5,9 @@ import java.time.format.DateTimeFormatter;
 /**
  * Schema 相关的公共常量
  */
-public final class SchemaConstants {
+public final class DateFormatConstants {
 
-    private SchemaConstants() {
+    private DateFormatConstants() {
     }
 
     /**

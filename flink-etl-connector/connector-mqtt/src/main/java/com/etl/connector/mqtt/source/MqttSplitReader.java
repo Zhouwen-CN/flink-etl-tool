@@ -4,7 +4,7 @@ import com.etl.connector.mqtt.source.config.MqttSourceConfig;
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.JsonToRowConverter;
 import com.etl.core.source.AbstractSplitReader;
-import com.etl.core.utils.JsonUtils;
+import com.etl.core.util.JsonUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
 import org.apache.flink.connector.base.source.reader.RecordsWithSplitIds;
@@ -180,7 +180,7 @@ public class MqttSplitReader extends AbstractSplitReader<Row, MqttSplit> {
                 String jsonContent = new String(payload, StandardCharsets.UTF_8);
                 log.debug("收到 MQTT 消息: topic={}, payload={}", topic, jsonContent);
 
-                JsonNode jsonNode = JsonUtils.readTree(jsonContent);
+                JsonNode jsonNode = JsonUtil.readTree(jsonContent);
 
                 // 转换为 Row
                 List<Row> rows = JsonToRowConverter.convertJsonToRows(jsonNode, schema);

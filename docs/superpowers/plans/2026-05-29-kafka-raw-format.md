@@ -349,7 +349,7 @@ Expected: BUILD SUCCESS
 - [ ] **Step 2: 验证 SPI 文件包含 RawFormatPlugin**
 
 检查 `connector-kafka/target/classes/META-INF/services/com.etl.connector.kafka.source.format.KafkaFormatPlugin` 是否包含
-`com.etl.connector.kafka.source.format.RawFormatPlugin`
+`com.etl.connector.kafka.source.format.raw.RawFormatPlugin`
 
 - [ ] **Step 3: 验证 KafkaFormatLoader 能加载 raw format**
 

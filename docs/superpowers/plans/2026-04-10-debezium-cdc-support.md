@@ -365,7 +365,7 @@ Co-Authored-By: Claude Sonnet 4.6 <noreply@anthropic.com>"
 package com.etl.kafka.source.format;
 
 import com.etl.core.schema.EtlSchema;
-import com.etl.core.utils.JsonUtils;
+import com.etl.core.util.JsonUtil;
 import org.apache.flink.types.Row;
 import org.apache.flink.types.RowKind;
 import org.apache.flink.util.Collector;
@@ -440,7 +440,7 @@ package com.etl.kafka.source.format;
 
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.JsonToRowConverter;
-import com.etl.core.utils.JsonUtils;
+import com.etl.core.util.JsonUtil;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDeserializationSchema;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;

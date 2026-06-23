@@ -283,7 +283,7 @@ git commit -m "refactor(jdbc-source): RangeSplit 简化为直接存储查询 SQL
 ```java
 package com.etl.jdbc.source.utils;
 
-import com.etl.core.utils.SqlUtils;
+import com.etl.core.util.SqlUtil;
 import source.com.etl.connector.jdbc.RangeSplit;
 import enums.source.com.etl.connector.jdbc.SplitStrategy;
 import lombok.extern.slf4j.Slf4j;

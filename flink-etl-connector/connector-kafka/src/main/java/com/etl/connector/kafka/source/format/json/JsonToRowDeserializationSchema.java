@@ -1,8 +1,8 @@
-package com.etl.connector.kafka.source.format;
+package com.etl.connector.kafka.source.format.json;
 
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.JsonToRowConverter;
-import com.etl.core.utils.JsonUtils;
+import com.etl.core.util.JsonUtil;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDeserializationSchema;
@@ -40,7 +40,7 @@ public class JsonToRowDeserializationSchema implements KafkaRecordDeserializatio
         }
 
         // 解析 JSON
-        JsonNode jsonNode = JsonUtils.readTree(record.value());
+        JsonNode jsonNode = JsonUtil.readTree(record.value());
 
         // 使用 JsonToRowConverter.convertJsonToRows 方法，支持 JSONObject 和 JSONArray
         List<Row> rows = JsonToRowConverter.convertJsonToRows(jsonNode, schema);

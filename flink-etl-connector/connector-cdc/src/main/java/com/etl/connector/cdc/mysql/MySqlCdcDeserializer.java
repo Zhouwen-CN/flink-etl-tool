@@ -3,8 +3,8 @@ package com.etl.connector.cdc.mysql;
 import com.etl.connector.cdc.mysql.config.MySqlCdcConfig;
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.JsonToRowConverter;
-import com.etl.core.utils.JsonUtils;
-import com.etl.core.utils.SqlUtils;
+import com.etl.core.util.JsonUtil;
+import com.etl.core.util.SqlUtil;
 import com.ververica.cdc.debezium.DebeziumDeserializationSchema;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
@@ -39,7 +39,7 @@ public class MySqlCdcDeserializer implements DebeziumDeserializationSchema<Row> 
         String password = cdcConfig.getPassword();
         String table = cdcConfig.getTable();
 
-        rowTypeInfo = (RowTypeInfo) SqlUtils.inferRowType(
+        rowTypeInfo = (RowTypeInfo) SqlUtil.inferRowType(
                 table,
                 null,
                 cdcConfig.getUrl(),
@@ -66,7 +66,7 @@ public class MySqlCdcDeserializer implements DebeziumDeserializationSchema<Row> 
 
         // 解析 JSON 字符串
         String jsonString = new String(valueBytes, StandardCharsets.UTF_8);
-        JsonNode jsonNode = JsonUtils.readTree(jsonString);
+        JsonNode jsonNode = JsonUtil.readTree(jsonString);
 
         // 验证必需字段 'op'
         if (!jsonNode.has("op")) {

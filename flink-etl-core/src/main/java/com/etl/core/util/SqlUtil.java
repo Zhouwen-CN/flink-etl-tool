@@ -1,4 +1,4 @@
-package com.etl.core.utils;
+package com.etl.core.util;
 
 import com.etl.core.exception.NoPrimaryKeyException;
 import com.etl.core.schema.SqlTypeConverter;
@@ -24,8 +24,8 @@ import java.util.Map;
  * SQL 工具类
  * 提供标识符转义、Schema 推断等通用功能
  */
-public final class SqlUtils {
-    private SqlUtils() {
+public final class SqlUtil {
+    private SqlUtil() {
     }
 
     /**

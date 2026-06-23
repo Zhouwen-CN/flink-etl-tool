@@ -1,4 +1,4 @@
-package com.etl.core.utils;
+package com.etl.core.util;
 
 
 import java.io.ByteArrayInputStream;
@@ -11,7 +11,7 @@ import java.io.ObjectStreamClass;
 /**
  * 序列化工具类
  */
-public final class SerializerUtils {
+public final class SerializerUtil {
     public static byte[] serialize(Object obj) {
         if (obj == null) {
             return null;

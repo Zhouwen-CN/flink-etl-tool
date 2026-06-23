@@ -32,7 +32,7 @@
 - [ ] **创建测试文件框架**
 
 ```java
-package com.etl.core.utils;
+package com.etl.core.util;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +41,6 @@ import org.junit.jupiter.api.Test;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
-import java.util.LinkedHashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -121,7 +120,7 @@ mvn test -Dtest=SqlUtilsTest#testGetPrimaryKey_SinglePrimaryKey
 预期输出:
 ```
 [ERROR] testGetPrimaryKey_SinglePrimaryKey FAILED
-Caused by: java.lang.NoSuchMethodException: com.etl.core.utils.SqlUtils.getPrimaryKey(...)
+Caused by: java.lang.NoSuchMethodException: com.etl.core.util.SqlUtil.getPrimaryKey(...)
 ```
 
 ---
@@ -478,10 +477,11 @@ if (mode == WriteMode.UPSERT) {
 ```
 
 需要添加导入:
+
 ```java
-import com.etl.core.utils.SqlUtils;
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import com.etl.core.util.SqlUtil;
+
+
 ```
 
 - [ ] **修改 JdbcSink.java**

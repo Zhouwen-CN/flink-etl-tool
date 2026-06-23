@@ -6,7 +6,7 @@ import com.etl.core.source.AbstractSplitSource;
 import com.etl.core.source.BaseEnumCheckpoint;
 import com.etl.core.source.BaseRecordEmitter;
 import com.etl.core.source.BaseSourceReader;
-import com.etl.core.utils.SqlUtils;
+import com.etl.core.util.SqlUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.connector.source.Boundedness;
@@ -63,7 +63,7 @@ public class JdbcSource extends AbstractSplitSource<JdbcSplit> {
         String username = jdbcSourceConfig.getUsername();
         String password = jdbcSourceConfig.getPassword();
 
-        return SqlUtils.inferRowType(
+        return SqlUtil.inferRowType(
                 table,
                 sql,
                 url,

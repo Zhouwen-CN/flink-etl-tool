@@ -1,6 +1,6 @@
 package com.etl.core.schema;
 
-import com.etl.core.constants.SchemaConstants;
+import com.etl.core.constants.DateFormatConstants;
 import com.etl.core.exception.TypeConversionException;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
@@ -47,7 +47,7 @@ public class TypeConverter {
         STRING_CONVERTERS.put(Types.DOUBLE, Double::parseDouble);
         STRING_CONVERTERS.put(Types.BOOLEAN, TypeConverter::parseBoolean);
         STRING_CONVERTERS.put(Types.BIG_DEC, BigDecimal::new);
-        STRING_CONVERTERS.put(Types.LOCAL_DATE_TIME, v -> LocalDateTime.parse(v, SchemaConstants.DEFAULT_TIMESTAMP_FORMAT));
+        STRING_CONVERTERS.put(Types.LOCAL_DATE_TIME, v -> LocalDateTime.parse(v, DateFormatConstants.DEFAULT_TIMESTAMP_FORMAT));
 
         // 初始化类型兼容性检查器
         TYPE_COMPATIBILITY_CHECKERS.put(Types.STRING, v -> v instanceof String);

@@ -2,7 +2,7 @@ package com.etl.connector.http.source.format;
 
 import com.etl.connector.http.source.config.HttpSourceConfig;
 import com.etl.core.schema.JsonToRowConverter;
-import com.etl.core.utils.JsonUtils;
+import com.etl.core.util.JsonUtil;
 import com.google.auto.service.AutoService;
 import com.jayway.jsonpath.PathNotFoundException;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +28,7 @@ public class JsonFormat implements HttpFormat {
     public List<Row> parse(String rawResponse, HttpSourceConfig config) {
         JsonNode rootNode;
         try {
-            rootNode = JsonUtils.getByJsonPath(rawResponse, config.getJsonPath());
+            rootNode = JsonUtil.getByJsonPath(rawResponse, config.getJsonPath());
         } catch (PathNotFoundException e) {
             throw new IllegalArgumentException("JsonPath 提取失败: " + config.getJsonPath(), e);
         }
