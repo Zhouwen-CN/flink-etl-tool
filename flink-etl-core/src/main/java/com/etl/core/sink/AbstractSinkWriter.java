@@ -25,9 +25,8 @@ import java.io.IOException;
  *   <li>{@link SinkWriter#close()}：清理资源的逻辑（如关闭连接）</li>
  * </ul>
  *
- * @param <ConfigT> Sink 配置类型
  */
-public abstract class AbstractSinkWriter<ConfigT> implements SinkWriter<Row> {
+public abstract class AbstractSinkWriter implements SinkWriter<Row> {
 
     /**
      * Writer 初始化上下文
@@ -35,19 +34,12 @@ public abstract class AbstractSinkWriter<ConfigT> implements SinkWriter<Row> {
     protected final Sink.InitContext context;
 
     /**
-     * Sink 配置对象
-     */
-    protected final ConfigT config;
-
-    /**
      * 构造函数
      *
      * @param context Writer 初始化上下文
-     * @param config  Sink 配置对象
      */
-    public AbstractSinkWriter(Sink.InitContext context, ConfigT config) {
+    public AbstractSinkWriter(Sink.InitContext context) {
         this.context = context;
-        this.config = config;
     }
 
     /**

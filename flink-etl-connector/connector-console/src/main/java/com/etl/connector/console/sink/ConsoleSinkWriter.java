@@ -12,13 +12,13 @@ import java.io.IOException;
  * 直接将数据输出到控制台，默认显示 subtask 信息
  */
 @Slf4j
-public class ConsoleSinkWriter extends AbstractSinkWriter<Boolean> {
+public class ConsoleSinkWriter extends AbstractSinkWriter {
 
     private final int subtaskId;
     private final int totalSubtasks;
 
     public ConsoleSinkWriter(Sink.InitContext context) throws IOException {
-        super(context, true);  // config 参数传入 Boolean.TRUE
+        super(context);  // config 参数传入 Boolean.TRUE
         this.subtaskId = context.getSubtaskId();
         this.totalSubtasks = context.getNumberOfParallelSubtasks();
 

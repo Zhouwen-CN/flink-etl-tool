@@ -2,6 +2,7 @@ package com.etl.connector.jdbc.sink;
 
 import com.etl.connector.jdbc.sink.config.JdbcSinkConfig;
 import com.etl.core.sink.AbstractSinkWriter;
+import com.etl.core.util.MetadataUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.types.Row;
@@ -18,14 +19,15 @@ import java.util.Arrays;
  * 简化为调用 OutputFormat
  */
 @Slf4j
-public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
+public class JdbcSinkWriter extends AbstractSinkWriter {
 
     private final transient Connection connection;
+    private final JdbcSinkConfig config;
     private transient JdbcOutputFormat outputFormat;
 
     public JdbcSinkWriter(Sink.InitContext context, JdbcSinkConfig config) throws IOException {
-        super(context, config);
-
+        super(context);
+        this.config = config;
         // 初始化数据库连接
         try {
             connection = DriverManager.getConnection(
@@ -44,6 +46,8 @@ public class JdbcSinkWriter extends AbstractSinkWriter<JdbcSinkConfig> {
 
     @Override
     public void write(Row row) throws IOException, InterruptedException {
+        // TODO: 暂时先删除元数据字段，后期可以扩展写入多表
+        row = MetadataUtil.removeAllMetadata(row);
         try {
             // 首次写入时缓存列名
             if (outputFormat == null) {
