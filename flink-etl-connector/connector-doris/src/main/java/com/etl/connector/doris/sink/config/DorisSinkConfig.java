@@ -3,7 +3,6 @@ package com.etl.connector.doris.sink.config;
 import com.etl.core.config.SinkConfig;
 import lombok.Builder;
 import lombok.Getter;
-import lombok.val;
 import org.apache.flink.util.Preconditions;
 
 import java.io.Serializable;
@@ -17,7 +16,7 @@ import java.util.Map;
 @Builder
 public class DorisSinkConfig implements Serializable {
     private static final long serialVersionUID = 1L;
-    private static final String tablePattern = "^[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+$";
+    private static final String TABLE_PATTERN = "^[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+$";
     /**
      * Doris FE 节点，host:port
      */
@@ -46,10 +45,6 @@ public class DorisSinkConfig implements Serializable {
      * 批量刷写间隔（毫秒）
      */
     private final Long batchIntervalMs;
-    /**
-     * 序列化格式，默认 json，通过 SPI 加载
-     */
-    private final String format;
     /**
      * CDC 表映射（debezium-json / ogg-json 格式必须）
      */
@@ -83,27 +78,18 @@ public class DorisSinkConfig implements Serializable {
                 throw new IllegalArgumentException("tableMapping 不是映射类型");
             }
             for (Map.Entry<?, ?> entry : ((Map<?, ?>) object).entrySet()) {
-                val key = String.valueOf(entry.getKey());
-                val value = String.valueOf(entry.getValue());
+                String key = String.valueOf(entry.getKey());
+                String value = String.valueOf(entry.getValue());
 
-                Preconditions.checkArgument(value.matches(tablePattern),
+                Preconditions.checkArgument(value.matches(TABLE_PATTERN),
                         "tableMapping value 必须为 db.table 格式: " + value);
                 tableMapping.put(key, value);
             }
         }
 
-        // format 解析，校验
-        String format = config.get("format", String.class, "json");
         String table = config.get("table", String.class);
-        if ("json".equals(format)) {
-            Preconditions.checkArgument(table != null && !table.trim().isEmpty(),
-                    "format 为 json 时 table 不能为空");
-            Preconditions.checkArgument(table.matches(tablePattern),
-                    "table 必须为 db.table 格式: " + table);
-        } else if ("debezium-json".equals(format) || "ogg-json".equals(format)) {
-            Preconditions.checkArgument(!tableMapping.isEmpty(),
-                    "format 为 " + format + " 时 tableMapping 不能为空");
-        }
+        Preconditions.checkArgument((table == null) != tableMapping.isEmpty(),
+                "table 和 tableMapping 必须且只能配置一个");
 
         return DorisSinkConfig.builder()
                 .fenodes(fenodes)
@@ -113,7 +99,6 @@ public class DorisSinkConfig implements Serializable {
                 .labelPrefix(labelPrefix)
                 .batchSize(batchSize)
                 .batchIntervalMs(batchIntervalMs)
-                .format(format)
                 .tableMapping(tableMapping)
                 .build();
     }

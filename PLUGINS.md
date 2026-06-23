@@ -1809,39 +1809,24 @@ Kafka Sink 与 Kafka Source 可以形成完整的数据流转链路：
 
 ### Doris Sink
 
-通过 Stream Load 写入 Apache Doris，基于 flink-doris-connector-1.15 实现。序列化格式通过 SPI 加载，支持 `json`、`debezium-json`、`ogg-json`。
+通过 Stream Load 写入 Apache Doris，基于 flink-doris-connector-1.15 实现
 
 #### 配置参数
 
-| 参数                | 必填        | 默认值        | 说明                                                       |
-|-------------------|-----------|------------|----------------------------------------------------------|
-| `fenodes`         | 是         | -          | Doris FE 节点地址，如 `127.0.0.1:8030`                        |
-| `table`           | 条件必填      | -          | 目标表标识，格式 `db.table`。format=json 时必填                       |
-| `username`        | 是         | -          | Doris 用户名                                                |
-| `password`        | 是         | -          | Doris 密码（可为空字符串）                                        |
-| `format`          | 否         | `json`     | 序列化格式：`json`、`debezium-json`、`ogg-json`                    |
-| `tableMapping`    | 条件必填      | -          | CDC 表映射，`debezium-json` / `ogg-json` 格式必填，格式 `{"source_table": "target_table"}` |
-| `labelPrefix`     | 否         | doris-sink | Stream Load 导入使用的 label 前缀                                |
-| `batchSize`       | 否         | 50000      | 攒批模式下，单个批次最多写入的数据行数                                     |
-| `batchIntervalMs` | 否         | 10000      | 攒批模式下，异步刷新缓存的间隔                                         |
-
-#### 格式说明
-
-**json**
-
-默认格式。Row 序列化为每行一个 JSON 对象，配合 Stream Load `read_json_by_line=true`。要求 `table` 参数为 `db.table` 格式。
-
-**debezium-json**
-
-Debezium CDC 格式。Row 的第一个字段必须为 STRING 类型的 Debezium JSON 消息。根据 `op` 字段自动路由增删改操作（`c`/`r` → INSERT，`u` → UPDATE，`d` → DELETE）。要求配置 `tableMapping` 映射源表到目标表。
-
-**ogg-json**
-
-Oracle GoldenGate CDC 格式。Row 的第一个字段必须为 STRING 类型的 OGG JSON 消息。自动将 `op_type`（`I`/`U`/`D`）转换为 Debezium 格式的 `op` 字段。要求配置 `tableMapping` 映射源表到目标表。
+| 参数                | 必填       | 默认值        | 说明                                                               |
+|-------------------|----------|------------|------------------------------------------------------------------|
+| `fenodes`         | 是        | -          | Doris FE 节点地址，如 `127.0.0.1:8030`                                 |
+| `table`           | 条件必填(单表) | -          | 目标表标识，格式 `db.table`，与tableMapping二选一                             |
+| `username`        | 是        | -          | Doris 用户名                                                        |
+| `password`        | 是        | -          | Doris 密码（可为空字符串）                                                 |
+| `tableMapping`    | 条件必填(多表) | -          | 表映射，格式 `{"source_table": "target_table"}`，上游传递了 `__SOURCE__` 字段， |
+| `labelPrefix`     | 否        | doris-sink | Stream Load 导入使用的 label 前缀                                       |
+| `batchSize`       | 否        | 50000      | 攒批模式下，单个批次最多写入的数据行数                                              |
+| `batchIntervalMs` | 否        | 10000      | 攒批模式下，异步刷新缓存的间隔                                                  |
 
 #### 配置示例
 
-**json 格式（默认）：**
+**单表**
 
 ```json
 {
@@ -1858,7 +1843,7 @@ Oracle GoldenGate CDC 格式。Row 的第一个字段必须为 STRING 类型的 
 }
 ```
 
-**debezium-json 格式（CDC）：**
+**多表**
 
 ```json
 {
@@ -1873,26 +1858,6 @@ Oracle GoldenGate CDC 格式。Row 的第一个字段必须为 STRING 类型的 
       "tableMapping": {
         "source_db.users": "target_db.users",
         "source_db.orders": "target_db.orders"
-      }
-    }
-  }
-}
-```
-
-**ogg-json 格式（CDC）：**
-
-```json
-{
-  "sink": {
-    "type": "doris",
-    "inputTable": "cdc_data",
-    "config": {
-      "fenodes": "127.0.0.1:8030",
-      "username": "root",
-      "password": "123456",
-      "format": "ogg-json",
-      "tableMapping": {
-        "SOURCE_DB.USERS": "target_db.users"
       }
     }
   }

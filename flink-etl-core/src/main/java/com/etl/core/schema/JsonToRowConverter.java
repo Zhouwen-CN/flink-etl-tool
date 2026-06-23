@@ -1,7 +1,6 @@
 package com.etl.core.schema;
 
 import com.etl.core.constants.DateFormatConstants;
-import lombok.val;
 import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
@@ -144,7 +143,7 @@ public class JsonToRowConverter {
             throw new IllegalArgumentException("期望对象类型，但得到: " + (node == null ? "null" : node.getNodeType()));
         }
 
-        val fieldCount = schema.getFieldCount();
+        int fieldCount = schema.getFieldCount();
         boolean hasExtra = extra != null && !extra.isEmpty();
         int arity = hasExtra ? fieldCount + extra.size() : fieldCount;
         Row row = Row.withPositions(arity);
@@ -158,7 +157,7 @@ public class JsonToRowConverter {
 
         if (hasExtra) {
             for (int i = 0; i < extra.size(); i++) {
-                val position = fieldCount + i;
+                int position = fieldCount + i;
                 row.setField(position, extra.get(i));
             }
         }

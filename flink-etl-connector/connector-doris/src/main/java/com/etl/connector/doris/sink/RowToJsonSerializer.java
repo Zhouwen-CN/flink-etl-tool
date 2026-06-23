@@ -1,6 +1,5 @@
-package com.etl.connector.doris.sink.format.json;
+package com.etl.connector.doris.sink;
 
-import com.etl.connector.doris.sink.config.DorisSinkConfig;
 import com.etl.core.schema.RowToJsonConverter;
 import com.etl.core.util.JsonUtil;
 import com.etl.core.util.MetadataUtil;
@@ -26,26 +25,26 @@ public class RowToJsonSerializer implements DorisRecordSerializer<Row> {
 
     private static final long serialVersionUID = 1L;
     private final Map<String, String> tableMapping;
+    private final boolean isMappingMode;
 
-    public RowToJsonSerializer(DorisSinkConfig config) {
-        tableMapping = config.getTableMapping();
+    public RowToJsonSerializer(Map<String, String> tableMapping) {
+        this.tableMapping = tableMapping;
+        // 配置已经校验，如果mapping不为空，说明是mapping模式
+        this.isMappingMode = !tableMapping.isEmpty();
     }
 
 
     @Override
     public DorisRecord serialize(Row row) throws IOException {
-        Pair<Row, String> pair = MetadataUtil.removeSource(row);
-        String source = pair.getValue();
-
-        String tableIdentifier = tableMapping.get(source);
-
-        if (tableIdentifier == null) {
-            log.warn("未找到表映射，请正确配置 tableMapping: {}", source);
-            return null;
+        String source = null;
+        if (isMappingMode) {
+            // 删除 source，并获取
+            Pair<Row, String> pair = MetadataUtil.removeSource(row);
+            row = pair.getKey();
+            source = pair.getValue();
         }
 
-        row = pair.getKey();
-
+        // 转 json
         int sign = row.getKind() == RowKind.DELETE ? 1 : 0;
         JsonNode node = RowToJsonConverter.convertRowToJsonNode(row);
         if (node.isObject()) {
@@ -53,7 +52,20 @@ public class RowToJsonSerializer implements DorisRecordSerializer<Row> {
             objectNode.put(LoadConstants.DORIS_DELETE_SIGN, sign);
         }
         String json = JsonUtil.writeValueAsString(node);
+        byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
 
-        return DorisRecord.of(tableIdentifier, json.getBytes(StandardCharsets.UTF_8));
+        // 序列化
+        if (isMappingMode) {
+            String tableIdentifier = tableMapping.get(source);
+
+            // 如果未找到表映射，直接返回null，数据会被过滤
+            if (tableIdentifier == null) {
+                log.warn("未找到表映射，请正确配置 tableMapping: {}", source);
+                return null;
+            }
+            return DorisRecord.of(tableIdentifier, bytes);
+        } else {
+            return DorisRecord.of(bytes);
+        }
     }
 }

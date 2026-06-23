@@ -21,11 +21,11 @@ import java.util.Set;
  * 元数据工具类
  */
 public final class MetadataUtil {
-    private static final String CDC_SOURCE = "__SOURCE__";
+    private static final String SOURCE = "__SOURCE__";
     private static final List<String> METADATA = new ArrayList<>();
 
     static {
-        METADATA.add(CDC_SOURCE);
+        METADATA.add(SOURCE);
     }
 
     public static Row removeAllMetadata(Row row) {
@@ -34,10 +34,9 @@ public final class MetadataUtil {
 
 
     public static Pair<Row, String> removeSource(Row row) {
-        Pair<Row, Map<String, String>> pair = removeMetadata(row, Collections.singletonList(CDC_SOURCE));
+        Pair<Row, Map<String, String>> pair = removeMetadata(row, Collections.singletonList(SOURCE));
         Row newRow = pair.getKey();
-        String source = pair.getValue().get(CDC_SOURCE);
-
+        String source = pair.getValue().get(SOURCE);
         return Pair.of(newRow, source);
     }
 
@@ -75,7 +74,7 @@ public final class MetadataUtil {
     }
 
     public static EtlSchema addSourceToSchema(EtlSchema schema) {
-        return addMetadataToSchema(schema, CDC_SOURCE, Types.STRING);
+        return addMetadataToSchema(schema, SOURCE, Types.STRING);
     }
 
     private static EtlSchema addMetadataToSchema(EtlSchema schema, String fieldName, TypeInformation<?> fieldType) {

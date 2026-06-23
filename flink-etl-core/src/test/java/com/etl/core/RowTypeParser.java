@@ -3,7 +3,6 @@ package com.etl.core;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.SneakyThrows;
-import lombok.val;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;
 import org.apache.flink.api.common.typeinfo.BasicTypeInfo;
@@ -271,7 +270,7 @@ public class RowTypeParser implements Serializable {
 
     // 获取 returns 类型
     public TypeInformation<Row> getReturnType() {
-        val size = this.fields.size();
+        int size = this.fields.size();
         String[] fieldNames = new String[size];
         TypeInformation<?>[] types = new TypeInformation<?>[size];
         for (int i = 0; i < size; i++) {

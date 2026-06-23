@@ -1,8 +1,6 @@
 package com.etl.connector.doris.sink;
 
 import com.etl.connector.doris.sink.config.DorisSinkConfig;
-import com.etl.connector.doris.sink.format.DorisFormatLoader;
-import com.etl.connector.doris.sink.format.DorisFormatPlugin;
 import com.etl.core.config.SinkConfig;
 import com.etl.core.spi.SinkPlugin;
 import com.google.auto.service.AutoService;
@@ -11,10 +9,8 @@ import org.apache.doris.flink.cfg.DorisExecutionOptions;
 import org.apache.doris.flink.cfg.DorisOptions;
 import org.apache.doris.flink.cfg.DorisReadOptions;
 import org.apache.doris.flink.sink.DorisSink;
-import org.apache.doris.flink.sink.writer.serializer.DorisRecordSerializer;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.types.Row;
-import org.apache.flink.util.Preconditions;
 
 /**
  * Doris Sink 插件
@@ -33,19 +29,18 @@ public class DorisSinkPlugin implements SinkPlugin {
     public Sink<Row> createSink(SinkConfig config) {
         DorisSinkConfig cfg = DorisSinkConfig.fromSinkConfig(config);
 
-        // 通过 SPI 加载 format 插件
-        DorisFormatPlugin formatPlugin = DorisFormatLoader.getFormatPlugin(cfg.getFormat());
-        Preconditions.checkNotNull(formatPlugin,
-                "不支持的 format: %s，可选: %s", cfg.getFormat(), DorisFormatLoader.supportedFormats());
-        DorisRecordSerializer<Row> serializer = formatPlugin.createSerializer(cfg);
-
         // Doris 连接配置
-        DorisOptions dorisOptions = DorisOptions.builder()
+        DorisOptions.Builder builder = DorisOptions.builder()
                 .setFenodes(cfg.getFenodes())
-                .setTableIdentifier(cfg.getTable())
                 .setUsername(cfg.getUsername())
-                .setPassword(cfg.getPassword())
-                .build();
+                .setPassword(cfg.getPassword());
+
+        String table = cfg.getTable();
+        if (table != null) {
+            builder.setTableIdentifier(table);
+        }
+
+        DorisOptions dorisOptions = builder.build();
 
         // 执行配置：batch 模式 + 禁用 2PC（at-least-once）
         DorisExecutionOptions.Builder execBuilder = DorisExecutionOptions.builderDefaults()
@@ -56,14 +51,14 @@ public class DorisSinkPlugin implements SinkPlugin {
                 .setBatchMode(true)
                 .disable2PC();
 
-        log.info("创建 Doris Sink: fenodes={}, table={}, format={}, labelPrefix={}, batchSize={}, batchIntervalMs={}",
-                cfg.getFenodes(), cfg.getTable(), cfg.getFormat(), cfg.getLabelPrefix(), cfg.getBatchSize(), cfg.getBatchIntervalMs());
+        log.info("创建 Doris Sink: fenodes={}, tableMapping={}, labelPrefix={}, batchSize={}, batchIntervalMs={}",
+                cfg.getFenodes(), cfg.getTableMapping(), cfg.getLabelPrefix(), cfg.getBatchSize(), cfg.getBatchIntervalMs());
 
         return DorisSink.<Row>builder()
                 .setDorisOptions(dorisOptions)
                 .setDorisReadOptions(DorisReadOptions.builder().build())
                 .setDorisExecutionOptions(execBuilder.build())
-                .setSerializer(serializer)
+                .setSerializer(new RowToJsonSerializer(cfg.getTableMapping()))
                 .build();
     }
 }
