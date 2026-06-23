@@ -22,7 +22,7 @@ public class JsonFormatPlugin implements DorisFormatPlugin {
 
     @Override
     public DorisRecordSerializer<Row> createSerializer(DorisSinkConfig config) {
-        return new RowToJsonSerializer();
+        return new RowToJsonSerializer(config);
     }
 
 }

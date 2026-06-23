@@ -1,11 +1,20 @@
 package com.etl.core.util;
 
 import com.etl.core.schema.EtlSchema;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
+import org.apache.flink.types.Row;
+import org.apache.flink.types.RowKind;
+import org.apache.flink.types.RowUtils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -13,12 +22,57 @@ import java.util.Set;
  */
 public final class MetadataUtil {
     private static final String CDC_SOURCE = "__SOURCE__";
-    private static final Set<String> METADATA = new HashSet<>();
+    private static final List<String> METADATA = new ArrayList<>();
 
     static {
         METADATA.add(CDC_SOURCE);
     }
 
+    public static Row removeAllMetadata(Row row) {
+        return removeMetadata(row, METADATA).getKey();
+    }
+
+
+    public static Pair<Row, String> removeSource(Row row) {
+        Pair<Row, Map<String, String>> pair = removeMetadata(row, Collections.singletonList(CDC_SOURCE));
+        Row newRow = pair.getKey();
+        String source = pair.getValue().get(CDC_SOURCE);
+
+        return Pair.of(newRow, source);
+    }
+
+
+    /**
+     * 删除元数据
+     *
+     * @param row  行
+     * @param keys 需要删除元数据的key列表
+     * @return key：删除元数据之后的行；value：元数据
+     */
+    private static Pair<Row, Map<String, String>> removeMetadata(Row row, List<String> keys) {
+        Set<String> fieldNames = row.getFieldNames(true);
+
+        RowKind kind = row.getKind();
+        List<Object> fieldByPosition = new ArrayList<>();
+        LinkedHashMap<String, Integer> positionByName = new LinkedHashMap<>();
+        Map<String, String> map = new HashMap<>();
+
+        int i = 0;
+        for (String fieldName : fieldNames) {
+            Object value = row.getField(fieldName);
+            int index = keys.indexOf(fieldName);
+            if (index >= 0) {
+                map.put(fieldName, value == null ? null : value.toString());
+                continue;
+            }
+
+            fieldByPosition.add(value);
+            positionByName.put(fieldName, i);
+            i++;
+        }
+
+        return Pair.of(RowUtils.createRowWithNamedPositions(kind, fieldByPosition.toArray(), positionByName), map);
+    }
 
     public static EtlSchema addSourceToSchema(EtlSchema schema) {
         return addMetadataToSchema(schema, CDC_SOURCE, Types.STRING);

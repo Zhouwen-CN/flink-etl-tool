@@ -3,6 +3,7 @@ package com.etl.connector.kafka.sink;
 import com.etl.connector.kafka.sink.config.KafkaSinkConfig;
 import com.etl.core.schema.RowToJsonConverter;
 import com.etl.core.util.JsonUtil;
+import com.etl.core.util.MetadataUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.kafka.sink.KafkaRecordSerializationSchema;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
@@ -62,6 +63,9 @@ public class RowToJsonSerializationSchema implements KafkaRecordSerializationSch
      * 序列化消息 Value
      */
     private byte[] serializeValue(Row row) {
+        // 删除元数据
+        row = MetadataUtil.removeAllMetadata(row);
+
         // Row -> JsonNode
         JsonNode jsonNode = RowToJsonConverter.convertRowToJsonNode(row);
 
