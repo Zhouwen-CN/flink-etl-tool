@@ -138,30 +138,25 @@ public class JsonToRowConverter {
      * @param extra  额外的字段，比如元数据
      * @return Row 对象
      */
-    public static Row convertJsonToRow(JsonNode node, EtlSchema schema, List<Object> extra) {
+    public static Row convertJsonToRow(JsonNode node, EtlSchema schema, Map<String, Object> extra) {
         if (node == null || !node.isObject()) {
             throw new IllegalArgumentException("期望对象类型，但得到: " + (node == null ? "null" : node.getNodeType()));
         }
 
         int fieldCount = schema.getFieldCount();
-        boolean hasExtra = extra != null && !extra.isEmpty();
-        int arity = hasExtra ? fieldCount + extra.size() : fieldCount;
-        Row row = Row.withPositions(arity);
+        Row row = Row.withPositions(fieldCount);
 
         for (int i = 0; i < fieldCount; i++) {
             String fieldName = schema.getFieldName(i);
             JsonNode fieldNode = node.get(fieldName);
-            Object value = convertFromJsonNode(fieldNode, schema.getFieldType(i));
+            Object value = null;
+            if (fieldNode != null) {
+                value = convertFromJsonNode(fieldNode, schema.getFieldType(i));
+            } else if (extra != null) {
+                value = extra.get(fieldName);
+            }
             row.setField(i, value);
         }
-
-        if (hasExtra) {
-            for (int i = 0; i < extra.size(); i++) {
-                int position = fieldCount + i;
-                row.setField(position, extra.get(i));
-            }
-        }
-
         return row;
     }
 

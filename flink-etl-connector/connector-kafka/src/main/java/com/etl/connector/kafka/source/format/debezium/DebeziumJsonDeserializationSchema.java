@@ -2,10 +2,10 @@ package com.etl.connector.kafka.source.format.debezium;
 
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.JsonToRowConverter;
+import com.etl.core.util.DebeziumJsonUtil;
 import com.etl.core.util.JsonUtil;
 import com.etl.core.util.MetadataUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDeserializationSchema;
@@ -17,8 +17,6 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Optional;
-import java.util.StringJoiner;
 
 /**
  * Debezium JSON 反序列化器
@@ -68,30 +66,15 @@ public class DebeziumJsonDeserializationSchema implements KafkaRecordDeserializa
         }
 
         // 添加source到row
-        String source = this.getSourceFromJsonNode(debeziumJson);
-        Row row = JsonToRowConverter.convertJsonToRow(dataNode, schema, Collections.singletonList(source));
+        String source = DebeziumJsonUtil.getSourceFromJsonNode(debeziumJson);
+        Row row = JsonToRowConverter.convertJsonToRow(
+                dataNode,
+                schema,
+                Collections.singletonMap(MetadataUtil.SOURCE, source)
+        );
         row.setKind(rowKind);
         out.collect(row);
     }
-
-    public String getSourceFromJsonNode(JsonNode jsonNode) {
-        StringJoiner identifier = new StringJoiner(".");
-        JsonNode source = jsonNode.get("source");
-        if (source == null) {
-            return null;
-        }
-
-        Optional.ofNullable(source.get("db")).ifPresent(item -> identifier.add(item.asText()));
-        Optional.ofNullable(source.get("schema")).ifPresent(item -> identifier.add(item.asText()));
-        Optional.ofNullable(source.get("table")).ifPresent(item -> identifier.add(item.asText()));
-
-        String result = identifier.toString();
-        if (StringUtils.isEmpty(result)) {
-            return null;
-        }
-        return result;
-    }
-
 
     /**
      * Debezium op 字段映射到 Flink RowKind

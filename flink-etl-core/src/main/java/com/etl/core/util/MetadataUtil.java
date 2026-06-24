@@ -4,6 +4,7 @@ import com.etl.core.schema.EtlSchema;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
+import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.types.Row;
 import org.apache.flink.types.RowKind;
 import org.apache.flink.types.RowUtils;
@@ -21,7 +22,7 @@ import java.util.Set;
  * 元数据工具类
  */
 public final class MetadataUtil {
-    private static final String SOURCE = "__SOURCE__";
+    public static final String SOURCE = "__SOURCE__";
     private static final List<String> METADATA = new ArrayList<>();
 
     static {
@@ -74,21 +75,29 @@ public final class MetadataUtil {
     }
 
     public static EtlSchema addSourceToSchema(EtlSchema schema) {
-        return addMetadataToSchema(schema, SOURCE, Types.STRING);
+        return addMetadata(schema.getFieldNames(), schema.getFieldTypes(), Collections.singletonMap(SOURCE, Types.STRING));
     }
 
-    private static EtlSchema addMetadataToSchema(EtlSchema schema, String fieldName, TypeInformation<?> fieldType) {
-        int fieldCount = schema.getFieldCount();
+    public static EtlSchema addSourceToSchema(RowTypeInfo rowTypeInfo) {
+        return addMetadata(rowTypeInfo.getFieldNames(), rowTypeInfo.getFieldTypes(), Collections.singletonMap(SOURCE, Types.STRING));
+    }
 
-        String[] f1 = schema.getFieldNames();
-        TypeInformation<?>[] t1 = schema.getFieldTypes();
+    private static EtlSchema addMetadata(String[] names, TypeInformation<?>[] types, Map<String, TypeInformation<?>> extraMap) {
+        int oldSize = names.length;
+        int size = oldSize + extraMap.size();
 
-        String[] f2 = Arrays.copyOf(f1, fieldCount + 1);
-        TypeInformation<?>[] t2 = Arrays.copyOf(t1, fieldCount + 1);
+        String[] newNames = Arrays.copyOf(names, size);
+        TypeInformation<?>[] newTypes = Arrays.copyOf(types, size);
 
-        f2[fieldCount] = fieldName;
-        t2[fieldCount] = fieldType;
+        int i = 0;
+        for (Map.Entry<String, TypeInformation<?>> entry : extraMap.entrySet()) {
+            String name = entry.getKey();
+            TypeInformation<?> type = entry.getValue();
+            newNames[oldSize + i] = name;
+            newTypes[oldSize + i] = type;
+            i++;
+        }
 
-        return new EtlSchema(f2, t2);
+        return new EtlSchema(newNames, newTypes);
     }
 }

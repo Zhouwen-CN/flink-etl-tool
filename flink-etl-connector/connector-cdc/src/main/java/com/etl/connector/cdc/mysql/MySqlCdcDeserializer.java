@@ -3,10 +3,13 @@ package com.etl.connector.cdc.mysql;
 import com.etl.connector.cdc.mysql.config.MySqlCdcConfig;
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.JsonToRowConverter;
+import com.etl.core.util.DebeziumJsonUtil;
 import com.etl.core.util.JsonUtil;
+import com.etl.core.util.MetadataUtil;
 import com.etl.core.util.SqlUtil;
 import com.ververica.cdc.debezium.DebeziumDeserializationSchema;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
+import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
 import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
 import org.apache.flink.types.Row;
@@ -20,6 +23,7 @@ import org.apache.kafka.connect.storage.ConverterType;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -30,7 +34,6 @@ import java.util.Map;
  */
 public class MySqlCdcDeserializer implements DebeziumDeserializationSchema<Row> {
 
-    private final RowTypeInfo rowTypeInfo;
     private final EtlSchema etlSchema;
     private transient JsonConverter jsonConverter;
 
@@ -39,7 +42,7 @@ public class MySqlCdcDeserializer implements DebeziumDeserializationSchema<Row> 
         String password = cdcConfig.getPassword();
         String table = cdcConfig.getTable();
 
-        rowTypeInfo = (RowTypeInfo) SqlUtil.inferRowType(
+        RowTypeInfo rowTypeInfo = (RowTypeInfo) SqlUtil.inferRowType(
                 table,
                 null,
                 cdcConfig.getUrl(),
@@ -47,7 +50,7 @@ public class MySqlCdcDeserializer implements DebeziumDeserializationSchema<Row> 
                 password
         );
 
-        etlSchema = new EtlSchema(rowTypeInfo.getFieldNames(), rowTypeInfo.getFieldTypes());
+        etlSchema = MetadataUtil.addSourceToSchema(rowTypeInfo);
     }
 
     @Override
@@ -66,35 +69,41 @@ public class MySqlCdcDeserializer implements DebeziumDeserializationSchema<Row> 
 
         // 解析 JSON 字符串
         String jsonString = new String(valueBytes, StandardCharsets.UTF_8);
-        JsonNode jsonNode = JsonUtil.readTree(jsonString);
+        JsonNode debeziumJsonNode = JsonUtil.readTree(jsonString);
 
         // 验证必需字段 'op'
-        if (!jsonNode.has("op")) {
+        if (!debeziumJsonNode.has("op")) {
             throw new IOException("Debezium JSON 缺少必需字段 'op'");
         }
 
         // 解析 Debezium op 字段
-        String op = jsonNode.get("op").asText();
+        String op = debeziumJsonNode.get("op").asText();
         RowKind rowKind = parseRowKind(op);
 
         // 提取业务数据（after/before 字段）并进行验证
         JsonNode dataNode;
         if (op.equals("d")) {
             // DELETE 操作使用 before 字段
-            if (!jsonNode.has("before") || jsonNode.get("before").isNull()) {
+            if (!debeziumJsonNode.has("before") || debeziumJsonNode.get("before").isNull()) {
                 throw new IOException("DELETE 操作缺少 'before' 字段");
             }
-            dataNode = jsonNode.get("before");
+            dataNode = debeziumJsonNode.get("before");
         } else {
             // INSERT/UPDATE 操作使用 after 字段
-            if (!jsonNode.has("after") || jsonNode.get("after").isNull()) {
+            if (!debeziumJsonNode.has("after") || debeziumJsonNode.get("after").isNull()) {
                 throw new IOException("INSERT/UPDATE 操作缺少 'after' 字段");
             }
-            dataNode = jsonNode.get("after");
+            dataNode = debeziumJsonNode.get("after");
         }
 
         // 构建 Row（带 RowKind）
-        Row row = JsonToRowConverter.convertJsonToRow(dataNode, etlSchema);
+        String source = DebeziumJsonUtil.getSourceFromJsonNode(debeziumJsonNode);
+        Row row = JsonToRowConverter.convertJsonToRow(
+                dataNode,
+                etlSchema,
+                Collections.singletonMap(MetadataUtil.SOURCE, source)
+        );
+
         row.setKind(rowKind);
 
         // 发送到下游
@@ -129,6 +138,6 @@ public class MySqlCdcDeserializer implements DebeziumDeserializationSchema<Row> 
 
     @Override
     public TypeInformation<Row> getProducedType() {
-        return rowTypeInfo;
+        return Types.ROW_NAMED(etlSchema.getFieldNames(), etlSchema.getFieldTypes());
     }
 }
