@@ -1,8 +1,7 @@
-package com.etl.connector.kafka.source.format.debezium;
+package com.etl.connector.kafka.source.format.ogg;
 
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.JsonToRowConverter;
-import com.etl.core.util.DebeziumJsonUtil;
 import com.etl.core.util.JsonUtil;
 import com.etl.core.util.MetadataUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -18,18 +17,12 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import java.io.IOException;
 import java.util.Collections;
 
-/**
- * Debezium JSON 反序列化器
- * 解析 Debezium CDC JSON 结构，设置 RowKind，提取业务数据
- */
 @Slf4j
-public class DebeziumJsonDeserializationSchema implements KafkaRecordDeserializationSchema<Row> {
+public class OggJsonDeserializationSchema implements KafkaRecordDeserializationSchema<Row> {
 
-    private static final long serialVersionUID = 1L;
+    private final EtlSchema schema;
 
-    private final EtlSchema schema;  // 业务数据 schema
-
-    public DebeziumJsonDeserializationSchema(EtlSchema schema) {
+    public OggJsonDeserializationSchema(EtlSchema schema) {
         this.schema = MetadataUtil.addSourceToSchema(schema);
     }
 
@@ -40,34 +33,39 @@ public class DebeziumJsonDeserializationSchema implements KafkaRecordDeserializa
         }
 
         // 解析 Debezium JSON
-        JsonNode debeziumJsonNode = JsonUtil.readTree(record.value());
+        JsonNode oggJsonNode = JsonUtil.readTree(record.value());
 
         // 提取操作类型
-        JsonNode opNode = debeziumJsonNode.get("op");
-        if (opNode == null || opNode.isNull()) {
-            log.warn("Debezium 消息缺少 op 字段，跳过该记录: topic={}, partition={}, offset={}",
+        JsonNode opTypeNode = oggJsonNode.get("op_type");
+        if (opTypeNode == null || opTypeNode.isNull()) {
+            log.warn("OGG 消息缺少 op_type 字段，跳过该记录: topic={}, partition={}, offset={}",
                     record.topic(), record.partition(), record.offset());
             return;
         }
-        String op = opNode.asText();
-        RowKind rowKind = DebeziumJsonUtil.mapOpToRowKind(op);
 
-        // 根据操作类型提取数据源
+        String opType = opTypeNode.asText();
+        RowKind rowKind = mapOpToRowKind(opType);
+        if (rowKind == null) {
+            log.warn("不支持的 op_type 类型: {}", opType);
+            return;
+        }
+
         JsonNode dataNode;
         if (rowKind == RowKind.DELETE) {
-            dataNode = debeziumJsonNode.get("before");
+            dataNode = oggJsonNode.get("before");
         } else {
-            dataNode = debeziumJsonNode.get("after");
+            dataNode = oggJsonNode.get("after");
         }
 
         if (dataNode == null || dataNode.isNull()) {
-            // before/after 可能为 null（某些场景）
-            log.warn("Debezium 消息缺少 before/after: {}", debeziumJsonNode);
+            log.warn("OGG 消息缺少 before/after: {}", oggJsonNode);
             return;
         }
 
         // 添加source到row
-        String source = DebeziumJsonUtil.getSourceFromJsonNode(debeziumJsonNode);
+        JsonNode table = oggJsonNode.get("table");
+        String source = table == null ? null : table.asText();
+
         Row row = JsonToRowConverter.convertJsonToRow(
                 dataNode,
                 schema,
@@ -75,6 +73,22 @@ public class DebeziumJsonDeserializationSchema implements KafkaRecordDeserializa
         );
         row.setKind(rowKind);
         out.collect(row);
+    }
+
+    /**
+     * Debezium op 字段映射到 Flink RowKind
+     */
+    private RowKind mapOpToRowKind(String opType) {
+        switch (opType) {
+            case "I":  // insert
+                return RowKind.INSERT;
+            case "U":  // update
+                return RowKind.UPDATE_AFTER;
+            case "D":  // delete
+                return RowKind.DELETE;
+            default: // "T" truncate
+                return null;
+        }
     }
 
     @Override

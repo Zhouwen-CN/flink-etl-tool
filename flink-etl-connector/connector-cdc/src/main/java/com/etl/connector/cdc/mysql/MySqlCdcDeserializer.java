@@ -8,6 +8,7 @@ import com.etl.core.util.JsonUtil;
 import com.etl.core.util.MetadataUtil;
 import com.etl.core.util.SqlUtil;
 import com.ververica.cdc.debezium.DebeziumDeserializationSchema;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
 import org.apache.flink.api.java.typeutils.RowTypeInfo;
@@ -32,6 +33,7 @@ import java.util.Map;
  * 将 Debezium JSON 转换为带 RowKind 的 Row
  * 动态从数据库获取表 Schema
  */
+@Slf4j
 public class MySqlCdcDeserializer implements DebeziumDeserializationSchema<Row> {
 
     private final EtlSchema etlSchema;
@@ -78,22 +80,20 @@ public class MySqlCdcDeserializer implements DebeziumDeserializationSchema<Row> 
 
         // 解析 Debezium op 字段
         String op = debeziumJsonNode.get("op").asText();
-        RowKind rowKind = parseRowKind(op);
+        RowKind rowKind = DebeziumJsonUtil.mapOpToRowKind(op);
 
         // 提取业务数据（after/before 字段）并进行验证
         JsonNode dataNode;
-        if (op.equals("d")) {
-            // DELETE 操作使用 before 字段
-            if (!debeziumJsonNode.has("before") || debeziumJsonNode.get("before").isNull()) {
-                throw new IOException("DELETE 操作缺少 'before' 字段");
-            }
+        if (rowKind == RowKind.DELETE) {
             dataNode = debeziumJsonNode.get("before");
         } else {
-            // INSERT/UPDATE 操作使用 after 字段
-            if (!debeziumJsonNode.has("after") || debeziumJsonNode.get("after").isNull()) {
-                throw new IOException("INSERT/UPDATE 操作缺少 'after' 字段");
-            }
             dataNode = debeziumJsonNode.get("after");
+        }
+
+        if (dataNode == null || dataNode.isNull()) {
+            // before/after 可能为 null（某些场景）
+            log.warn("Debezium 消息缺少 before/after: {}", debeziumJsonNode);
+            return;
         }
 
         // 构建 Row（带 RowKind）
@@ -108,20 +108,6 @@ public class MySqlCdcDeserializer implements DebeziumDeserializationSchema<Row> 
 
         // 发送到下游
         out.collect(row);
-    }
-
-    private RowKind parseRowKind(String op) {
-        switch (op) {
-            case "c":  // create
-            case "r":  // read（快照读取）
-                return RowKind.INSERT;
-            case "u":  // update
-                return RowKind.UPDATE_AFTER;
-            case "d":  // delete
-                return RowKind.DELETE;
-            default:
-                throw new IllegalArgumentException("不支持的 op 类型: " + op);
-        }
     }
 
     /**
