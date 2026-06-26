@@ -24,17 +24,10 @@ import java.util.function.Function;
  */
 public class JsonToRowConverter {
 
-    // region JsonNode 转换器映射
-
     /**
      * JsonNode 转换器映射
      */
     private static final Map<TypeInformation<?>, Function<JsonNode, Object>> JSON_NODE_CONVERTERS = new HashMap<>();
-
-    /**
-     * JsonNode 数组元素转换器映射
-     */
-    private static final Map<TypeInformation<?>, Function<JsonNode, Object>> JSON_ARRAY_ELEMENT_CONVERTERS = new HashMap<>();
 
     static {
         // 初始化 JsonNode 转换器
@@ -43,19 +36,9 @@ public class JsonToRowConverter {
         JSON_NODE_CONVERTERS.put(Types.LONG, JsonNode::asLong);
         JSON_NODE_CONVERTERS.put(Types.DOUBLE, JsonNode::asDouble);
         JSON_NODE_CONVERTERS.put(Types.BOOLEAN, JsonNode::asBoolean);
-        JSON_NODE_CONVERTERS.put(Types.BIG_DEC, node -> new BigDecimal(node.asText()));
-        JSON_NODE_CONVERTERS.put(Types.LOCAL_DATE_TIME, node -> LocalDateTime.parse(node.asText(), DateFormatConstants.DEFAULT_TIMESTAMP_FORMAT));
-
-        // 初始化 JsonNode 数组元素转换器（处理 null 情况）
-        JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.STRING, node -> node.isNull() ? null : node.asText());
-        JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.INT, node -> node.isNull() ? null : node.asInt());
-        JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.LONG, node -> node.isNull() ? null : node.asLong());
-        JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.DOUBLE, node -> node.isNull() ? null : node.asDouble());
-        JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.BOOLEAN, node -> node.isNull() ? null : node.asBoolean());
-        JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.BIG_DEC, node -> node.isNull() ? null : new BigDecimal(node.asText()));
-        JSON_ARRAY_ELEMENT_CONVERTERS.put(Types.LOCAL_DATE_TIME, node -> node.isNull() ? null : LocalDateTime.parse(node.asText(), DateFormatConstants.DEFAULT_TIMESTAMP_FORMAT));
+        JSON_NODE_CONVERTERS.put(Types.BIG_DEC, node -> node.isNull() ? null : new BigDecimal(node.asText()));
+        JSON_NODE_CONVERTERS.put(Types.LOCAL_DATE_TIME, node -> node.isNull() ? null : LocalDateTime.parse(node.asText(), DateFormatConstants.DEFAULT_TIMESTAMP_FORMAT));
     }
-    // endregion
 
     private JsonToRowConverter() {
         // 私有构造函数，防止实例化
@@ -215,7 +198,7 @@ public class JsonToRowConverter {
         }
 
         // 获取元素转换器（用于基本类型）
-        Function<JsonNode, Object> elementConverter = JSON_ARRAY_ELEMENT_CONVERTERS.get(componentType);
+        Function<JsonNode, Object> elementConverter = JSON_NODE_CONVERTERS.get(componentType);
 
         // 基本类型数组处理
         if (elementConverter != null) {

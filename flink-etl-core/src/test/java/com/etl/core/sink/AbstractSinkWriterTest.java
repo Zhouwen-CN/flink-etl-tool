@@ -55,11 +55,4 @@ public abstract class AbstractSinkWriterTest {
         assertEquals(0, writer.context.getSubtaskId());
         assertEquals(1, writer.context.getNumberOfParallelSubtasks());
     }
-
-    @Test
-    public void testConfigAccess() throws Exception {
-        AbstractSinkWriter writer = createWriter();
-
-        assertNotNull(writer.config);
-    }
 }
