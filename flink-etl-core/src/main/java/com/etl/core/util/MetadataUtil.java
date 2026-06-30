@@ -30,18 +30,13 @@ public final class MetadataUtil {
     }
 
     public static Row removeAllMetadata(Row row) {
-        return removeMetadata(row, METADATA, false).getKey();
+        return removeMetadata(row, METADATA).getKey();
     }
 
 
-    /**
-     * <pre>
-     *     目前这个函数只有doris sink在用，doris字段名通常都是小写
-     *     TODO: Row字段名顺便转小写，也可以通过sql转换，这里图省事
-     * </pre>
-     */
+
     public static Pair<Row, String> removeSource(Row row) {
-        Pair<Row, Map<String, String>> pair = removeMetadata(row, Collections.singletonList(SOURCE), true);
+        Pair<Row, Map<String, String>> pair = removeMetadata(row, Collections.singletonList(SOURCE));
         Row newRow = pair.getKey();
         String source = pair.getValue().get(SOURCE);
         return Pair.of(newRow, source);
@@ -55,7 +50,7 @@ public final class MetadataUtil {
      * @param keys 需要删除元数据的key列表
      * @return key：删除元数据之后的行；value：元数据
      */
-    private static Pair<Row, Map<String, String>> removeMetadata(Row row, List<String> keys, boolean toLowerCase) {
+    private static Pair<Row, Map<String, String>> removeMetadata(Row row, List<String> keys) {
         Set<String> fieldNames = row.getFieldNames(true);
 
         RowKind kind = row.getKind();
@@ -70,10 +65,6 @@ public final class MetadataUtil {
             if (index >= 0) {
                 map.put(fieldName, value == null ? null : value.toString());
                 continue;
-            }
-
-            if (toLowerCase) {
-                fieldName = fieldName.toLowerCase();
             }
 
             fieldByPosition.add(value);
