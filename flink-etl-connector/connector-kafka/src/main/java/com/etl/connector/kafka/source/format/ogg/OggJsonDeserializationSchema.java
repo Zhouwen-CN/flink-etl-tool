@@ -2,6 +2,7 @@ package com.etl.connector.kafka.source.format.ogg;
 
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.JsonToRowConverter;
+import com.etl.core.util.CdcJsonUtil;
 import com.etl.core.util.JsonUtil;
 import com.etl.core.util.MetadataUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -32,24 +33,24 @@ public class OggJsonDeserializationSchema implements KafkaRecordDeserializationS
             return;
         }
 
-        // 解析 Debezium JSON
         JsonNode oggJsonNode = JsonUtil.readTree(record.value());
 
-        // 提取操作类型
+        // 解析操作类型
         JsonNode opTypeNode = oggJsonNode.get("op_type");
         if (opTypeNode == null || opTypeNode.isNull()) {
-            log.warn("OGG 消息缺少 op_type 字段，跳过该记录: topic={}, partition={}, offset={}",
+            log.warn("OGG Json 缺少 op_type 字段: topic={}, partition={}, offset={}",
+                    record.topic(), record.partition(), record.offset());
+            return;
+        }
+        String opType = opTypeNode.asText();
+        RowKind rowKind = CdcJsonUtil.parseOggOp(opType);
+        if (rowKind == null) {
+            log.warn("OGG Json 不支持的 op_type 类型: topic={}, partition={}, offset={}",
                     record.topic(), record.partition(), record.offset());
             return;
         }
 
-        String opType = opTypeNode.asText();
-        RowKind rowKind = mapOpToRowKind(opType);
-        if (rowKind == null) {
-            log.warn("不支持的 op_type 类型: {}", opType);
-            return;
-        }
-
+        // 获取 data
         JsonNode dataNode;
         if (rowKind == RowKind.DELETE) {
             dataNode = oggJsonNode.get("before");
@@ -58,14 +59,13 @@ public class OggJsonDeserializationSchema implements KafkaRecordDeserializationS
         }
 
         if (dataNode == null || dataNode.isNull()) {
-            log.warn("OGG 消息缺少 before/after: {}", oggJsonNode);
+            log.warn("OGG Json 缺少 before/after: topic={}, partition={}, offset={}",
+                    record.topic(), record.partition(), record.offset());
             return;
         }
 
         // 添加source到row
-        JsonNode table = oggJsonNode.get("table");
-        String source = table == null ? null : table.asText();
-
+        String source = CdcJsonUtil.getOggSource(oggJsonNode);
         Row row = JsonToRowConverter.convertJsonToRow(
                 dataNode,
                 schema,
@@ -73,22 +73,6 @@ public class OggJsonDeserializationSchema implements KafkaRecordDeserializationS
         );
         row.setKind(rowKind);
         out.collect(row);
-    }
-
-    /**
-     * Debezium op 字段映射到 Flink RowKind
-     */
-    private RowKind mapOpToRowKind(String opType) {
-        switch (opType) {
-            case "I":  // insert
-                return RowKind.INSERT;
-            case "U":  // update
-                return RowKind.UPDATE_AFTER;
-            case "D":  // delete
-                return RowKind.DELETE;
-            default: // "T" truncate
-                return null;
-        }
     }
 
     @Override

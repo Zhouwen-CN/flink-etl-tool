@@ -1,4 +1,4 @@
-package com.etl.connector.kafka.source.format.debezium;
+package com.etl.connector.kafka.source.format.mixin;
 
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.JsonToRowConverter;
@@ -18,18 +18,12 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import java.io.IOException;
 import java.util.Collections;
 
-/**
- * Debezium JSON 反序列化器
- * 解析 Debezium CDC JSON 结构，设置 RowKind，提取业务数据
- */
 @Slf4j
-public class DebeziumJsonDeserializationSchema implements KafkaRecordDeserializationSchema<Row> {
+public class MixinJsonDeserializationSchema implements KafkaRecordDeserializationSchema<Row> {
 
-    private static final long serialVersionUID = 1L;
+    private final EtlSchema schema;
 
-    private final EtlSchema schema;  // 业务数据 schema
-
-    public DebeziumJsonDeserializationSchema(EtlSchema schema) {
+    public MixinJsonDeserializationSchema(EtlSchema schema) {
         this.schema = MetadataUtil.addSourceToSchema(schema);
     }
 
@@ -39,19 +33,28 @@ public class DebeziumJsonDeserializationSchema implements KafkaRecordDeserializa
             return;
         }
 
-        JsonNode debeziumJsonNode = JsonUtil.readTree(record.value());
+        JsonNode mixinJsonNode = JsonUtil.readTree(record.value());
+
+        RowKind rowKind = null;
+        String source = null;
 
         // 解析操作类型
-        JsonNode opNode = debeziumJsonNode.get("op");
-        if (opNode == null || opNode.isNull()) {
-            log.warn("Debezium Json 缺少 op 字段: topic={}, partition={}, offset={}",
-                    record.topic(), record.partition(), record.offset());
-            return;
+        // ogg
+        if (mixinJsonNode.has("op_type")) {
+            rowKind = CdcJsonUtil.parseOggOp(mixinJsonNode.get("op_type").asText());
+            source = CdcJsonUtil.getOggSource(mixinJsonNode);
+            // custom ogg
+        } else if (mixinJsonNode.has("optype")) {
+            rowKind = CdcJsonUtil.parseCustomOggOp(mixinJsonNode.get("optype").asText());
+            source = CdcJsonUtil.getCustomOggSource(mixinJsonNode);
+            // debezium
+        } else if (mixinJsonNode.has("op")) {
+            rowKind = CdcJsonUtil.parseDebeziumOp(mixinJsonNode.get("op").asText());
+            source = CdcJsonUtil.getDebeziumSource(mixinJsonNode);
         }
-        String op = opNode.asText();
-        RowKind rowKind = CdcJsonUtil.parseDebeziumOp(op);
+
         if (rowKind == null) {
-            log.warn("Debezium Json 不支持的 op 类型: topic={}, partition={}, offset={}",
+            log.warn("Mixin Json 操作类型解析失败: topic={}, partition={}, offset={}",
                     record.topic(), record.partition(), record.offset());
             return;
         }
@@ -59,19 +62,18 @@ public class DebeziumJsonDeserializationSchema implements KafkaRecordDeserializa
         // 获取 data
         JsonNode dataNode;
         if (rowKind == RowKind.DELETE) {
-            dataNode = debeziumJsonNode.get("before");
+            dataNode = mixinJsonNode.get("before");
         } else {
-            dataNode = debeziumJsonNode.get("after");
+            dataNode = mixinJsonNode.get("after");
         }
+
         if (dataNode == null || dataNode.isNull()) {
-            // before/after 可能为 null（某些场景）
-            log.warn("Debezium Json 缺少 before/after: topic={}, partition={}, offset={}",
+            log.warn("Mixin Json 消息缺少 before/after: topic={}, partition={}, offset={}",
                     record.topic(), record.partition(), record.offset());
             return;
         }
 
-        // 添加source到row
-        String source = CdcJsonUtil.getDebeziumSource(debeziumJsonNode);
+        // 添加 source 到 row
         Row row = JsonToRowConverter.convertJsonToRow(
                 dataNode,
                 schema,

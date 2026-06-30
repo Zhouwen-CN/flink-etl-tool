@@ -3,7 +3,7 @@ package com.etl.connector.cdc.mysql;
 import com.etl.connector.cdc.mysql.config.MySqlCdcConfig;
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.JsonToRowConverter;
-import com.etl.core.util.DebeziumJsonUtil;
+import com.etl.core.util.CdcJsonUtil;
 import com.etl.core.util.JsonUtil;
 import com.etl.core.util.MetadataUtil;
 import com.etl.core.util.SqlUtil;
@@ -75,12 +75,15 @@ public class MySqlCdcDeserializer implements DebeziumDeserializationSchema<Row> 
 
         // 验证必需字段 'op'
         if (!debeziumJsonNode.has("op")) {
-            throw new IOException("Debezium JSON 缺少必需字段 'op'");
+            throw new IOException("Debezium JSON 缺少必需字段 op");
         }
 
         // 解析 Debezium op 字段
         String op = debeziumJsonNode.get("op").asText();
-        RowKind rowKind = DebeziumJsonUtil.mapOpToRowKind(op);
+        RowKind rowKind = CdcJsonUtil.parseDebeziumOp(op);
+        if (rowKind == null) {
+            throw new IOException("Debezium JSON 不支持的 op 类型: " + op);
+        }
 
         // 提取业务数据（after/before 字段）并进行验证
         JsonNode dataNode;
@@ -97,7 +100,7 @@ public class MySqlCdcDeserializer implements DebeziumDeserializationSchema<Row> 
         }
 
         // 构建 Row（带 RowKind）
-        String source = DebeziumJsonUtil.getSourceFromJsonNode(debeziumJsonNode);
+        String source = CdcJsonUtil.getDebeziumSource(debeziumJsonNode);
         Row row = JsonToRowConverter.convertJsonToRow(
                 dataNode,
                 etlSchema,
