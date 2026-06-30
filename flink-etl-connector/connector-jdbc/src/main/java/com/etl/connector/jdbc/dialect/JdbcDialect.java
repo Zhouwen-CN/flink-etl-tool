@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
  * 因为 jdbc source 和 jdbc sink都需要，所以放在了 core 模块
  */
 public interface JdbcDialect extends Serializable {
+    String driverClassName();
 
     /**
      * 获取数据库类型标识

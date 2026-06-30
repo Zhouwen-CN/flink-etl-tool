@@ -19,6 +19,11 @@ public class OracleDialect implements JdbcDialect {
     private static final long serialVersionUID = 1L;
 
     @Override
+    public String driverClassName() {
+        return "oracle.jdbc.OracleDriver";
+    }
+
+    @Override
     public String getName() {
         return "oracle";
     }

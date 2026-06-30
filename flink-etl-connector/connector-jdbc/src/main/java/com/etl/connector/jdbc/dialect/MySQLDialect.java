@@ -18,6 +18,11 @@ public class MySQLDialect implements JdbcDialect {
     private static final long serialVersionUID = 1L;
 
     @Override
+    public String driverClassName() {
+        return "com.mysql.cj.jdbc.Driver";
+    }
+
+    @Override
     public String getName() {
         return "mysql";
     }

@@ -16,6 +16,11 @@ public class PostgreSQLDialect implements JdbcDialect {
     private static final long serialVersionUID = 1L;
 
     @Override
+    public String driverClassName() {
+        return "org.postgresql.Driver";
+    }
+
+    @Override
     public String getName() {
         return "postgresql";
     }

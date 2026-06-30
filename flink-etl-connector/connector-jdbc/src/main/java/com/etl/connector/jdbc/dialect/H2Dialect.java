@@ -16,6 +16,11 @@ public class H2Dialect implements JdbcDialect {
     private static final long serialVersionUID = 1L;
 
     @Override
+    public String driverClassName() {
+        return "org.h2.Driver";
+    }
+
+    @Override
     public String getName() {
         return "h2";
     }
