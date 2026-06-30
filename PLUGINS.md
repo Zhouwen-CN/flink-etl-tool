@@ -26,6 +26,7 @@
     - [内置 UDF 函数](#内置-udf-函数)
     - [使用示例](#使用示例)
     - [扩展新 UDF](#扩展新-udf)
+- [完整配置示例](#完整配置示例)
 
 ---
 
@@ -367,18 +368,20 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 
 ```json
 {
-  "source": {
-    "type": "jdbc",
-    "outputTable": "users",
-    "config": {
-      "url": "jdbc:mysql://localhost:3306/mydb",
-      "username": "root",
-      "password": "password",
-      "table": "users",
-      "splitKey": "id",
-      "batchSize": 1000
+  "sources": [
+    {
+      "type": "jdbc",
+      "outputTable": "users",
+      "config": {
+        "url": "jdbc:mysql://localhost:3306/mydb",
+        "username": "root",
+        "password": "password",
+        "table": "users",
+        "splitKey": "id",
+        "batchSize": 1000
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -386,18 +389,20 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 
 ```json
 {
-  "source": {
-    "type": "jdbc",
-    "outputTable": "active_users",
-    "config": {
-      "url": "jdbc:mysql://localhost:3306/mydb",
-      "username": "root",
-      "password": "password",
-      "sql": "SELECT id, name, email FROM users WHERE status = 1",
-      "splitKey": "id",
-      "queryTimeout": 300
+  "sources": [
+    {
+      "type": "jdbc",
+      "outputTable": "active_users",
+      "config": {
+        "url": "jdbc:mysql://localhost:3306/mydb",
+        "username": "root",
+        "password": "password",
+        "sql": "SELECT id, name, email FROM users WHERE status = 1",
+        "splitKey": "id",
+        "queryTimeout": 300
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -405,19 +410,21 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 
 ```json
 {
-  "source": {
-    "type": "jdbc",
-    "outputTable": "users",
-    "config": {
-      "url": "jdbc:oceanbase://localhost:2883/test",
-      "username": "admin",
-      "password": "password",
-      "table": "USERS",
-      "dialect": "oracle",
-      "splitKey": "ID",
-      "batchSize": 1000
+  "sources": [
+    {
+      "type": "jdbc",
+      "outputTable": "users",
+      "config": {
+        "url": "jdbc:oceanbase://localhost:2883/test",
+        "username": "admin",
+        "password": "password",
+        "table": "USERS",
+        "dialect": "oracle",
+        "splitKey": "ID",
+        "batchSize": 1000
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -464,23 +471,25 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 
 ```json
 {
-  "source": {
-    "type": "localfile",
-    "outputTable": "csv_data",
-    "config": {
-      "path": "/data/input/*.csv",
-      "format": "csv",
-      "encoding": "UTF-8",
-      "delimiter": ",",
-      "skipHeader": true,
-      "schema": {
-        "id": "LONG",
-        "name": "STRING",
-        "age": "INT",
-        "email": "STRING"
+  "sources": [
+    {
+      "type": "localfile",
+      "outputTable": "csv_data",
+      "config": {
+        "path": "/data/input/*.csv",
+        "format": "csv",
+        "encoding": "UTF-8",
+        "delimiter": ",",
+        "skipHeader": true,
+        "schema": {
+          "id": "LONG",
+          "name": "STRING",
+          "age": "INT",
+          "email": "STRING"
+        }
       }
     }
-  }
+  ]
 }
 ```
 
@@ -488,20 +497,22 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 
 ```json
 {
-  "source": {
-    "type": "localfile",
-    "outputTable": "csv_data",
-    "config": {
-      "path": "/data/**/*.csv",
-      "format": "csv",
-      "recursive": true,
-      "skipHeader": true,
-      "schema": {
-        "id": "STRING",
-        "value": "DOUBLE"
+  "sources": [
+    {
+      "type": "localfile",
+      "outputTable": "csv_data",
+      "config": {
+        "path": "/data/**/*.csv",
+        "format": "csv",
+        "recursive": true,
+        "skipHeader": true,
+        "schema": {
+          "id": "STRING",
+          "value": "DOUBLE"
+        }
       }
     }
-  }
+  ]
 }
 ```
 
@@ -569,18 +580,20 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 
 ```json
 {
-  "source": {
-    "type": "http",
-    "outputTable": "users",
-    "config": {
-      "url": "https://api.example.com/users",
-      "schema": {
-        "id": "LONG",
-        "name": "STRING",
-        "email": "STRING"
+  "sources": [
+    {
+      "type": "http",
+      "outputTable": "users",
+      "config": {
+        "url": "https://api.example.com/users",
+        "schema": {
+          "id": "LONG",
+          "name": "STRING",
+          "email": "STRING"
+        }
       }
     }
-  }
+  ]
 }
 ```
 
@@ -588,33 +601,35 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 
 ```json
 {
-  "source": {
-    "type": "http",
-    "outputTable": "users",
-    "config": {
-      "url": "https://api.example.com/users/query",
-      "method": "POST",
-      "headers": {
-        "Authorization": "Bearer token123"
-      },
-      "body": {
-        "status": "active"
-      },
-      "format": "json",
-      "jsonPath": "$.data.items",
-      "schema": {
-        "id": "LONG",
-        "name": "STRING",
-        "tags": [
-          "STRING"
-        ],
-        "address": {
-          "city": "STRING",
-          "zip": "STRING"
+  "sources": [
+    {
+      "type": "http",
+      "outputTable": "users",
+      "config": {
+        "url": "https://api.example.com/users/query",
+        "method": "POST",
+        "headers": {
+          "Authorization": "Bearer token123"
+        },
+        "body": {
+          "status": "active"
+        },
+        "format": "json",
+        "jsonPath": "$.data.items",
+        "schema": {
+          "id": "LONG",
+          "name": "STRING",
+          "tags": [
+            "STRING"
+          ],
+          "address": {
+            "city": "STRING",
+            "zip": "STRING"
+          }
         }
       }
     }
-  }
+  ]
 }
 ```
 
@@ -622,19 +637,21 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 
 ```json
 {
-  "source": {
-    "type": "http",
-    "outputTable": "items",
-    "config": {
-      "url": "https://api.example.com/list.xml",
-      "format": "xml",
-      "xmlPath": "/response/items/item",
-      "schema": {
-        "id": "INT",
-        "name": "STRING"
+  "sources": [
+    {
+      "type": "http",
+      "outputTable": "items",
+      "config": {
+        "url": "https://api.example.com/list.xml",
+        "format": "xml",
+        "xmlPath": "/response/items/item",
+        "schema": {
+          "id": "INT",
+          "name": "STRING"
+        }
       }
     }
-  }
+  ]
 }
 ```
 
@@ -663,24 +680,26 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 
 ```json
 {
-  "source": {
-    "type": "kafka",
-    "outputTable": "user_events",
-    "config": {
-      "bootstrapServers": "localhost:9092",
-      "groupId": "etl-consumer",
-      "topics": [
-        "user-events",
-        "order-events"
-      ],
-      "startupMode": "earliest",
-      "schema": {
-        "userId": "LONG",
-        "eventType": "STRING",
-        "timestamp": "LONG"
+  "sources": [
+    {
+      "type": "kafka",
+      "outputTable": "user_events",
+      "config": {
+        "bootstrapServers": "localhost:9092",
+        "groupId": "etl-consumer",
+        "topics": [
+          "user-events",
+          "order-events"
+        ],
+        "startupMode": "earliest",
+        "schema": {
+          "userId": "LONG",
+          "eventType": "STRING",
+          "timestamp": "LONG"
+        }
       }
     }
-  }
+  ]
 }
 ```
 
@@ -688,26 +707,28 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 
 ```json
 {
-  "source": {
-    "type": "kafka",
-    "outputTable": "metrics",
-    "config": {
-      "bootstrapServers": "localhost:9092",
-      "groupId": "metrics-consumer",
-      "topicPattern": "metrics-.*",
-      "startupMode": "latest",
-      "properties": {
-        "fetch.max.bytes": "52428800"
-      },
-      "schema": {
-        "metric": "STRING",
-        "value": "DOUBLE",
-        "tags": [
-          "STRING"
-        ]
+  "sources": [
+    {
+      "type": "kafka",
+      "outputTable": "metrics",
+      "config": {
+        "bootstrapServers": "localhost:9092",
+        "groupId": "metrics-consumer",
+        "topicPattern": "metrics-.*",
+        "startupMode": "latest",
+        "properties": {
+          "fetch.max.bytes": "52428800"
+        },
+        "schema": {
+          "metric": "STRING",
+          "value": "DOUBLE",
+          "tags": [
+            "STRING"
+          ]
+        }
       }
     }
-  }
+  ]
 }
 ```
 
@@ -717,25 +738,27 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 
 ```json
 {
-  "source": {
-    "type": "kafka",
-    "outputTable": "users_cdc",
-    "config": {
-      "bootstrapServers": "localhost:9092",
-      "groupId": "cdc-consumer",
-      "topics": [
-        "dbserver1.inventory.users"
-      ],
-      "startupMode": "earliest",
-      "format": "debezium-json",
-      "schema": {
-        "id": "LONG",
-        "name": "STRING",
-        "email": "STRING",
-        "updated_at": "TIMESTAMP"
+  "sources": [
+    {
+      "type": "kafka",
+      "outputTable": "users_cdc",
+      "config": {
+        "bootstrapServers": "localhost:9092",
+        "groupId": "cdc-consumer",
+        "topics": [
+          "dbserver1.inventory.users"
+        ],
+        "startupMode": "earliest",
+        "format": "debezium-json",
+        "schema": {
+          "id": "LONG",
+          "name": "STRING",
+          "email": "STRING",
+          "updated_at": "TIMESTAMP"
+        }
       }
     }
-  }
+  ]
 }
 ```
 
@@ -760,22 +783,24 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 
 ```json
 {
-  "source": {
-    "type": "kafka",
-    "outputTable": "raw_data",
-    "config": {
-      "bootstrapServers": "localhost:9092",
-      "groupId": "raw-consumer",
-      "topics": [
-        "raw-topic"
-      ],
-      "startupMode": "earliest",
-      "format": "raw",
-      "schema": {
-        "message": "STRING"
+  "sources": [
+    {
+      "type": "kafka",
+      "outputTable": "raw_data",
+      "config": {
+        "bootstrapServers": "localhost:9092",
+        "groupId": "raw-consumer",
+        "topics": [
+          "raw-topic"
+        ],
+        "startupMode": "earliest",
+        "format": "raw",
+        "schema": {
+          "message": "STRING"
+        }
       }
     }
-  }
+  ]
 }
 ```
 
@@ -817,16 +842,18 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 
 ```json
 {
-  "source": {
-    "type": "mysql-cdc",
-    "outputTable": "users_cdc",
-    "config": {
-      "url": "jdbc:mysql://localhost:3306/mydb",
-      "username": "root",
-      "password": "password",
-      "table": "users"
+  "sources": [
+    {
+      "type": "mysql-cdc",
+      "outputTable": "users_cdc",
+      "config": {
+        "url": "jdbc:mysql://localhost:3306/mydb",
+        "username": "root",
+        "password": "password",
+        "table": "users"
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -834,17 +861,19 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 
 ```json
 {
-  "source": {
-    "type": "mysql-cdc",
-    "outputTable": "orders_cdc",
-    "config": {
-      "url": "jdbc:mysql://localhost:3306/mydb",
-      "username": "root",
-      "password": "password",
-      "table": "orders",
-      "startupMode": "earliest"
+  "sources": [
+    {
+      "type": "mysql-cdc",
+      "outputTable": "orders_cdc",
+      "config": {
+        "url": "jdbc:mysql://localhost:3306/mydb",
+        "username": "root",
+        "password": "password",
+        "table": "orders",
+        "startupMode": "earliest"
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -852,20 +881,22 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 
 ```json
 {
-  "source": {
-    "type": "mysql-cdc",
-    "outputTable": "inventory_cdc",
-    "config": {
-      "url": "jdbc:mysql://localhost:3306/mydb",
-      "username": "root",
-      "password": "password",
-      "table": "inventory",
-      "startupMode": "initial",
-      "serverId": 5401,
-      "serverTimeZone": "Asia/Shanghai",
-      "splitKey": "id"
+  "sources": [
+    {
+      "type": "mysql-cdc",
+      "outputTable": "inventory_cdc",
+      "config": {
+        "url": "jdbc:mysql://localhost:3306/mydb",
+        "username": "root",
+        "password": "password",
+        "table": "inventory",
+        "startupMode": "initial",
+        "serverId": 5401,
+        "serverTimeZone": "Asia/Shanghai",
+        "splitKey": "id"
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -977,19 +1008,21 @@ MySQL 数据库需满足以下条件:
 
 ```json
 {
-  "source": {
-    "type": "mqtt",
-    "outputTable": "sensor_data",
-    "config": {
-      "broker": "tcp://localhost:1883",
-      "topic": "sensor/temperature",
-      "schema": {
-        "deviceId": "STRING",
-        "value": "DOUBLE",
-        "timestamp": "TIMESTAMP"
+  "sources": [
+    {
+      "type": "mqtt",
+      "outputTable": "sensor_data",
+      "config": {
+        "broker": "tcp://localhost:1883",
+        "topic": "sensor/temperature",
+        "schema": {
+          "deviceId": "STRING",
+          "value": "DOUBLE",
+          "timestamp": "TIMESTAMP"
+        }
       }
     }
-  }
+  ]
 }
 ```
 
@@ -997,29 +1030,31 @@ MySQL 数据库需满足以下条件:
 
 ```json
 {
-  "source": {
-    "type": "mqtt",
-    "outputTable": "mqtt_events",
-    "config": {
-      "broker": "tcp://broker.example.com:1883",
-      "topic": "events/log",
-      "clientId": "etl-consumer-001",
-      "username": "admin",
-      "password": "secret",
-      "schema": {
-        "eventId": "STRING",
-        "type": "STRING",
-        "data": {
-          "key": "STRING",
-          "value": "DOUBLE"
-        },
-        "tags": [
-          "STRING"
-        ],
-        "timestamp": "TIMESTAMP"
+  "sources": [
+    {
+      "type": "mqtt",
+      "outputTable": "mqtt_events",
+      "config": {
+        "broker": "tcp://broker.example.com:1883",
+        "topic": "events/log",
+        "clientId": "etl-consumer-001",
+        "username": "admin",
+        "password": "secret",
+        "schema": {
+          "eventId": "STRING",
+          "type": "STRING",
+          "data": {
+            "key": "STRING",
+            "value": "DOUBLE"
+          },
+          "tags": [
+            "STRING"
+          ],
+          "timestamp": "TIMESTAMP"
+        }
       }
     }
-  }
+  ]
 }
 ```
 
@@ -1078,38 +1113,40 @@ MySQL 数据库需满足以下条件:
 
 ```json
 {
-  "source": {
-    "type": "mock",
-    "outputTable": "users",
-    "config": {
-      "schema": {
-        "id": "LONG",
-        "name": "STRING",
-        "age": "INT",
-        "active": "BOOLEAN"
-      },
-      "data": [
-        {
-          "id": 1,
-          "name": "Alice",
-          "age": 25,
-          "active": true
+  "sources": [
+    {
+      "type": "mock",
+      "outputTable": "users",
+      "config": {
+        "schema": {
+          "id": "LONG",
+          "name": "STRING",
+          "age": "INT",
+          "active": "BOOLEAN"
         },
-        {
-          "id": 2,
-          "name": "Bob",
-          "age": 30,
-          "active": false
-        },
-        {
-          "id": 1,
-          "name": "Alice Updated",
-          "age": 26,
-          "active": true
-        }
-      ]
+        "data": [
+          {
+            "id": 1,
+            "name": "Alice",
+            "age": 25,
+            "active": true
+          },
+          {
+            "id": 2,
+            "name": "Bob",
+            "age": 30,
+            "active": false
+          },
+          {
+            "id": 1,
+            "name": "Alice Updated",
+            "age": 26,
+            "active": true
+          }
+        ]
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -1117,19 +1154,21 @@ MySQL 数据库需满足以下条件:
 
 ```json
 {
-  "source": {
-    "type": "mock",
-    "outputTable": "orders",
-    "config": {
-      "schema": {
-        "orderId": "LONG",
-        "amount": "DOUBLE",
-        "status": "STRING",
-        "created_at": "TIMESTAMP"
-      },
-      "numRows": 50
+  "sources": [
+    {
+      "type": "mock",
+      "outputTable": "orders",
+      "config": {
+        "schema": {
+          "orderId": "LONG",
+          "amount": "DOUBLE",
+          "status": "STRING",
+          "created_at": "TIMESTAMP"
+        },
+        "numRows": 50
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -1137,18 +1176,20 @@ MySQL 数据库需满足以下条件:
 
 ```json
 {
-  "source": {
-    "type": "mock",
-    "outputTable": "events",
-    "config": {
-      "schema": {
-        "eventId": "LONG",
-        "eventType": "STRING",
-        "timestamp": "TIMESTAMP"
-      },
-      "intervalMs": 500
+  "sources": [
+    {
+      "type": "mock",
+      "outputTable": "events",
+      "config": {
+        "schema": {
+          "eventId": "LONG",
+          "eventType": "STRING",
+          "timestamp": "TIMESTAMP"
+        },
+        "intervalMs": 500
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -1228,16 +1269,18 @@ address=4, value=-1
 
 ```json
 {
-  "source": {
-    "type": "modbus",
-    "outputTable": "modbus_data",
-    "config": {
-      "host": "192.168.1.100:502",
-      "deviceId": 1,
-      "address": 0,
-      "count": 10
+  "sources": [
+    {
+      "type": "modbus",
+      "outputTable": "modbus_data",
+      "config": {
+        "host": "192.168.1.100:502",
+        "deviceId": 1,
+        "address": 0,
+        "count": 10
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -1245,72 +1288,21 @@ address=4, value=-1
 
 ```json
 {
-  "source": {
-    "type": "modbus",
-    "outputTable": "modbus_data",
-    "config": {
-      "host": "192.168.1.100:502",
-      "deviceId": 1,
-      "address": 0,
-      "count": 10,
-      "intervalMs": 2000
+  "sources": [
+    {
+      "type": "modbus",
+      "outputTable": "modbus_data",
+      "config": {
+        "host": "192.168.1.100:502",
+        "deviceId": 1,
+        "address": 0,
+        "count": 10,
+        "intervalMs": 2000
+      }
     }
-  }
+  ]
 }
 ```
-
----
-
-## Sink 插件开发指南
-
-### 使用新 Sink API
-
-所有新 Sink 插件推荐使用 `AbstractSink` 和 `AbstractSinkWriter` 基类。
-
-#### AbstractSinkWriter 特点
-
-- **最小化抽象**：只提供 context 和 config 字段访问
-- **子类完全自主**：自行实现 write()、flush()、close() 方法
-- **InitContext 访问**：通过 `context` 字段直接获取运行时信息（subtaskId、并行度、metrics）
-
-#### 开发步骤
-
-1. 创建 Sink 类，继承 `AbstractSink`
-2. 在构造函数中进行参数校验和配置对象构建
-3. 创建 Writer 类，继承 `AbstractSinkWriter`
-4. 实现 `write()` 方法：写入数据逻辑（自行决定是否批量）
-5. 实现 `flush()` 方法：提交数据逻辑（如批量提交）
-6. 实现 `close()` 方法：清理资源逻辑（如关闭连接）
-7. 注册 SPI（使用 `@AutoService(SinkPlugin.class)`）
-
-#### 批量管理
-
-需要批量写入的 Sink（如 JDBC）自行管理：
-
-- 维护 `batchSize` 和 `pendingCount` 字段
-- 在 `write()` 中判断是否触发 flush
-- 在 `flush()` 中执行批量提交
-- 在 `close()` 中提交剩余数据
-
-不需要批量的 Sink（如 Console）：
-
-- `write()` 直接输出
-- `flush()` 空实现
-- `close()` 空实现或简单清理
-
-### InitContext 使用
-
-Writer 可以通过 `context` 字段访问：
-
-- `context.getSubtaskId()` - 获取子任务 ID
-- `context.getNumberOfParallelSubtasks()` - 获取总并行度
-- `context.metricGroup()` - 获取度量组（用于上报指标）
-
-### 异常处理
-
-- `write()` 失败 → 抛出 IOException，Flink 从 checkpoint 重试
-- `flush()` 失败 → 自行处理异常（如 rollback），然后抛出 IOException
-- `close()` 时 flush 失败 → 抛出异常，任务失败
 
 ---
 
@@ -1328,10 +1320,12 @@ Writer 可以通过 `context` 字段访问：
 
 ```json
 {
-  "sink": {
-    "type": "console",
-    "inputTable": "output_data"
-  }
+  "sinks": [
+    {
+      "type": "console",
+      "inputTable": "output_data"
+    }
+  ]
 }
 ```
 
@@ -1371,19 +1365,21 @@ CDC 模式用于处理带有 RowKind 标记的数据（如 Debezium CDC 数据�
 
 ```json
 {
-  "sink": {
-    "type": "jdbc",
-    "inputTable": "users_cdc",
-    "config": {
-      "url": "jdbc:mysql://localhost:3306/target_db",
-      "username": "root",
-      "password": "password",
-      "table": "users",
-      "mode": "cdc",
-      "batchSize": 100,
-      "batchIntervalMs": 1000
+  "sinks": [
+    {
+      "type": "jdbc",
+      "inputTable": "users_cdc",
+      "config": {
+        "url": "jdbc:mysql://localhost:3306/target_db",
+        "username": "root",
+        "password": "password",
+        "table": "users",
+        "mode": "cdc",
+        "batchSize": 100,
+        "batchIntervalMs": 1000
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -1426,18 +1422,20 @@ CUSTOM 模式用于执行用户自定义 SQL，实现复杂写入逻辑（如多
 
 ```json
 {
-  "sink": {
-    "type": "jdbc",
-    "inputTable": "user_data",
-    "config": {
-      "url": "jdbc:mysql://localhost:3306/mydb",
-      "username": "root",
-      "password": "password",
-      "mode": "custom",
-      "sql": "INSERT INTO user_stats(user_id, total_orders, last_update) VALUES(:userId, :orderCount, NOW()) ON DUPLICATE KEY UPDATE total_orders=VALUES(total_orders), last_update=NOW()",
-      "batchSize": 100
+  "sinks": [
+    {
+      "type": "jdbc",
+      "inputTable": "user_data",
+      "config": {
+        "url": "jdbc:mysql://localhost:3306/mydb",
+        "username": "root",
+        "password": "password",
+        "mode": "custom",
+        "sql": "INSERT INTO user_stats(user_id, total_orders, last_update) VALUES(:userId, :orderCount, NOW()) ON DUPLICATE KEY UPDATE total_orders=VALUES(total_orders), last_update=NOW()",
+        "batchSize": 100
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -1528,18 +1526,20 @@ JDBC Sink 支持两种批量刷写触发机制：
 
 ```json
 {
-  "sink": {
-    "type": "jdbc",
-    "inputTable": "output_data",
-    "config": {
-      "url": "jdbc:mysql://localhost:3306/mydb",
-      "username": "root",
-      "password": "password",
-      "table": "target_table",
-      "batchSize": 100,
-      "batchIntervalMs": 1000
+  "sinks": [
+    {
+      "type": "jdbc",
+      "inputTable": "output_data",
+      "config": {
+        "url": "jdbc:mysql://localhost:3306/mydb",
+        "username": "root",
+        "password": "password",
+        "table": "target_table",
+        "batchSize": 100,
+        "batchIntervalMs": 1000
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -1547,18 +1547,20 @@ JDBC Sink 支持两种批量刷写触发机制：
 
 ```json
 {
-  "sink": {
-    "type": "jdbc",
-    "inputTable": "output_data",
-    "config": {
-      "mode": "INSERT",
-      "url": "jdbc:mysql://localhost:3306/mydb",
-      "username": "root",
-      "password": "password",
-      "table": "target_table",
-      "batchSize": 100
+  "sinks": [
+    {
+      "type": "jdbc",
+      "inputTable": "output_data",
+      "config": {
+        "mode": "INSERT",
+        "url": "jdbc:mysql://localhost:3306/mydb",
+        "username": "root",
+        "password": "password",
+        "table": "target_table",
+        "batchSize": 100
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -1566,18 +1568,20 @@ JDBC Sink 支持两种批量刷写触发机制：
 
 ```json
 {
-  "sink": {
-    "type": "jdbc",
-    "inputTable": "output_data",
-    "config": {
-      "mode": "CUSTOM",
-      "url": "jdbc:mysql://localhost:3306/mydb",
-      "username": "root",
-      "password": "password",
-      "sql": "INSERT INTO user_table(id, name, email) VALUES(:id, :name, :email) ON DUPLICATE KEY UPDATE name=VALUES(name), email=VALUES(email)",
-      "batchSize": 100
+  "sinks": [
+    {
+      "type": "jdbc",
+      "inputTable": "output_data",
+      "config": {
+        "mode": "CUSTOM",
+        "url": "jdbc:mysql://localhost:3306/mydb",
+        "username": "root",
+        "password": "password",
+        "sql": "INSERT INTO user_table(id, name, email) VALUES(:id, :name, :email) ON DUPLICATE KEY UPDATE name=VALUES(name), email=VALUES(email)",
+        "batchSize": 100
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -1585,18 +1589,20 @@ JDBC Sink 支持两种批量刷写触发机制：
 
 ```json
 {
-  "sink": {
-    "type": "jdbc",
-    "inputTable": "output_data",
-    "config": {
-      "mode": "UPSERT",
-      "url": "jdbc:mysql://localhost:3306/mydb",
-      "username": "root",
-      "password": "password",
-      "table": "target_table",
-      "batchSize": 100
+  "sinks": [
+    {
+      "type": "jdbc",
+      "inputTable": "output_data",
+      "config": {
+        "mode": "UPSERT",
+        "url": "jdbc:mysql://localhost:3306/mydb",
+        "username": "root",
+        "password": "password",
+        "table": "target_table",
+        "batchSize": 100
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -1608,21 +1614,23 @@ JDBC Sink 支持两种批量刷写触发机制：
 
 ```json
 {
-  "sink": {
-    "type": "jdbc",
-    "inputTable": "output_data",
-    "config": {
-      "url": "jdbc:mysql://localhost:3306/mydb",
-      "username": "root",
-      "password": "password",
-      "table": "users",
-      "mode": "upsert",
-      "keyFields": [
-        "email"
-      ],
-      "batchSize": 100
+  "sinks": [
+    {
+      "type": "jdbc",
+      "inputTable": "output_data",
+      "config": {
+        "url": "jdbc:mysql://localhost:3306/mydb",
+        "username": "root",
+        "password": "password",
+        "table": "users",
+        "mode": "upsert",
+        "keyFields": [
+          "email"
+        ],
+        "batchSize": 100
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -1710,14 +1718,16 @@ JDBC Sink 自动识别数据库类型并使用对应的标识符转义：
 
 ```json
 {
-  "sink": {
-    "type": "kafka",
-    "inputTable": "output_data",
-    "config": {
-      "bootstrapServers": "localhost:9092",
-      "topic": "output-topic"
+  "sinks": [
+    {
+      "type": "kafka",
+      "inputTable": "output_data",
+      "config": {
+        "bootstrapServers": "localhost:9092",
+        "topic": "output-topic"
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -1725,19 +1735,21 @@ JDBC Sink 自动识别数据库类型并使用对应的标识符转义：
 
 ```json
 {
-  "sink": {
-    "type": "kafka",
-    "inputTable": "user_events",
-    "config": {
-      "bootstrapServers": "localhost:9092",
-      "topic": "user-events",
-      "keyField": "userId",
-      "properties": {
-        "compression.type": "gzip",
-        "batch.size": "16384"
+  "sinks": [
+    {
+      "type": "kafka",
+      "inputTable": "user_events",
+      "config": {
+        "bootstrapServers": "localhost:9092",
+        "topic": "user-events",
+        "keyField": "userId",
+        "properties": {
+          "compression.type": "gzip",
+          "batch.size": "16384"
+        }
       }
     }
-  }
+  ]
 }
 ```
 
@@ -1830,16 +1842,18 @@ Kafka Sink 与 Kafka Source 可以形成完整的数据流转链路：
 
 ```json
 {
-  "sink": {
-    "type": "doris",
-    "inputTable": "output_data",
-    "config": {
-      "fenodes": "127.0.0.1:8030",
-      "table": "test_db.test_tbl",
-      "username": "root",
-      "password": "123456"
+  "sinks": [
+    {
+      "type": "doris",
+      "inputTable": "output_data",
+      "config": {
+        "fenodes": "127.0.0.1:8030",
+        "table": "test_db.test_tbl",
+        "username": "root",
+        "password": "123456"
+      }
     }
-  }
+  ]
 }
 ```
 
@@ -1847,20 +1861,22 @@ Kafka Sink 与 Kafka Source 可以形成完整的数据流转链路：
 
 ```json
 {
-  "sink": {
-    "type": "doris",
-    "inputTable": "cdc_data",
-    "config": {
-      "fenodes": "127.0.0.1:8030",
-      "username": "root",
-      "password": "123456",
-      "format": "debezium-json",
-      "tableMapping": {
-        "source_db.users": "target_db.users",
-        "source_db.orders": "target_db.orders"
+  "sinks": [
+    {
+      "type": "doris",
+      "inputTable": "cdc_data",
+      "config": {
+        "fenodes": "127.0.0.1:8030",
+        "username": "root",
+        "password": "123456",
+        "format": "debezium-json",
+        "tableMapping": {
+          "source_db.users": "target_db.users",
+          "source_db.orders": "target_db.orders"
+        }
       }
     }
-  }
+  ]
 }
 ```
 
