@@ -28,7 +28,6 @@ import java.util.Set;
  * <ul>
  *   <li>每个分片创建独立的数据库连接</li>
  *   <li>支持分批读取，每批最多 batchSize 条记录</li>
- *   <li>支持流式读取（MySQL 需设置 batchSize=Integer.MIN_VALUE）</li>
  *   <li>直接返回 Flink Row 类型，无需额外包装</li>
  * </ul>
  */

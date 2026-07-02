@@ -24,3 +24,4 @@ logs
 docs/examples/provided
 */.lck
 .codegraph/
+.qoder

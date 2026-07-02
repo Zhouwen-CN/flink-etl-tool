@@ -121,6 +121,7 @@ public class NumericSplitter extends ChunkSplitter {
                 if (rs.getObject(1) == null) {
                     return Pair.of(null, null);
                 }
+                // todo: 超过 Long.MAX_VALUE 的 BigDecimal 被截断，分片范围错误
                 long min = rs.getLong(1);
                 long max = rs.getLong(2);
                 return Pair.of(min, max);

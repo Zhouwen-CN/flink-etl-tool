@@ -16,16 +16,19 @@ import java.util.function.Function;
 /**
  * Key 归并缓冲执行器
  * 用于 CDC/UPSERT 模式，按主键归并数据并分段执行
+ *
+ * 参考 Flink 的 TableBufferReducedStatementExecutor：
+ * - reduceBuffer 是唯一数据源，addToBatch 只入缓冲
+ * - executeBatch 遍历 reduceBuffer 填充内部执行器后执行，仅在成功后清空
+ * - 不做内部 flush，由 JdbcOutputFormat 的 batchSize 控制刷写
+ * - 重试前调用 clearBatch() 清空内部执行器缓冲，防止重复
  */
 @Slf4j
 public class BufferReducedExecutor implements JdbcBatchStatementExecutor {
 
-    private static final int DEFAULT_MAX_BUFFER_SIZE = 10_000;
-
     private final JdbcBatchStatementExecutor upsertExecutor;
     private final JdbcBatchStatementExecutor deleteExecutor;
     private final Function<Row, Row> keyExtractor;
-    private final int maxBufferSize;
 
     // 核心缓冲：LinkedHashMap 保证流入顺序
     // Boolean: true=upsert, false=delete
@@ -36,17 +39,6 @@ public class BufferReducedExecutor implements JdbcBatchStatementExecutor {
             String table,
             String[] columns,
             List<String> keyFields) {
-        this(dialect, table, columns, keyFields, DEFAULT_MAX_BUFFER_SIZE);
-    }
-
-    public BufferReducedExecutor(
-            JdbcDialect dialect,
-            String table,
-            String[] columns,
-            List<String> keyFields,
-            int maxBufferSize) {
-
-        this.maxBufferSize = maxBufferSize;
 
         // 初始化内部 Executor
         String upsertSql = dialect.getUpsertSql(table, columns, keyFields);
@@ -93,16 +85,6 @@ public class BufferReducedExecutor implements JdbcBatchStatementExecutor {
 
         // 归并入 buffer（同 key 自动覆盖，保留最终状态）
         buffer.put(key, new AbstractMap.SimpleEntry<>(changeFlag, record));
-
-        // 防止 buffer 无限增长导致 OOM
-        if (buffer.size() >= maxBufferSize) {
-            log.warn("Buffer 达到上限 {}，强制执行批次", maxBufferSize);
-            try {
-                executeBatch();
-            } catch (SQLException e) {
-                throw new SQLException("Buffer 满时强制刷写失败", e);
-            }
-        }
     }
 
     @Override
@@ -110,6 +92,10 @@ public class BufferReducedExecutor implements JdbcBatchStatementExecutor {
         if (buffer.isEmpty()) {
             return;
         }
+
+        // 重试前清空内部执行器缓冲，防止上次失败残留的重复数据
+        upsertExecutor.clearBatch();
+        deleteExecutor.clearBatch();
 
         Boolean prevFlag = null;
         for (Map.Entry<Row, Map.Entry<Boolean, Row>> entry : buffer.entrySet()) {
@@ -133,7 +119,7 @@ public class BufferReducedExecutor implements JdbcBatchStatementExecutor {
         }
 
         // 执行最后的批次
-        if (prevFlag) {
+        if (prevFlag != null && prevFlag) {
             upsertExecutor.executeBatch();
         } else {
             deleteExecutor.executeBatch();

@@ -46,13 +46,7 @@ public final class JdbcDialectLoader {
         if (dialectName != null && !dialectName.isEmpty()) {
             // 显式指定 dialect，直接按名称查找
             log.info("使用显式配置的 dialect: {}", dialectName);
-            JdbcDialect jdbcDialect = JdbcDialectLoader.getByName(dialectName);
-            try {
-                Class.forName(jdbcDialect.driverClassName());
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException("未找到对应的驱动: " + dialectName);
-            }
-            return jdbcDialect;
+            return JdbcDialectLoader.getByName(dialectName);
         } else {
             // 未配置 dialect，根据 URL 自动识别
             log.info("根据 URL 自动识别 dialect");

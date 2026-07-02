@@ -32,11 +32,11 @@ public class JsonToRowConverter {
     static {
         // 初始化 JsonNode 转换器
         JSON_NODE_CONVERTERS.put(Types.STRING, JsonNode::asText);
-        JSON_NODE_CONVERTERS.put(Types.INT, JsonNode::asInt);
-        JSON_NODE_CONVERTERS.put(Types.LONG, JsonNode::asLong);
-        JSON_NODE_CONVERTERS.put(Types.DOUBLE, JsonNode::asDouble);
-        JSON_NODE_CONVERTERS.put(Types.BOOLEAN, JsonNode::asBoolean);
-        JSON_NODE_CONVERTERS.put(Types.BIG_DEC, node -> node.isNull() ? null : new BigDecimal(node.asText()));
+        JSON_NODE_CONVERTERS.put(Types.INT, node -> node.isNumber() ? node.asInt() : null);
+        JSON_NODE_CONVERTERS.put(Types.LONG, node -> node.isNumber() ? node.asLong() : null);
+        JSON_NODE_CONVERTERS.put(Types.DOUBLE, node -> node.isNumber() ? node.asDouble() : null);
+        JSON_NODE_CONVERTERS.put(Types.BOOLEAN, node -> node.isBoolean() ? node.asBoolean() : null);
+        JSON_NODE_CONVERTERS.put(Types.BIG_DEC, node -> node.isNumber() ? new BigDecimal(node.asText()) : null);
         JSON_NODE_CONVERTERS.put(Types.LOCAL_DATE_TIME, node -> node.isNull() ? null : LocalDateTime.parse(node.asText(), DateFormatConstants.DEFAULT_TIMESTAMP_FORMAT));
     }
 

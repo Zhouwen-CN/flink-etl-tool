@@ -3,7 +3,6 @@ package com.etl.connector.jdbc.sink;
 import com.etl.connector.jdbc.sink.config.JdbcSinkConfig;
 import com.etl.connector.jdbc.sink.executor.BufferReducedExecutor;
 import com.etl.connector.jdbc.sink.executor.JdbcBatchStatementExecutor;
-import com.etl.connector.jdbc.sink.executor.SimpleBatchExecutor;
 import com.etl.connector.jdbc.sink.executor.SimpleBufferedExecutor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -69,7 +68,8 @@ public class JdbcOutputFormatBuilder {
 
             case CUSTOM:
                 log.info("CUSTOM 模式: sql={}", config.getSql());
-                return new SimpleBatchExecutor(config.getSql());
+                NamedParameterSqlParser.ParsedSql parsed = NamedParameterSqlParser.parse(config.getSql());
+                return new SimpleBufferedExecutor(parsed.getPreparedSql(), parsed.getParamNames().toArray(new String[0]));
 
             default:
                 throw new IllegalArgumentException("不支持的写入模式: " + config.getMode());

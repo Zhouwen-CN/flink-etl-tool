@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -23,7 +24,7 @@ import java.util.Set;
  */
 public final class MetadataUtil {
     public static final String SOURCE = "__SOURCE__";
-    private static final List<String> METADATA = new ArrayList<>();
+    private static final Set<String> METADATA = new HashSet<>();
 
     static {
         METADATA.add(SOURCE);
@@ -33,16 +34,6 @@ public final class MetadataUtil {
         return removeMetadata(row, METADATA).getKey();
     }
 
-
-
-    public static Pair<Row, String> removeSource(Row row) {
-        Pair<Row, Map<String, String>> pair = removeMetadata(row, Collections.singletonList(SOURCE));
-        Row newRow = pair.getKey();
-        String source = pair.getValue().get(SOURCE);
-        return Pair.of(newRow, source);
-    }
-
-
     /**
      * 删除元数据
      *
@@ -50,7 +41,7 @@ public final class MetadataUtil {
      * @param keys 需要删除元数据的key列表
      * @return key：删除元数据之后的行；value：元数据
      */
-    private static Pair<Row, Map<String, String>> removeMetadata(Row row, List<String> keys) {
+    private static Pair<Row, Map<String, String>> removeMetadata(Row row, Set<String> keys) {
         Set<String> fieldNames = row.getFieldNames(true);
 
         RowKind kind = row.getKind();
@@ -61,8 +52,7 @@ public final class MetadataUtil {
         int i = 0;
         for (String fieldName : fieldNames) {
             Object value = row.getField(fieldName);
-            int index = keys.indexOf(fieldName);
-            if (index >= 0) {
+            if (keys.contains(fieldName)) {
                 map.put(fieldName, value == null ? null : value.toString());
                 continue;
             }

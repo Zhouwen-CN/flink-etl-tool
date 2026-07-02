@@ -94,7 +94,7 @@ public class JdbcSinkConfig implements Serializable {
         Long batchIntervalMs = config.get("batchIntervalMs", Long.class, 0L);
 
         log.info("创建 JdbcSink: url={}, dialect={}, table={}, sql={}, mode={}, keyFields={}, batchSize={}, batchIntervalMs={}",
-                dialect.wrapUrl(url),
+                url,
                 dialect,
                 table,
                 sql,
@@ -105,7 +105,7 @@ public class JdbcSinkConfig implements Serializable {
         );
 
         return JdbcSinkConfig.builder()
-                .url(dialect.wrapUrl(url))
+                .url(url)
                 .username(username)
                 .password(password)
                 .table(table)

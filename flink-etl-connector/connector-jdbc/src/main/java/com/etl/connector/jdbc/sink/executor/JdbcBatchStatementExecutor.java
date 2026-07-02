@@ -32,6 +32,12 @@ public interface JdbcBatchStatementExecutor {
     void executeBatch() throws SQLException;
 
     /**
+     * 清空内部缓冲（不清空 PreparedStatement 的批处理队列）
+     * 用于重试前重置内部状态，防止重复数据
+     */
+    default void clearBatch() {}
+
+    /**
      * 关闭 Statement
      * @throws SQLException SQL 异常
      */

@@ -185,8 +185,14 @@ public class MqttSplitReader extends AbstractSplitReader<Row, MqttSplit> {
                 // 转换为 Row
                 List<Row> rows = JsonToRowConverter.convertJsonToRows(jsonNode, schema);
                 for (Row row : rows) {
-                    if (!messageQueue.offer(row)) {
-                        log.warn("消息队列已满，丢弃消息");
+                    try {
+                        // 阻塞式入队：队列满时阻塞 Paho 回调线程，broker 收不到 PUBACK
+                        // 自然减速，避免消息丢失（QoS=1 下 broker 会重发未确认的消息）
+                        messageQueue.put(row);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        log.warn("消息入队被中断，可能正在关闭");
+                        return;
                     }
                 }
 

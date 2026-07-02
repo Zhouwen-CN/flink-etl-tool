@@ -46,7 +46,6 @@ public class JdbcSinkWriter extends AbstractSinkWriter {
 
     @Override
     public void write(Row row) throws IOException, InterruptedException {
-        // TODO: 暂时先删除元数据字段，后期可以扩展写入多表
         row = MetadataUtil.removeAllMetadata(row);
         try {
             // 首次写入时缓存列名
