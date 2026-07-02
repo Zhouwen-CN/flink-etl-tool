@@ -1825,20 +1825,17 @@ Kafka Sink 与 Kafka Source 可以形成完整的数据流转链路：
 
 #### 配置参数
 
-| 参数                | 必填       | 默认值        | 说明                                                               |
-|-------------------|----------|------------|------------------------------------------------------------------|
-| `fenodes`         | 是        | -          | Doris FE 节点地址，如 `127.0.0.1:8030`                                 |
-| `table`           | 条件必填(单表) | -          | 目标表标识，格式 `db.table`，与tableMapping二选一                             |
-| `username`        | 是        | -          | Doris 用户名                                                        |
-| `password`        | 是        | -          | Doris 密码（可为空字符串）                                                 |
-| `tableMapping`    | 条件必填(多表) | -          | 表映射，格式 `{"source_table": "target_table"}`，上游传递了 `__SOURCE__` 字段， |
-| `labelPrefix`     | 否        | doris-sink | Stream Load 导入使用的 label 前缀                                       |
-| `batchSize`       | 否        | 50000      | 攒批模式下，单个批次最多写入的数据行数                                              |
-| `batchIntervalMs` | 否        | 10000      | 攒批模式下，异步刷新缓存的间隔                                                  |
+| 参数                | 必填 | 默认值        | 说明                               |
+|-------------------|----|------------|----------------------------------|
+| `fenodes`         | 是  | -          | Doris FE 节点地址，如 `127.0.0.1:8030` |
+| `table`           | 是  | -          | 目标表标识，格式 `db.table`              |
+| `username`        | 是  | -          | Doris 用户名                        |
+| `password`        | 是  | -          | Doris 密码（可为空字符串）                 |
+| `labelPrefix`     | 否  | doris-sink | Stream Load 导入使用的 label 前缀       |
+| `batchSize`       | 否  | 50000      | 攒批模式下，单个批次最多写入的数据行数              |
+| `batchIntervalMs` | 否  | 10000      | 攒批模式下，异步刷新缓存的间隔                  |
 
 #### 配置示例
-
-**单表**
 
 ```json
 {
@@ -1851,29 +1848,6 @@ Kafka Sink 与 Kafka Source 可以形成完整的数据流转链路：
         "table": "test_db.test_tbl",
         "username": "root",
         "password": "123456"
-      }
-    }
-  ]
-}
-```
-
-**多表**
-
-```json
-{
-  "sinks": [
-    {
-      "type": "doris",
-      "inputTable": "cdc_data",
-      "config": {
-        "fenodes": "127.0.0.1:8030",
-        "username": "root",
-        "password": "123456",
-        "format": "debezium-json",
-        "tableMapping": {
-          "source_db.users": "target_db.users",
-          "source_db.orders": "target_db.orders"
-        }
       }
     }
   ]

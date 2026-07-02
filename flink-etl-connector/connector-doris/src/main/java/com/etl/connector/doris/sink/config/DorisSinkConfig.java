@@ -6,8 +6,6 @@ import lombok.Getter;
 import org.apache.flink.util.Preconditions;
 
 import java.io.Serializable;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Doris Sink 配置
@@ -45,10 +43,6 @@ public class DorisSinkConfig implements Serializable {
      * 批量刷写间隔（毫秒）
      */
     private final Long batchIntervalMs;
-    /**
-     * CDC 表映射（debezium-json / ogg-json 格式必须）
-     */
-    private final Map<String, String> tableMapping;
 
     /**
      * 从 SinkConfig 解析并校验
@@ -57,10 +51,12 @@ public class DorisSinkConfig implements Serializable {
         String fenodes = config.get("fenodes", String.class);
         Preconditions.checkArgument(fenodes != null && !fenodes.trim().isEmpty(), "fenodes 不能为空");
 
+        String table = config.get("table", String.class);
+        Preconditions.checkArgument(table != null, "table 不能为 null");
+
         String username = config.get("username", String.class);
         Preconditions.checkArgument(username != null && !username.trim().isEmpty(), "username 不能为空");
 
-        // password 允许空字符串，但不允许 null
         String password = config.get("password", String.class);
         Preconditions.checkArgument(password != null, "password 不能为 null");
 
@@ -70,27 +66,6 @@ public class DorisSinkConfig implements Serializable {
         Long batchIntervalMs = config.get("batchIntervalMs", Long.class, 10000L);
         Preconditions.checkArgument(batchIntervalMs > 0, "batchIntervalMs 需要大于0");
 
-        // tableMapping 解析
-        Map<String, String> tableMapping = new HashMap<>();
-        Object object = config.get("tableMapping");
-        if (object != null) {
-            if (!(object instanceof Map<?, ?>)) {
-                throw new IllegalArgumentException("tableMapping 不是映射类型");
-            }
-            for (Map.Entry<?, ?> entry : ((Map<?, ?>) object).entrySet()) {
-                String key = String.valueOf(entry.getKey());
-                String value = String.valueOf(entry.getValue());
-
-                Preconditions.checkArgument(value.matches(TABLE_PATTERN),
-                        "tableMapping value 必须为 db.table 格式: " + value);
-                tableMapping.put(key, value);
-            }
-        }
-
-        String table = config.get("table", String.class);
-        Preconditions.checkArgument((table == null) != tableMapping.isEmpty(),
-                "table 和 tableMapping 必须且只能配置一个");
-
         return DorisSinkConfig.builder()
                 .fenodes(fenodes)
                 .table(table)
@@ -99,7 +74,6 @@ public class DorisSinkConfig implements Serializable {
                 .labelPrefix(labelPrefix)
                 .batchSize(batchSize)
                 .batchIntervalMs(batchIntervalMs)
-                .tableMapping(tableMapping)
                 .build();
     }
 }

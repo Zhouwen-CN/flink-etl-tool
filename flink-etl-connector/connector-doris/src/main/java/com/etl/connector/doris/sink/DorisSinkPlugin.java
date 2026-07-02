@@ -30,17 +30,12 @@ public class DorisSinkPlugin implements SinkPlugin {
         DorisSinkConfig cfg = DorisSinkConfig.fromSinkConfig(config);
 
         // Doris 连接配置
-        DorisOptions.Builder builder = DorisOptions.builder()
+        DorisOptions dorisOptions = DorisOptions.builder()
                 .setFenodes(cfg.getFenodes())
+                .setTableIdentifier(cfg.getTable())
                 .setUsername(cfg.getUsername())
-                .setPassword(cfg.getPassword());
-
-        String table = cfg.getTable();
-        if (table != null) {
-            builder.setTableIdentifier(table);
-        }
-
-        DorisOptions dorisOptions = builder.build();
+                .setPassword(cfg.getPassword())
+                .build();
 
         // 执行配置：batch 模式 + 禁用 2PC（at-least-once）
         DorisExecutionOptions.Builder execBuilder = DorisExecutionOptions.builderDefaults()
@@ -51,14 +46,14 @@ public class DorisSinkPlugin implements SinkPlugin {
                 .setBatchMode(true)
                 .disable2PC();
 
-        log.info("创建 Doris Sink: fenodes={}, tableMapping={}, labelPrefix={}, batchSize={}, batchIntervalMs={}",
-                cfg.getFenodes(), cfg.getTableMapping(), cfg.getLabelPrefix(), cfg.getBatchSize(), cfg.getBatchIntervalMs());
+        log.info("创建 Doris Sink: fenodes={}, table={}, labelPrefix={}, batchSize={}, batchIntervalMs={}",
+                cfg.getFenodes(), cfg.getTable(), cfg.getLabelPrefix(), cfg.getBatchSize(), cfg.getBatchIntervalMs());
 
         return DorisSink.<Row>builder()
                 .setDorisOptions(dorisOptions)
                 .setDorisReadOptions(DorisReadOptions.builder().build())
                 .setDorisExecutionOptions(execBuilder.build())
-                .setSerializer(new RowToJsonSerializer(cfg.getTableMapping()))
+                .setSerializer(new RowToJsonSerializer())
                 .build();
     }
 }
