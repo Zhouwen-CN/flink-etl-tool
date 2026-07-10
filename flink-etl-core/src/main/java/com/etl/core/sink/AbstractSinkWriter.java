@@ -56,10 +56,7 @@ public abstract class AbstractSinkWriter implements SinkWriter<Row> {
         this.write(row);
 
         OperatorIOMetricGroup ioMetricGroup = this.context.metricGroup().getIOMetricGroup();
-        // 这个指标是 sink scope 级别的，需要在 metrics 面板上自己拉图表
         ioMetricGroup.getNumRecordsOutCounter().inc();
-        // 这里使用 bytes 来指代条数，因为可以在webui上直观的看到
-        ioMetricGroup.getNumBytesOutCounter().inc();
     }
 
     /**

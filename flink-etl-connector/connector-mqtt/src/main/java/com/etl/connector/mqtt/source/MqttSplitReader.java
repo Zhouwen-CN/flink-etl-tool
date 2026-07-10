@@ -128,13 +128,6 @@ public class MqttSplitReader extends AbstractSplitReader<Row, MqttSplit> {
     }
 
     /**
-     * 唤醒阻塞的提取操作
-     */
-    public void wakeUp() {
-        // 唤醒阻塞的 fetch 操作
-    }
-
-    /**
      * 关闭读取器，释放资源
      *
      * @throws Exception 关闭异常

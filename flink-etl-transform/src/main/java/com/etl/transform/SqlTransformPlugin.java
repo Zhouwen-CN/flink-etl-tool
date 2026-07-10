@@ -29,7 +29,7 @@ public class SqlTransformPlugin implements TransformPlugin {
             throw new IllegalArgumentException("SQL Transform 配置缺少 'sql' 字段");
         }
 
-        log.info("执行 SQL: {}", sql);
+        log.debug("执行 SQL: {}", sql);
 
         try {
             return stEnv.sqlQuery(sql);

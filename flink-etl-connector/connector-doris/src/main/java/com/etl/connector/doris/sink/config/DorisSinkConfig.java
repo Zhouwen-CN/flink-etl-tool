@@ -14,7 +14,7 @@ import java.io.Serializable;
 @Builder
 public class DorisSinkConfig implements Serializable {
     private static final long serialVersionUID = 1L;
-    private static final String TABLE_PATTERN = "^[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+$";
+
     /**
      * Doris FE 节点，host:port
      */
@@ -53,6 +53,7 @@ public class DorisSinkConfig implements Serializable {
 
         String table = config.get("table", String.class);
         Preconditions.checkArgument(table != null, "table 不能为 null");
+        Preconditions.checkArgument(table.matches("^[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+$"),"table 需要符合 database.table 的格式");
 
         String username = config.get("username", String.class);
         Preconditions.checkArgument(username != null && !username.trim().isEmpty(), "username 不能为空");
