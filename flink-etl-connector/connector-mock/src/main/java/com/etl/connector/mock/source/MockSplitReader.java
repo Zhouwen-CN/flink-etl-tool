@@ -2,7 +2,7 @@ package com.etl.connector.mock.source;
 
 import com.etl.connector.mock.source.config.MockSourceConfig;
 import com.etl.connector.mock.source.generator.RandomRowGenerator;
-import com.etl.core.schema.JsonToRowConverter;
+import com.etl.core.schema.convert.JsonToRowConverter;
 import com.etl.core.source.AbstractSplitReader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;

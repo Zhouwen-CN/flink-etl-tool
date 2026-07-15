@@ -1,5 +1,6 @@
 package com.etl.core.schema;
 
+import com.etl.core.schema.convert.JsonToRowConverter;
 import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;

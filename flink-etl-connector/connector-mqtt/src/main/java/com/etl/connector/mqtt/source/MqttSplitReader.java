@@ -2,7 +2,7 @@ package com.etl.connector.mqtt.source;
 
 import com.etl.connector.mqtt.source.config.MqttSourceConfig;
 import com.etl.core.schema.EtlSchema;
-import com.etl.core.schema.JsonToRowConverter;
+import com.etl.core.schema.convert.JsonToRowConverter;
 import com.etl.core.source.AbstractSplitReader;
 import com.etl.core.util.JsonUtil;
 import lombok.extern.slf4j.Slf4j;

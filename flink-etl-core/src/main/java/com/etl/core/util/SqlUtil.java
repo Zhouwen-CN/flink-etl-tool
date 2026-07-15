@@ -1,7 +1,7 @@
 package com.etl.core.util;
 
 import com.etl.core.exception.NoPrimaryKeyException;
-import com.etl.core.schema.SqlTypeConverter;
+import com.etl.core.schema.convert.SqlTypeConverter;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;

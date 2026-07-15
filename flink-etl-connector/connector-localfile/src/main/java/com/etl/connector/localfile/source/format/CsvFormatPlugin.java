@@ -2,7 +2,7 @@ package com.etl.connector.localfile.source.format;
 
 import com.etl.connector.localfile.source.config.LocalFileSourceConfig;
 import com.etl.core.schema.EtlSchema;
-import com.etl.core.schema.TypeConverter;
+import com.etl.core.schema.convert.TypeConverter;
 import com.google.auto.service.AutoService;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;

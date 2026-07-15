@@ -1,7 +1,7 @@
 package com.etl.connector.kafka.source.format.json;
 
 import com.etl.core.schema.EtlSchema;
-import com.etl.core.schema.JsonToRowConverter;
+import com.etl.core.schema.convert.JsonToRowConverter;
 import com.etl.core.util.JsonUtil;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;

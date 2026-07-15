@@ -1,10 +1,11 @@
 package com.etl.connector.kafka.source.format.mixin;
 
 import com.etl.core.schema.EtlSchema;
-import com.etl.core.schema.JsonToRowConverter;
+import com.etl.core.schema.convert.JsonToRowConverter;
+import com.etl.core.schema.metadata.Metadata;
+import com.etl.core.schema.metadata.MetadataManager;
 import com.etl.core.util.CdcJsonUtil;
 import com.etl.core.util.JsonUtil;
-import com.etl.core.util.MetadataUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
@@ -16,7 +17,6 @@ import org.apache.flink.util.Collector;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
 import java.io.IOException;
-import java.util.Collections;
 
 @Slf4j
 public class MixinJsonDeserializationSchema implements KafkaRecordDeserializationSchema<Row> {
@@ -24,7 +24,7 @@ public class MixinJsonDeserializationSchema implements KafkaRecordDeserializatio
     private final EtlSchema schema;
 
     public MixinJsonDeserializationSchema(EtlSchema schema) {
-        this.schema = MetadataUtil.addSourceToSchema(schema);
+        this.schema = MetadataManager.addMetadata(schema);
     }
 
     @Override
@@ -36,21 +36,21 @@ public class MixinJsonDeserializationSchema implements KafkaRecordDeserializatio
         JsonNode mixinJsonNode = JsonUtil.readTree(record.value());
 
         RowKind rowKind = null;
-        String source = null;
+        String table = null;
 
         // 解析操作类型
         // ogg
         if (mixinJsonNode.has("op_type")) {
             rowKind = CdcJsonUtil.parseOggOp(mixinJsonNode.get("op_type").asText());
-            source = CdcJsonUtil.getOggSource(mixinJsonNode);
+            table = CdcJsonUtil.getOggSource(mixinJsonNode);
             // custom ogg
         } else if (mixinJsonNode.has("optype")) {
             rowKind = CdcJsonUtil.parseCustomOggOp(mixinJsonNode.get("optype").asText());
-            source = CdcJsonUtil.getCustomOggSource(mixinJsonNode);
+            table = CdcJsonUtil.getCustomOggSource(mixinJsonNode);
             // debezium
         } else if (mixinJsonNode.has("op")) {
             rowKind = CdcJsonUtil.parseDebeziumOp(mixinJsonNode.get("op").asText());
-            source = CdcJsonUtil.getDebeziumSource(mixinJsonNode);
+            table = CdcJsonUtil.getDebeziumSource(mixinJsonNode);
         }
 
         if (rowKind == null) {
@@ -77,7 +77,7 @@ public class MixinJsonDeserializationSchema implements KafkaRecordDeserializatio
         Row row = JsonToRowConverter.convertJsonToRow(
                 dataNode,
                 schema,
-                Collections.singletonMap(MetadataUtil.SOURCE, source)
+                Metadata.builder().topic(record.topic()).table(table).build()
         );
         row.setKind(rowKind);
         out.collect(row);

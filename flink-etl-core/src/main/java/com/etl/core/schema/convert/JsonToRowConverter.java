@@ -1,6 +1,8 @@
-package com.etl.core.schema;
+package com.etl.core.schema.convert;
 
 import com.etl.core.constants.DateFormatConstants;
+import com.etl.core.schema.EtlSchema;
+import com.etl.core.schema.metadata.Metadata;
 import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
@@ -118,10 +120,10 @@ public class JsonToRowConverter {
      *
      * @param node   JsonNode 节点
      * @param schema Schema 定义
-     * @param extra  额外的字段，比如元数据
+     * @param metadata  元数据字段
      * @return Row 对象
      */
-    public static Row convertJsonToRow(JsonNode node, EtlSchema schema, Map<String, Object> extra) {
+    public static Row convertJsonToRow(JsonNode node, EtlSchema schema, Metadata metadata) {
         if (node == null || !node.isObject()) {
             throw new IllegalArgumentException("期望对象类型，但得到: " + (node == null ? "null" : node.getNodeType()));
         }
@@ -135,8 +137,8 @@ public class JsonToRowConverter {
             Object value = null;
             if (fieldNode != null) {
                 value = convertFromJsonNode(fieldNode, schema.getFieldType(i));
-            } else if (extra != null) {
-                value = extra.get(fieldName);
+            } else if (metadata != null) {
+                value = metadata.toRow();
             }
             row.setField(i, value);
         }

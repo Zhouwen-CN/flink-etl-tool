@@ -1,10 +1,11 @@
 package com.etl.connector.kafka.source.format.debezium;
 
 import com.etl.core.schema.EtlSchema;
-import com.etl.core.schema.JsonToRowConverter;
+import com.etl.core.schema.convert.JsonToRowConverter;
+import com.etl.core.schema.metadata.Metadata;
+import com.etl.core.schema.metadata.MetadataManager;
 import com.etl.core.util.CdcJsonUtil;
 import com.etl.core.util.JsonUtil;
-import com.etl.core.util.MetadataUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
@@ -16,7 +17,6 @@ import org.apache.flink.util.Collector;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 
 import java.io.IOException;
-import java.util.Collections;
 
 /**
  * Debezium JSON 反序列化器
@@ -30,7 +30,7 @@ public class DebeziumJsonDeserializationSchema implements KafkaRecordDeserializa
     private final EtlSchema schema;  // 业务数据 schema
 
     public DebeziumJsonDeserializationSchema(EtlSchema schema) {
-        this.schema = MetadataUtil.addSourceToSchema(schema);
+        this.schema = MetadataManager.addMetadata(schema);
     }
 
     @Override
@@ -71,11 +71,11 @@ public class DebeziumJsonDeserializationSchema implements KafkaRecordDeserializa
         }
 
         // 添加source到row
-        String source = CdcJsonUtil.getDebeziumSource(debeziumJsonNode);
+        String table = CdcJsonUtil.getDebeziumSource(debeziumJsonNode);
         Row row = JsonToRowConverter.convertJsonToRow(
                 dataNode,
                 schema,
-                Collections.singletonMap(MetadataUtil.SOURCE, source)
+                Metadata.builder().topic(record.topic()).table(table).build()
         );
         row.setKind(rowKind);
         out.collect(row);

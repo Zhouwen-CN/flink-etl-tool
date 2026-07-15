@@ -1,8 +1,8 @@
 package com.etl.connector.doris.sink;
 
-import com.etl.core.schema.RowToJsonConverter;
+import com.etl.core.schema.convert.RowToJsonConverter;
+import com.etl.core.schema.metadata.MetadataManager;
 import com.etl.core.util.JsonUtil;
-import com.etl.core.util.MetadataUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.doris.flink.sink.writer.LoadConstants;
 import org.apache.doris.flink.sink.writer.serializer.DorisRecord;
@@ -26,7 +26,7 @@ public class RowToJsonSerializer implements DorisRecordSerializer<Row> {
 
     @Override
     public DorisRecord serialize(Row row) throws IOException {
-        row = MetadataUtil.removeAllMetadata(row);
+        row = MetadataManager.removeMetadata(row);
 
         // 转 json
         int sign = row.getKind() == RowKind.DELETE ? 1 : 0;

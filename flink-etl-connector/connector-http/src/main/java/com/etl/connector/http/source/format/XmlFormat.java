@@ -1,7 +1,7 @@
 package com.etl.connector.http.source.format;
 
 import com.etl.connector.http.source.config.HttpSourceConfig;
-import com.etl.core.schema.XmlToRowConverter;
+import com.etl.core.schema.convert.XmlToRowConverter;
 import com.google.auto.service.AutoService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.types.Row;

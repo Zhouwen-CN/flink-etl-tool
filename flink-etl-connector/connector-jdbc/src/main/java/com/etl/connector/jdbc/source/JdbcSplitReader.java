@@ -1,7 +1,7 @@
 package com.etl.connector.jdbc.source;
 
-import com.etl.core.schema.SqlTypeConverter;
-import com.etl.core.schema.TypeConverter;
+import com.etl.core.schema.convert.SqlTypeConverter;
+import com.etl.core.schema.convert.TypeConverter;
 import com.etl.core.source.AbstractSplitReader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;

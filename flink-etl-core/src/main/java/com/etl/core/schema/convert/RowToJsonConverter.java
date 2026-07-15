@@ -1,4 +1,4 @@
-package com.etl.core.schema;
+package com.etl.core.schema.convert;
 
 import com.etl.core.constants.DateFormatConstants;
 import com.etl.core.util.JsonUtil;

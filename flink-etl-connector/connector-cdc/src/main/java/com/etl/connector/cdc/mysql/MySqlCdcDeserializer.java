@@ -2,10 +2,11 @@ package com.etl.connector.cdc.mysql;
 
 import com.etl.connector.cdc.mysql.config.MySqlCdcConfig;
 import com.etl.core.schema.EtlSchema;
-import com.etl.core.schema.JsonToRowConverter;
+import com.etl.core.schema.convert.JsonToRowConverter;
+import com.etl.core.schema.metadata.Metadata;
+import com.etl.core.schema.metadata.MetadataManager;
 import com.etl.core.util.CdcJsonUtil;
 import com.etl.core.util.JsonUtil;
-import com.etl.core.util.MetadataUtil;
 import com.etl.core.util.SqlUtil;
 import com.ververica.cdc.debezium.DebeziumDeserializationSchema;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +25,6 @@ import org.apache.kafka.connect.storage.ConverterType;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -52,7 +52,7 @@ public class MySqlCdcDeserializer implements DebeziumDeserializationSchema<Row> 
                 password
         );
 
-        etlSchema = MetadataUtil.addSourceToSchema(rowTypeInfo);
+        etlSchema = MetadataManager.addMetadata(rowTypeInfo);
     }
 
     @Override
@@ -100,11 +100,11 @@ public class MySqlCdcDeserializer implements DebeziumDeserializationSchema<Row> 
         }
 
         // 构建 Row（带 RowKind）
-        String source = CdcJsonUtil.getDebeziumSource(debeziumJsonNode);
+        String table = CdcJsonUtil.getDebeziumSource(debeziumJsonNode);
         Row row = JsonToRowConverter.convertJsonToRow(
                 dataNode,
                 etlSchema,
-                Collections.singletonMap(MetadataUtil.SOURCE, source)
+                Metadata.builder().table(table).build()
         );
 
         row.setKind(rowKind);

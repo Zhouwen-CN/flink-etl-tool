@@ -1,5 +1,6 @@
 package com.etl.core.schema;
 
+import com.etl.core.schema.convert.XmlToRowConverter;
 import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
@@ -13,7 +14,6 @@ import org.dom4j.io.SAXReader;
 import org.junit.jupiter.api.Test;
 
 import java.io.StringReader;
-import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;

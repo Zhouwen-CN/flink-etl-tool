@@ -1,4 +1,4 @@
-package com.etl.core.schema;
+package com.etl.core.schema.convert;
 
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;

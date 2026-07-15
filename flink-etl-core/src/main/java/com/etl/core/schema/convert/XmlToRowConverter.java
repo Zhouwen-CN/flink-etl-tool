@@ -1,5 +1,6 @@
-package com.etl.core.schema;
+package com.etl.core.schema.convert;
 
+import com.etl.core.schema.EtlSchema;
 import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.typeutils.ObjectArrayTypeInfo;

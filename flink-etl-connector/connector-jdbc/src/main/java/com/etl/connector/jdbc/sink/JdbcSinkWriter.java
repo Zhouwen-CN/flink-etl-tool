@@ -1,8 +1,8 @@
 package com.etl.connector.jdbc.sink;
 
 import com.etl.connector.jdbc.sink.config.JdbcSinkConfig;
+import com.etl.core.schema.metadata.MetadataManager;
 import com.etl.core.sink.AbstractSinkWriter;
-import com.etl.core.util.MetadataUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.types.Row;
@@ -46,7 +46,7 @@ public class JdbcSinkWriter extends AbstractSinkWriter {
 
     @Override
     public void write(Row row) throws IOException, InterruptedException {
-        row = MetadataUtil.removeAllMetadata(row);
+        row = MetadataManager.removeMetadata(row);
         try {
             // 首次写入时缓存列名
             if (outputFormat == null) {
