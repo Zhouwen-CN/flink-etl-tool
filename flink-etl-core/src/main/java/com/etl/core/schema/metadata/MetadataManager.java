@@ -22,8 +22,8 @@ import java.util.Set;
  */
 public class MetadataManager {
 
-    public static final String TOPIC_FIELD = "topic";
-    public static final String TABLE_FIELD = "table";
+    private static final String TOPIC_FIELD = "topic";
+    private static final String SOURCE_FIELD = "source";
     private static final String METADATA_FIELD = "_metadata";
 
     public static Row removeMetadata(Row row) {
@@ -56,8 +56,8 @@ public class MetadataManager {
         }
 
         Metadata metadata = Metadata.builder()
-                .table(metadataMap.get(TOPIC_FIELD))
-                .table(metadataMap.get(TABLE_FIELD))
+                .topic(metadataMap.get(TOPIC_FIELD))
+                .source(metadataMap.get(SOURCE_FIELD))
                 .build();
 
         return Pair.of(RowUtils.createRowWithNamedPositions(kind, fieldByPosition.toArray(), positionByName), metadata);
@@ -80,7 +80,7 @@ public class MetadataManager {
         TypeInformation<?>[] newTypes = Arrays.copyOf(types, size);
 
         newNames[length] = METADATA_FIELD;
-        newTypes[length] = Types.ROW_NAMED(new String[]{TOPIC_FIELD, TABLE_FIELD}, Types.STRING, Types.STRING);
+        newTypes[length] = Types.ROW_NAMED(new String[]{TOPIC_FIELD, SOURCE_FIELD}, Types.STRING, Types.STRING);
 
         return new EtlSchema(newNames, newTypes);
     }

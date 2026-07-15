@@ -1,4 +1,4 @@
-package com.etl.connector.kafka.source.format.ogg;
+package com.etl.connector.kafka.source.format.cdc;
 
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.convert.JsonToRowConverter;
@@ -19,11 +19,11 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import java.io.IOException;
 
 @Slf4j
-public class OggJsonDeserializationSchema implements KafkaRecordDeserializationSchema<Row> {
+public class CdcJsonDeserializationSchema implements KafkaRecordDeserializationSchema<Row> {
 
     private final EtlSchema schema;
 
-    public OggJsonDeserializationSchema(EtlSchema schema) {
+    public CdcJsonDeserializationSchema(EtlSchema schema) {
         this.schema = MetadataManager.addMetadata(schema);
     }
 
@@ -33,19 +33,28 @@ public class OggJsonDeserializationSchema implements KafkaRecordDeserializationS
             return;
         }
 
-        JsonNode oggJsonNode = JsonUtil.readTree(record.value());
+        JsonNode mixinJsonNode = JsonUtil.readTree(record.value());
+
+        RowKind rowKind = null;
+        String source = null;
 
         // 解析操作类型
-        JsonNode opTypeNode = oggJsonNode.get("op_type");
-        if (opTypeNode == null || opTypeNode.isNull()) {
-            log.warn("OGG Json 缺少 op_type 字段: topic={}, partition={}, offset={}",
-                    record.topic(), record.partition(), record.offset());
-            return;
+        // ogg
+        if (mixinJsonNode.has("op_type")) {
+            rowKind = CdcJsonUtil.parseOggOp(mixinJsonNode.get("op_type").asText());
+            source = CdcJsonUtil.getOggSource(mixinJsonNode);
+            // custom ogg
+        } else if (mixinJsonNode.has("optype")) {
+            rowKind = CdcJsonUtil.parseCustomOggOp(mixinJsonNode.get("optype").asText());
+            source = CdcJsonUtil.getCustomOggSource(mixinJsonNode);
+            // debezium
+        } else if (mixinJsonNode.has("op")) {
+            rowKind = CdcJsonUtil.parseDebeziumOp(mixinJsonNode.get("op").asText());
+            source = CdcJsonUtil.getDebeziumSource(mixinJsonNode);
         }
-        String opType = opTypeNode.asText();
-        RowKind rowKind = CdcJsonUtil.parseOggOp(opType);
+
         if (rowKind == null) {
-            log.warn("OGG Json 不支持的 op_type 类型: topic={}, partition={}, offset={}",
+            log.warn("CDC Json 操作类型解析失败: topic={}, partition={}, offset={}",
                     record.topic(), record.partition(), record.offset());
             return;
         }
@@ -53,23 +62,22 @@ public class OggJsonDeserializationSchema implements KafkaRecordDeserializationS
         // 获取 data
         JsonNode dataNode;
         if (rowKind == RowKind.DELETE) {
-            dataNode = oggJsonNode.get("before");
+            dataNode = mixinJsonNode.get("before");
         } else {
-            dataNode = oggJsonNode.get("after");
+            dataNode = mixinJsonNode.get("after");
         }
 
         if (dataNode == null || dataNode.isNull()) {
-            log.warn("OGG Json 缺少 before/after: topic={}, partition={}, offset={}",
+            log.warn("CDC Json 消息缺少 before/after: topic={}, partition={}, offset={}",
                     record.topic(), record.partition(), record.offset());
             return;
         }
 
-        // 添加source到row
-        String table = CdcJsonUtil.getOggSource(oggJsonNode);
+        // 添加 source 到 row
         Row row = JsonToRowConverter.convertJsonToRow(
                 dataNode,
                 schema,
-                Metadata.builder().topic(record.topic()).table(table).build()
+                Metadata.builder().topic(record.topic()).source(source).build()
         );
         row.setKind(rowKind);
         out.collect(row);

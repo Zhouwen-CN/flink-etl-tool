@@ -1,4 +1,4 @@
-package com.etl.connector.kafka.source.format.debezium;
+package com.etl.connector.kafka.source.format.cdc;
 
 import com.etl.connector.kafka.source.format.KafkaFormatPlugin;
 import com.etl.core.schema.EtlSchema;
@@ -7,21 +7,20 @@ import org.apache.flink.connector.kafka.source.reader.deserializer.KafkaRecordDe
 import org.apache.flink.types.Row;
 
 /**
- * Debezium CDC JSON 格式反序列化器插件
- * 解析 Debezium JSON 结构，设置 RowKind，提取 after/before 数据
+ * 兼容 debezium、ogg、yingfang
  */
 @AutoService(KafkaFormatPlugin.class)
-public class DebeziumJsonFormatPlugin implements KafkaFormatPlugin {
+public class CdcJsonFormatPlugin implements KafkaFormatPlugin {
 
     private static final long serialVersionUID = 1L;
 
     @Override
     public String identifier() {
-        return "debezium-json";
+        return "cdc-json";
     }
 
     @Override
     public KafkaRecordDeserializationSchema<Row> createDeserializer(EtlSchema schema) {
-        return new DebeziumJsonDeserializationSchema(schema);
+        return new CdcJsonDeserializationSchema(schema);
     }
 }

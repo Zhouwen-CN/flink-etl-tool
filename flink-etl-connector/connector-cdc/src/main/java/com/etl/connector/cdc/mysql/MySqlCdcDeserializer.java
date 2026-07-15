@@ -100,11 +100,11 @@ public class MySqlCdcDeserializer implements DebeziumDeserializationSchema<Row> 
         }
 
         // 构建 Row（带 RowKind）
-        String table = CdcJsonUtil.getDebeziumSource(debeziumJsonNode);
+        String source = CdcJsonUtil.getDebeziumSource(debeziumJsonNode);
         Row row = JsonToRowConverter.convertJsonToRow(
                 dataNode,
                 etlSchema,
-                Metadata.builder().table(table).build()
+                Metadata.builder().source(source).build()
         );
 
         row.setKind(rowKind);

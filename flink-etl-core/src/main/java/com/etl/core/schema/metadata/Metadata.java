@@ -13,9 +13,9 @@ import org.apache.flink.types.Row;
 @ToString
 public class Metadata {
     private String topic;
-    private String table;
+    private String source;
 
     public Row toRow() {
-        return Row.of(topic, table);
+        return Row.of(topic, source);
     }
 }

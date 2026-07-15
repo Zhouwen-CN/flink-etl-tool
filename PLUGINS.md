@@ -670,7 +670,7 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 | `topics`           | 条件必填 | -          | Topic 列表，与 `topicPattern` 二选一                                      |
 | `topicPattern`     | 条件必填 | -          | Topic 正则表达式，与 `topics` 二选一                                         |
 | `startupMode`      |  否   | `earliest` | 启动模式：`earliest`（从最早开始）、`latest`（从最新开始）、`committed`（从已提交 offset 开始） |
-| `format`           |  否   | `json`     | 消息格式：`json`、`debezium-json`、`ogg-json`、`raw`                       |
+| `format`           |  否   | `json`     | 消息格式：`json`、`cdc-json`、`raw`                                       |
 | `properties`       |  否   | `{}`       | 额外的 Kafka consumer 配置                                              |
 | `schema`           |  是   | -          | 消息体字段定义                                                            |
 
@@ -703,7 +703,7 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 }
 ```
 
-**正则匹配模式：**
+**Topic 正则匹配模式：**
 
 ```json
 {
@@ -732,9 +732,9 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 }
 ```
 
-#### Debezium CDC 格式配置示例
+#### CDC 格式配置示例
 
-**Kafka Source Debezium 配置:**
+**Kafka Source CDC 配置:**
 
 ```json
 {
@@ -749,7 +749,7 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
           "dbserver1.inventory.users"
         ],
         "startupMode": "earliest",
-        "format": "debezium-json",
+        "format": "cdc-json",
         "schema": {
           "id": "LONG",
           "name": "STRING",
@@ -764,12 +764,7 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 
 **说明:**
 
-- `format: "debezium-json"` 启用 Debezium CDC 数据解析
-- `schema` 只需配置业务数据的字段结构（after/before 的字段），无需配置 Debezium 元数据
-- 解析后的 Row 会自动设置 RowKind：
-    - `op='c'/'r'` → INSERT
-    - `op='u'` → UPDATE_AFTER
-    - `op='d'` → DELETE
+- format: "cdc-json"，兼容 debezium、ogg、yingfang
 
 #### 数据解析说明
 
