@@ -65,26 +65,6 @@ public class CliArgumentParser {
     }
 
     /**
-     * 打印使用说明
-     */
-    public static void printUsage() {
-        System.err.println("用法:");
-        System.err.println("  java -jar flink-etl-tool.jar --file <config.json>");
-        System.err.println("  java -jar flink-etl-tool.jar --config '<json-string>'");
-        System.err.println("  java -jar flink-etl-tool.jar --config '<base64-encoded-json>'");
-        System.err.println();
-        System.err.println("参数:");
-        System.err.println("  --file <path>      从文件加载配置");
-        System.err.println("  --config <json>    从 JSON 字符串加载配置（支持 Base64 编码）");
-        System.err.println();
-        System.err.println("示例:");
-        System.err.println("  java -jar flink-etl-tool.jar --file config/mysql-to-console.json");
-        System.err.println("  java -jar flink-etl-tool.jar --config '{\"job\":{\"name\":\"test\",\"mode\":\"batch\"},...}'");
-        System.err.println("  java -jar flink-etl-tool.jar --config 'eyJqb2IiOnt9fQ=='");
-        System.err.println();
-    }
-
-    /**
      * 从文件加载配置为 JSON 字符串
      *
      * @param filePath 配置文件路径

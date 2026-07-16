@@ -4,6 +4,7 @@ import com.etl.client.parser.CliArgumentParser;
 import com.etl.core.config.JobConfig;
 import com.etl.core.job.JobExecutor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 
 /**
  * ETL 客户端启动器
@@ -11,20 +12,16 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class EtlClient {
     public static void main(String[] args) {
-        System.setProperty("java.security.auth.login.config", "D:/work/haibo/kafka_config/jaas.conf");
-        System.setProperty("java.security.krb5.conf", "D:/work/haibo/kafka_config/krb5.conf");
 
         log.info("ETL 工具启动");
         try {
             JobConfig config = CliArgumentParser.parse(args);
             JobExecutor executor = new JobExecutor();
             executor.execute(config);
-
-        } catch (IllegalArgumentException e) {
-            log.error("配置错误：{}", e.getMessage());
-            CliArgumentParser.printUsage();
         } catch (Exception e) {
             log.error("Job 执行失败", e);
+            // 给 /jars/:jarid/plan 接口提供错误信息
+            System.err.println(ExceptionUtils.getStackTrace(e));
         }
     }
 }
