@@ -1,10 +1,25 @@
 package com.etl.connector.doris.sink.v2;
 
+import com.etl.core.schema.convert.RowToJsonConverter;
+import com.etl.core.schema.metadata.MetadataManager;
+import com.etl.core.util.JsonUtil;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.doris.flink.sink.writer.LoadConstants;
+import org.apache.doris.flink.sink.writer.serializer.DorisRecord;
+import org.apache.doris.flink.sink.writer.serializer.DorisRecordSerializer;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.JsonNode;
+import org.apache.flink.shaded.jackson2.com.fasterxml.jackson.databind.node.ObjectNode;
+import org.apache.flink.types.Row;
+import org.apache.flink.types.RowKind;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+
 /**
  * Row 到 Doris JSON 字节的序列化器
  * 适用于 flink-doris-connector-1.15:1.5.2，建议使用这个
  */
-/*@Slf4j
+@Slf4j
 public class RowToJsonSerializer implements DorisRecordSerializer<Row> {
 
     private static final long serialVersionUID = 1L;
@@ -27,4 +42,4 @@ public class RowToJsonSerializer implements DorisRecordSerializer<Row> {
         // 序列化
         return DorisRecord.of(bytes);
     }
-}*/
+}

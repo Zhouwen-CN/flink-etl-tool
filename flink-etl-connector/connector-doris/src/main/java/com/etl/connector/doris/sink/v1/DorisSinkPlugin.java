@@ -1,3 +1,4 @@
+/*
 package com.etl.connector.doris.sink.v1;
 
 import com.etl.connector.doris.sink.config.DorisSinkConfig;
@@ -15,11 +16,13 @@ import org.apache.flink.types.Row;
 
 import java.util.Properties;
 
+*/
 /**
  * Doris Sink 插件
  * 封装官方 flink-doris-connector，通过 Stream Load 写入，at-least-once（batch 模式）
  * 适用于 flink-doris-connector-1.15:1.4.0
- */
+ *//*
+
 @Slf4j
 @AutoService(SinkPlugin.class)
 public class DorisSinkPlugin implements SinkPlugin {
@@ -65,3 +68,4 @@ public class DorisSinkPlugin implements SinkPlugin {
         return SinkV1Adapter.wrap(dorisSink);
     }
 }
+*/

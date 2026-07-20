@@ -1,11 +1,23 @@
 package com.etl.connector.doris.sink.v2;
 
+import com.etl.connector.doris.sink.config.DorisSinkConfig;
+import com.etl.core.config.SinkConfig;
+import com.etl.core.spi.SinkPlugin;
+import com.google.auto.service.AutoService;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.doris.flink.cfg.DorisExecutionOptions;
+import org.apache.doris.flink.cfg.DorisOptions;
+import org.apache.doris.flink.cfg.DorisReadOptions;
+import org.apache.doris.flink.sink.DorisSink;
+import org.apache.flink.api.connector.sink2.Sink;
+import org.apache.flink.types.Row;
+
 /**
  * Doris Sink 插件
  * 封装官方 flink-doris-connector，通过 Stream Load 写入，at-least-once（batch 模式）
  * 适用于 flink-doris-connector-1.15:1.5.2，建议使用这个
  */
-/*@Slf4j
+@Slf4j
 @AutoService(SinkPlugin.class)
 public class DorisSinkPlugin implements SinkPlugin {
 
@@ -45,4 +57,4 @@ public class DorisSinkPlugin implements SinkPlugin {
                 .setSerializer(new RowToJsonSerializer())
                 .build();
     }
-}*/
+}
