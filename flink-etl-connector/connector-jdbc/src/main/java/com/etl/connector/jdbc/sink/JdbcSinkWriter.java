@@ -1,5 +1,6 @@
 package com.etl.connector.jdbc.sink;
 
+import com.etl.connector.jdbc.dialect.JdbcDialectLoader;
 import com.etl.connector.jdbc.sink.config.JdbcSinkConfig;
 import com.etl.core.schema.metadata.MetadataManager;
 import com.etl.core.sink.AbstractSinkWriter;
@@ -28,6 +29,9 @@ public class JdbcSinkWriter extends AbstractSinkWriter {
     public JdbcSinkWriter(Sink.InitContext context, JdbcSinkConfig config) throws IOException {
         super(context);
         this.config = config;
+
+        // Class.forName 加载驱动
+        JdbcDialectLoader.get(null, config.getUrl());
         // 初始化数据库连接
         try {
             connection = DriverManager.getConnection(
