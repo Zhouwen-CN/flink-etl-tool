@@ -24,7 +24,7 @@ public class MetadataManager {
 
     private static final String TOPIC_FIELD = "topic";
     private static final String SOURCE_FIELD = "source";
-    private static final String METADATA_FIELD = "_metadata";
+    public static final String METADATA_FIELD = "_metadata";
 
     public static Row removeMetadata(Row row) {
         return extractMetadata(row).getKey();

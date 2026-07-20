@@ -3,6 +3,7 @@ package com.etl.core.schema.convert;
 import com.etl.core.constants.DateFormatConstants;
 import com.etl.core.schema.EtlSchema;
 import com.etl.core.schema.metadata.Metadata;
+import com.etl.core.schema.metadata.MetadataManager;
 import org.apache.flink.api.common.typeinfo.BasicArrayTypeInfo;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.common.typeinfo.Types;
@@ -137,7 +138,7 @@ public class JsonToRowConverter {
             Object value = null;
             if (fieldNode != null) {
                 value = convertFromJsonNode(fieldNode, schema.getFieldType(i));
-            } else if (metadata != null) {
+            } else if (MetadataManager.METADATA_FIELD.equals(fieldName)) {
                 value = metadata.toRow();
             }
             row.setField(i, value);
