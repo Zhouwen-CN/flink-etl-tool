@@ -34,17 +34,81 @@ public class JsonToRowConverter {
 
     static {
         // 初始化 JsonNode 转换器
-        JSON_NODE_CONVERTERS.put(Types.STRING, JsonNode::asText);
-        JSON_NODE_CONVERTERS.put(Types.INT, node -> node.isNumber() ? node.asInt() : null);
-        JSON_NODE_CONVERTERS.put(Types.LONG, node -> node.isNumber() ? node.asLong() : null);
-        JSON_NODE_CONVERTERS.put(Types.DOUBLE, node -> node.isNumber() ? node.asDouble() : null);
-        JSON_NODE_CONVERTERS.put(Types.BOOLEAN, node -> node.isBoolean() ? node.asBoolean() : null);
-        JSON_NODE_CONVERTERS.put(Types.BIG_DEC, node -> node.isNumber() ? new BigDecimal(node.asText()) : null);
-        JSON_NODE_CONVERTERS.put(Types.LOCAL_DATE_TIME, node -> node.isNull() ? null : LocalDateTime.parse(node.asText(), DateFormatConstants.DEFAULT_TIMESTAMP_FORMAT));
+        JSON_NODE_CONVERTERS.put(Types.STRING, node -> convert(node, String.class));
+        JSON_NODE_CONVERTERS.put(Types.INT, node -> convert(node, Integer.class));
+        JSON_NODE_CONVERTERS.put(Types.LONG, node -> convert(node, Long.class));
+        JSON_NODE_CONVERTERS.put(Types.DOUBLE, node -> convert(node, Double.class));
+        JSON_NODE_CONVERTERS.put(Types.BOOLEAN, node -> convert(node, Boolean.class));
+        JSON_NODE_CONVERTERS.put(Types.BIG_DEC, node -> convert(node, BigDecimal.class));
+        JSON_NODE_CONVERTERS.put(Types.LOCAL_DATE_TIME, node -> convert(node, LocalDateTime.class));
     }
 
     private JsonToRowConverter() {
         // 私有构造函数，防止实例化
+    }
+
+
+    private static Object convert(JsonNode node, Class<?> clazz) {
+        if (node == null || node.isNull()) {
+            return null;
+        }
+
+        // string
+        String text = node.asText();
+        if (clazz == String.class) {
+            return text;
+        }
+
+        // boolean
+        if (clazz == Boolean.class) {
+            if (node.isBoolean()) {
+                return node.asBoolean();
+            }
+
+            if ("true".equalsIgnoreCase(text)) {
+                return true;
+            }
+
+            if ("false".equalsIgnoreCase(text)) {
+                return false;
+            }
+
+            return null;
+        }
+
+        // timestamp
+        if (clazz == LocalDateTime.class) {
+            try {
+                return LocalDateTime.parse(text, DateFormatConstants.DEFAULT_TIMESTAMP_FORMAT);
+            } catch (Exception e) {
+                return null;
+            }
+        }
+
+        // number
+        BigDecimal bigDecimal;
+        try {
+            bigDecimal = new BigDecimal(text);
+        } catch (Exception e) {
+            return null;
+        }
+        if (clazz == Integer.class) {
+            return bigDecimal.intValue();
+        }
+
+        if (clazz == Long.class) {
+            return bigDecimal.longValue();
+        }
+
+        if (clazz == Double.class) {
+            return bigDecimal.doubleValue();
+        }
+
+        if (clazz == BigDecimal.class) {
+            return bigDecimal;
+        }
+
+        return text;
     }
 
     /**
@@ -119,9 +183,9 @@ public class JsonToRowConverter {
     /**
      * 将 JsonNode 转换为 Flink Row（基于 EtlSchema）
      *
-     * @param node   JsonNode 节点
-     * @param schema Schema 定义
-     * @param metadata  元数据字段
+     * @param node     JsonNode 节点
+     * @param schema   Schema 定义
+     * @param metadata 元数据字段
      * @return Row 对象
      */
     public static Row convertJsonToRow(JsonNode node, EtlSchema schema, Metadata metadata) {
