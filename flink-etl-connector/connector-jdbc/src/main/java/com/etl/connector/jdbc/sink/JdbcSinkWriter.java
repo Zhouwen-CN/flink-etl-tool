@@ -1,6 +1,5 @@
 package com.etl.connector.jdbc.sink;
 
-import com.etl.connector.jdbc.dialect.JdbcDialectLoader;
 import com.etl.connector.jdbc.sink.config.JdbcSinkConfig;
 import com.etl.core.schema.metadata.MetadataManager;
 import com.etl.core.sink.AbstractSinkWriter;
@@ -30,10 +29,9 @@ public class JdbcSinkWriter extends AbstractSinkWriter {
         super(context);
         this.config = config;
 
-        // Class.forName 加载驱动
-        JdbcDialectLoader.get(null, config.getUrl());
         // 初始化数据库连接
         try {
+            Class.forName(config.getDialect().driverClassName());
             connection = DriverManager.getConnection(
                     config.getUrl(),
                     config.getUsername(),
@@ -43,7 +41,7 @@ public class JdbcSinkWriter extends AbstractSinkWriter {
 
             log.info("JDBC Sink Writer 已连接: url={}, mode={}, subtaskId={}",
                     config.getUrl(), config.getMode(), context.getSubtaskId());
-        } catch (SQLException e) {
+        } catch (Exception e) {
             throw new IOException("Failed to initialize JDBC connection", e);
         }
     }

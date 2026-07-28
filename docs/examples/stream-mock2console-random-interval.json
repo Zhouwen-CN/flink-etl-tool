@@ -1,4 +1,5 @@
 {
+  "$schema": "schema/job-config-schema.json",
   "job": {
     "name": "stream-mock2console-random-interval",
     "mode": "streaming",

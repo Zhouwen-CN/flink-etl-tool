@@ -1,0 +1,963 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "https://raw.giteeusercontent.com/Zhouwen-CN/flink-etl-api/raw/master/src/main/resources/META-INF/job-config-schema.json",
+  "title": "Flink ETL Job Config",
+  "description": "Apache Flink 配置驱动 ETL 任务的 JSON 配置文件",
+  "type": "object",
+  "required": [
+    "sources",
+    "sinks"
+  ],
+  "properties": {
+    "job": {
+      "$ref": "#/definitions/JobConfig"
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/SourcePlugin"
+      }
+    },
+    "transforms": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/TransformPlugin"
+      }
+    },
+    "sinks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/definitions/SinkPlugin"
+      }
+    }
+  },
+  "definitions": {
+    "JobConfig": {
+      "type": "object",
+      "required": [
+        "name",
+        "mode"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "任务名称"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "batch",
+            "streaming"
+          ],
+          "description": "运行模式"
+        },
+        "parallelism": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "并行度"
+        },
+        "checkpointInterval": {
+          "type": "integer",
+          "minimum": 1000,
+          "default": 30000,
+          "description": "检查点间隔（streaming 模式下生效）"
+        },
+        "checkpointTimeout": {
+          "type": "integer",
+          "minimum": 1000,
+          "default": 60000,
+          "description": "检查点超时（streaming 模式下生效）"
+        }
+      },
+      "additionalProperties": false
+    },
+    "SchemaSimpleType": {
+      "type": "string",
+      "enum": [
+        "string",
+        "STRING",
+        "boolean",
+        "BOOLEAN",
+        "int",
+        "INT",
+        "long",
+        "LONG",
+        "double",
+        "DOUBLE",
+        "decimal",
+        "DECIMAL",
+        "timestamp",
+        "TIMESTAMP"
+      ]
+    },
+    "SchemaObjectType": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/SchemaField"
+      }
+    },
+    "SchemaField": {
+      "description": "Schema 字段定义：简单类型、基础类型数组、嵌套对象或对象数组",
+      "oneOf": [
+        {
+          "$ref": "#/definitions/SchemaSimpleType"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SchemaSimpleType"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        },
+        {
+          "$ref": "#/definitions/SchemaObjectType"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SchemaObjectType"
+          },
+          "minItems": 1,
+          "maxItems": 1
+        }
+      ]
+    },
+    "SchemaDefinition": {
+      "description": "Schema 定义，将数据源映射成表",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/SchemaField"
+      }
+    },
+    "JdbcSource": {
+      "type": "object",
+      "required": [
+        "type",
+        "outputTable",
+        "config"
+      ],
+      "properties": {
+        "type": {
+          "const": "jdbc"
+        },
+        "outputTable": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object",
+          "required": [
+            "url",
+            "username",
+            "password"
+          ],
+          "properties": {
+            "url": {
+              "type": "string",
+              "description": "连接 URL"
+            },
+            "username": {
+              "type": "string",
+              "description": "用户名"
+            },
+            "password": {
+              "type": "string",
+              "description": "密码"
+            },
+            "dialect": {
+              "type": "string",
+              "enum": [
+                "mysql",
+                "postgresql",
+                "oracle"
+              ],
+              "description": "数据库方言"
+            },
+            "table": {
+              "type": "string",
+              "description": "和 sql 二选一"
+            },
+            "sql": {
+              "type": "string",
+              "description": "和 表名 二选一"
+            },
+            "splitKey": {
+              "type": "string",
+              "description": "分片主键，不配置时自动发现"
+            },
+            "batchSize": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 100,
+              "description": "批量大小"
+            },
+            "queryTimeout": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "查询超时"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "LocalFileSource": {
+      "type": "object",
+      "required": [
+        "type",
+        "outputTable",
+        "config"
+      ],
+      "properties": {
+        "type": {
+          "const": "localfile"
+        },
+        "outputTable": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object",
+          "required": [
+            "path",
+            "format",
+            "schema"
+          ],
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "文件路径，支持通配符"
+            },
+            "format": {
+              "type": "string",
+              "enum": [
+                "csv"
+              ],
+              "description": "文件格式转换器"
+            },
+            "encoding": {
+              "type": "string",
+              "default": "UTF-8",
+              "description": "文件编码"
+            },
+            "delimiter": {
+              "type": "string",
+              "description": "字段分隔符"
+            },
+            "skipHeader": {
+              "type": "boolean",
+              "description": "跳过首行"
+            },
+            "recursive": {
+              "type": "boolean",
+              "description": "递归查找"
+            },
+            "schema": {
+              "$ref": "#/definitions/SchemaDefinition"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "HttpSource": {
+      "type": "object",
+      "required": [
+        "type",
+        "outputTable",
+        "config"
+      ],
+      "properties": {
+        "type": {
+          "const": "http"
+        },
+        "outputTable": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object",
+          "required": [
+            "url",
+            "schema"
+          ],
+          "properties": {
+            "url": {
+              "type": "string",
+              "description": "请求 URL"
+            },
+            "method": {
+              "type": "string",
+              "enum": [
+                "get",
+                "post"
+              ],
+              "description": "请求方法"
+            },
+            "headers": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "请求头"
+            },
+            "params": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "URL 参数"
+            },
+            "body": {
+              "oneOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "object"
+                }
+              ],
+              "description": "请求体"
+            },
+            "format": {
+              "type": "string",
+              "enum": [
+                "json",
+                "xml"
+              ],
+              "description": "响应体格式转换器"
+            },
+            "jsonPath": {
+              "type": "string",
+              "description": "JsonPath 解析"
+            },
+            "xmlPath": {
+              "type": "string",
+              "description": "XmlPath 解析"
+            },
+            "schema": {
+              "$ref": "#/definitions/SchemaDefinition"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "KafkaSource": {
+      "type": "object",
+      "required": [
+        "type",
+        "outputTable",
+        "config"
+      ],
+      "properties": {
+        "type": {
+          "const": "kafka"
+        },
+        "outputTable": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object",
+          "required": [
+            "bootstrapServers",
+            "groupId",
+            "schema"
+          ],
+          "oneOf": [
+            {
+              "required": [
+                "topics"
+              ]
+            },
+            {
+              "required": [
+                "topicPattern"
+              ]
+            }
+          ],
+          "properties": {
+            "bootstrapServers": {
+              "type": "string",
+              "description": "Kafka Bootstrap Servers"
+            },
+            "groupId": {
+              "type": "string",
+              "description": "消费者组 ID"
+            },
+            "topics": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1,
+              "description": "和 topicPattern 二选一"
+            },
+            "topicPattern": {
+              "type": "string",
+              "description": "和 topics 二选一"
+            },
+            "startupMode": {
+              "type": "string",
+              "enum": [
+                "earliest",
+                "latest",
+                "committed"
+              ],
+              "description": "启动模式"
+            },
+            "format": {
+              "type": "string",
+              "enum": [
+                "json",
+                "cdc-json",
+                "raw"
+              ],
+              "description": "消息格式转换器"
+            },
+            "properties": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "消费者参数"
+            },
+            "schema": {
+              "$ref": "#/definitions/SchemaDefinition"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "MysqlCdcSource": {
+      "type": "object",
+      "required": [
+        "type",
+        "outputTable",
+        "config"
+      ],
+      "properties": {
+        "type": {
+          "const": "mysql-cdc"
+        },
+        "outputTable": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object",
+          "required": [
+            "url",
+            "table",
+            "username",
+            "password"
+          ],
+          "properties": {
+            "url": {
+              "type": "string",
+              "description": "连接 URL"
+            },
+            "table": {
+              "type": "string",
+              "description": "表名"
+            },
+            "username": {
+              "type": "string",
+              "description": "用户名"
+            },
+            "password": {
+              "type": "string",
+              "description": "密码"
+            },
+            "startupMode": {
+              "type": "string",
+              "enum": [
+                "earliest",
+                "latest",
+                "initial"
+              ],
+              "description": "启动模式"
+            },
+            "serverId": {
+              "type": "integer",
+              "minimum": 5400,
+              "maximum": 15400,
+              "description": "MySQL binlog client ID"
+            },
+            "serverTimeZone": {
+              "type": "string",
+              "default": "Asia/Shanghai",
+              "description": "时区"
+            },
+            "splitKey": {
+              "type": "string",
+              "description": "分片主键，不配置时自动发现"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "MqttSource": {
+      "type": "object",
+      "required": [
+        "type",
+        "outputTable",
+        "config"
+      ],
+      "properties": {
+        "type": {
+          "const": "mqtt"
+        },
+        "outputTable": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object",
+          "required": [
+            "broker",
+            "topic",
+            "schema"
+          ],
+          "properties": {
+            "broker": {
+              "type": "string",
+              "description": "MQTT broker 地址"
+            },
+            "topic": {
+              "type": "string",
+              "description": "Topic 名称"
+            },
+            "clientId": {
+              "type": "string",
+              "description": "客户端 ID"
+            },
+            "username": {
+              "type": "string",
+              "description": "用户名"
+            },
+            "password": {
+              "type": "string",
+              "description": "密码"
+            },
+            "schema": {
+              "$ref": "#/definitions/SchemaDefinition"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "MockSource": {
+      "type": "object",
+      "required": [
+        "type",
+        "outputTable",
+        "config"
+      ],
+      "properties": {
+        "type": {
+          "const": "mock"
+        },
+        "outputTable": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object",
+          "required": [
+            "schema"
+          ],
+          "properties": {
+            "schema": {
+              "$ref": "#/definitions/SchemaDefinition"
+            },
+            "data": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              },
+              "description": "生成数据，和 numRows 二选一"
+            },
+            "numRows": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 10,
+              "description": "生成行数，和 data 二选一"
+            },
+            "intervalMs": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 1000,
+              "description": "生成间隔，streaming 模式下使用"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "ModbusSource": {
+      "type": "object",
+      "required": [
+        "type",
+        "outputTable",
+        "config"
+      ],
+      "properties": {
+        "type": {
+          "const": "modbus"
+        },
+        "outputTable": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object",
+          "required": [
+            "host",
+            "address",
+            "count"
+          ],
+          "properties": {
+            "host": {
+              "type": "string",
+              "description": "Modbus TCP 地址"
+            },
+            "deviceId": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 247,
+              "description": "从站地址"
+            },
+            "address": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "寄存器起始地址"
+            },
+            "count": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "读取寄存器数量"
+            },
+            "wordSize": {
+              "type": "integer",
+              "enum": [
+                1,
+                2
+              ],
+              "description": "字宽，几个寄存器组成一个数据值"
+            },
+            "intervalMs": {
+              "type": "integer",
+              "minimum": 0,
+              "default": "1000",
+              "description": "请求间隔，streaming 模式下使用"
+            },
+            "timeoutMs": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "TCP 连接与读取超时"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "SourcePlugin": {
+      "oneOf": [
+        {
+          "$ref": "#/definitions/JdbcSource"
+        },
+        {
+          "$ref": "#/definitions/LocalFileSource"
+        },
+        {
+          "$ref": "#/definitions/HttpSource"
+        },
+        {
+          "$ref": "#/definitions/KafkaSource"
+        },
+        {
+          "$ref": "#/definitions/MysqlCdcSource"
+        },
+        {
+          "$ref": "#/definitions/MqttSource"
+        },
+        {
+          "$ref": "#/definitions/MockSource"
+        },
+        {
+          "$ref": "#/definitions/ModbusSource"
+        }
+      ]
+    },
+    "TransformPlugin": {
+      "type": "object",
+      "required": [
+        "type",
+        "outputTable",
+        "config"
+      ],
+      "properties": {
+        "type": {
+          "const": "sql"
+        },
+        "inputTable": {
+          "type": "string"
+        },
+        "outputTable": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object",
+          "required": [
+            "sql"
+          ],
+          "properties": {
+            "sql": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "ConsoleSink": {
+      "type": "object",
+      "required": [
+        "type",
+        "inputTable"
+      ],
+      "properties": {
+        "type": {
+          "const": "console"
+        },
+        "inputTable": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "JdbcSink": {
+      "type": "object",
+      "required": [
+        "type",
+        "inputTable",
+        "config"
+      ],
+      "properties": {
+        "type": {
+          "const": "jdbc"
+        },
+        "inputTable": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object",
+          "required": [
+            "url",
+            "username",
+            "password"
+          ],
+          "properties": {
+            "url": {
+              "type": "string",
+              "description": "连接 URL"
+            },
+            "username": {
+              "type": "string",
+              "description": "用户名"
+            },
+            "password": {
+              "type": "string",
+              "description": "密码"
+            },
+            "dialect": {
+              "type": "string",
+              "enum": [
+                "mysql",
+                "postgresql",
+                "oracle"
+              ],
+              "description": "数据库方言"
+            },
+            "table": {
+              "type": "string",
+              "description": "表名，和 sql 二选一"
+            },
+            "sql": {
+              "type": "string",
+              "description": "插入语句，和 table 二选一"
+            },
+            "mode": {
+              "type": "string",
+              "enum": [
+                "insert",
+                "upsert",
+                "cdc",
+                "custom"
+              ],
+              "default": "upsert",
+              "description": "写入模式"
+            },
+            "keyFields": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1,
+              "description": "主键"
+            },
+            "batchSize": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 100,
+              "description": "批量大小"
+            },
+            "batchIntervalMs": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "时间间隔"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "KafkaSink": {
+      "type": "object",
+      "required": [
+        "type",
+        "inputTable",
+        "config"
+      ],
+      "properties": {
+        "type": {
+          "const": "kafka"
+        },
+        "inputTable": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object",
+          "required": [
+            "bootstrapServers",
+            "topic"
+          ],
+          "properties": {
+            "bootstrapServers": {
+              "type": "string",
+              "description": "Kafka Bootstrap Servers"
+            },
+            "topic": {
+              "type": "string",
+              "description": "topic 名称"
+            },
+            "keyField": {
+              "type": "string",
+              "description": "消息键，配置字段名"
+            },
+            "properties": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "string"
+              },
+              "description": "生产者参数"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "DorisSink": {
+      "type": "object",
+      "required": [
+        "type",
+        "inputTable",
+        "config"
+      ],
+      "properties": {
+        "type": {
+          "const": "doris"
+        },
+        "inputTable": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object",
+          "required": [
+            "fenodes",
+            "table",
+            "username",
+            "password"
+          ],
+          "properties": {
+            "fenodes": {
+              "type": "string",
+              "description": "FE 节点"
+            },
+            "table": {
+              "type": "string",
+              "description": "表名"
+            },
+            "username": {
+              "type": "string",
+              "description": "用户名"
+            },
+            "password": {
+              "type": "string",
+              "description": "密码"
+            },
+            "labelPrefix": {
+              "type": "string",
+              "description": "Stream Load 导入使用的 label 前缀"
+            },
+            "batchSize": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 50000,
+              "description": "批量大小"
+            },
+            "batchIntervalMs": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 10000,
+              "description": "时间间隔"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "SinkPlugin": {
+      "oneOf": [
+        {
+          "$ref": "#/definitions/ConsoleSink"
+        },
+        {
+          "$ref": "#/definitions/JdbcSink"
+        },
+        {
+          "$ref": "#/definitions/KafkaSink"
+        },
+        {
+          "$ref": "#/definitions/DorisSink"
+        }
+      ]
+    }
+  }
+}

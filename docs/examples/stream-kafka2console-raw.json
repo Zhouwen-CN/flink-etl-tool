@@ -1,4 +1,5 @@
 {
+  "$schema": "schema/job-config-schema.json",
   "job": {
     "name": "kafka-raw-to-console",
     "mode": "streaming",

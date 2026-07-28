@@ -1,4 +1,5 @@
 {
+  "$schema": "schema/job-config-schema.json",
   "job": {
     "name": "batch-modbus2console",
     "mode": "batch",

@@ -1,4 +1,5 @@
 {
+  "$schema": "schema/job-config-schema.json",
   "job": {
     "name": "batch-http2console",
     "mode": "batch",
@@ -13,7 +14,7 @@
         "params":{
           "apikey": "f1dafbeca1e9eeca5c93ce419cff8ae6",
           "type": "douyin",
-          "test": 1
+          "test": "1"
         },
         "format": "json",
         "jsonPath": "$.data",

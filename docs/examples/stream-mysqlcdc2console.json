@@ -1,4 +1,5 @@
 {
+  "$schema": "schema/job-config-schema.json",
   "job": {
     "name": "stream-mysqlcdc2console",
     "mode": "streaming",
@@ -9,7 +10,7 @@
       "type": "mysql-cdc",
       "outputTable": "source_table",
       "config": {
-        "startupMode": "EARLIEST",
+        "startupMode": "earliest",
         "url": "jdbc:mysql://127.0.0.1:3306/test_db",
         "table": "user_table",
         "username": "root",
