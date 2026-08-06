@@ -3,6 +3,7 @@ package com.etl.connector.jdbc.sink;
 import com.etl.connector.jdbc.sink.config.JdbcSinkConfig;
 import com.etl.core.schema.metadata.MetadataManager;
 import com.etl.core.sink.AbstractSinkWriter;
+import com.etl.core.util.JdbcUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.types.Row;
@@ -10,7 +11,6 @@ import org.apache.flink.util.IOUtils;
 
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Arrays;
 
@@ -31,19 +31,21 @@ public class JdbcSinkWriter extends AbstractSinkWriter {
 
         // 初始化数据库连接
         try {
-            Class.forName(config.getDialect().driverClassName());
-            connection = DriverManager.getConnection(
+            connection = JdbcUtil.getConnection(
                     config.getUrl(),
                     config.getUsername(),
-                    config.getPassword()
+                    config.getPassword(),
+                    config.getDialect().driverClassName()
             );
             connection.setAutoCommit(false);
-
-            log.info("JDBC Sink Writer 已连接: url={}, mode={}, subtaskId={}",
-                    config.getUrl(), config.getMode(), context.getSubtaskId());
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             throw new IOException("Failed to initialize JDBC connection", e);
+        } catch (SQLException e) {
+            throw new IOException("Failed to set auto commit", e);
         }
+
+        log.info("JDBC Sink Writer 已连接: url={}, mode={}, subtaskId={}",
+                config.getUrl(), config.getMode(), context.getSubtaskId());
     }
 
     @Override

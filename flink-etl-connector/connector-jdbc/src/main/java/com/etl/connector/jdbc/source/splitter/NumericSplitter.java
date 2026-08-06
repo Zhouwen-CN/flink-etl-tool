@@ -2,14 +2,10 @@ package com.etl.connector.jdbc.source.splitter;
 
 import com.etl.connector.jdbc.source.JdbcSplit;
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
+import com.etl.core.util.JdbcUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -112,15 +108,8 @@ public class NumericSplitter extends ChunkSplitter {
                     column, column, sql);
         }
 
-        try (Connection conn = DriverManager.getConnection(url, username, password);
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(rangeQuery)) {
-
+        return JdbcUtil.query(url, username, password, null, rangeQuery, (conn, stmt, rs) -> {
             if (rs.next()) {
-                // 检查是否为 NULL（空表时 MIN/MAX 返回 NULL）
-                if (rs.getObject(1) == null) {
-                    return Pair.of(null, null);
-                }
                 // todo: 超过 Long.MAX_VALUE 的 BigDecimal 被截断，分片范围错误
                 long min = rs.getLong(1);
                 long max = rs.getLong(2);
@@ -129,8 +118,6 @@ public class NumericSplitter extends ChunkSplitter {
 
             return Pair.of(null, null);
 
-        } catch (SQLException e) {
-            throw new RuntimeException("获取数值范围失败: " + e.getMessage(), e);
-        }
+        });
     }
 }

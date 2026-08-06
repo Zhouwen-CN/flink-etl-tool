@@ -3,6 +3,7 @@ package com.etl.connector.jdbc.source;
 import com.etl.core.schema.convert.SqlTypeConverter;
 import com.etl.core.schema.convert.TypeConverter;
 import com.etl.core.source.AbstractSplitReader;
+import com.etl.core.util.JdbcUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
@@ -12,7 +13,6 @@ import org.apache.flink.util.IOUtils;
 
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -70,10 +70,11 @@ public class JdbcSplitReader extends AbstractSplitReader<Row, JdbcSplit> {
      */
     private void startNewSplit(JdbcSplit split) throws IOException {
         log.info("开始读取分片: {}", split.splitId());
-
+        // todo: 驱动 classForName 问题
         try {
             // 创建连接
-            currentConnection = DriverManager.getConnection(split.getUrl(), split.getUsername(), split.getPassword());
+            currentConnection = JdbcUtil.getConnection(
+                    split.getUrl(), split.getUsername(), split.getPassword(), null);
             currentStatement = currentConnection.createStatement(
                     ResultSet.TYPE_FORWARD_ONLY,
                     ResultSet.CONCUR_READ_ONLY

@@ -5,7 +5,7 @@ import com.etl.connector.jdbc.dialect.JdbcDialectLoader;
 import com.etl.connector.jdbc.dialect.WriteMode;
 import com.etl.core.config.SinkConfig;
 import com.etl.core.exception.NoPrimaryKeyException;
-import com.etl.core.util.SqlUtil;
+import com.etl.core.util.JdbcUtil;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -78,7 +78,7 @@ public class JdbcSinkConfig implements Serializable {
             // 自动获取主键
             List<Pair<String, Integer>> pkInfo;
             try {
-                pkInfo = SqlUtil.getPrimaryKey(url, table, username, password);
+                pkInfo = JdbcUtil.getPrimaryKey(url, table, username, password);
             } catch (NoPrimaryKeyException e) {
                 throw new RuntimeException(
                         String.format("表 '%s' 没有主键，无法使用 %s 模式。请使用 INSERT 模式、手动配置 keyFields 或为表添加主键",

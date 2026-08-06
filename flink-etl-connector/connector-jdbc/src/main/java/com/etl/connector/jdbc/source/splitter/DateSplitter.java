@@ -2,15 +2,11 @@ package com.etl.connector.jdbc.source.splitter;
 
 import com.etl.connector.jdbc.source.JdbcSplit;
 import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
+import com.etl.core.util.JdbcUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
 
-import java.sql.Connection;
 import java.sql.Date;
-import java.sql.DriverManager;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -122,10 +118,7 @@ public class DateSplitter extends ChunkSplitter {
                     column, column, sql);
         }
 
-        try (Connection conn = DriverManager.getConnection(url, username, password);
-             Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(rangeQuery)) {
-
+        return JdbcUtil.query(url, username, password, null, rangeQuery, (conn, stmt, rs) -> {
             if (rs.next()) {
                 Date min = rs.getDate(1);
                 Date max = rs.getDate(2);
@@ -134,9 +127,7 @@ public class DateSplitter extends ChunkSplitter {
 
             return Pair.of(null, null); // 空表
 
-        } catch (SQLException e) {
-            throw new RuntimeException("查询日期范围失败: " + e.getMessage(), e);
-        }
+        });
     }
 
     /**

@@ -6,8 +6,8 @@ import com.etl.core.schema.convert.JsonToRowConverter;
 import com.etl.core.schema.metadata.Metadata;
 import com.etl.core.schema.metadata.MetadataManager;
 import com.etl.core.util.CdcJsonUtil;
+import com.etl.core.util.JdbcUtil;
 import com.etl.core.util.JsonUtil;
-import com.etl.core.util.SqlUtil;
 import com.ververica.cdc.debezium.DebeziumDeserializationSchema;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -44,7 +44,7 @@ public class MySqlCdcDeserializer implements DebeziumDeserializationSchema<Row> 
         String password = cdcConfig.getPassword();
         String table = cdcConfig.getTable();
 
-        RowTypeInfo rowTypeInfo = (RowTypeInfo) SqlUtil.inferRowType(
+        RowTypeInfo rowTypeInfo = (RowTypeInfo) JdbcUtil.inferRowType(
                 table,
                 null,
                 cdcConfig.getUrl(),

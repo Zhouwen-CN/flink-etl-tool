@@ -7,6 +7,7 @@ import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.CoreOptions;
 import org.apache.flink.configuration.ExecutionOptions;
+import org.apache.flink.configuration.RestOptions;
 import org.apache.flink.configuration.TaskManagerOptions;
 import org.apache.flink.streaming.api.CheckpointingMode;
 import org.apache.flink.streaming.api.environment.CheckpointConfig;
@@ -57,6 +58,7 @@ public class JobExecutor {
 
         RuntimeExecutionMode runtimeMode = jobConfig.getMode().getRuntimeMode();
         configuration.set(ExecutionOptions.RUNTIME_MODE, runtimeMode);
+        configuration.set(RestOptions.ENABLE_FLAMEGRAPH, true); // 开启火焰图
 
         Integer parallelism = jobConfig.getParallelism();
         if (parallelism != null) {

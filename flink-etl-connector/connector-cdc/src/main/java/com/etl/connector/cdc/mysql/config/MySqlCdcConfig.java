@@ -2,7 +2,7 @@ package com.etl.connector.cdc.mysql.config;
 
 import com.etl.connector.cdc.mysql.StartupMode;
 import com.etl.core.config.SourceConfig;
-import com.etl.core.util.SqlUtil;
+import com.etl.core.util.JdbcUtil;
 import com.ververica.cdc.connectors.mysql.table.StartupOptions;
 import lombok.Builder;
 import lombok.Getter;
@@ -66,7 +66,7 @@ public class MySqlCdcConfig implements Serializable {
         if (splitKey == null) {
             try {
                 // 尝试从数据库获取主键
-                List<Pair<String, Integer>> primaryKeyList = SqlUtil.getPrimaryKey(url, table, username, password);
+                List<Pair<String, Integer>> primaryKeyList = JdbcUtil.getPrimaryKey(url, table, username, password);
                 if (!primaryKeyList.isEmpty()) {
                     // 使用第一个主键列作为 splitKey
                     splitKey = primaryKeyList.get(0).getKey();
