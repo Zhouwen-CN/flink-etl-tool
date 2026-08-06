@@ -79,16 +79,7 @@ public class DateSplitter extends ChunkSplitter {
             String querySql = dialect.buildDateRangeQuery(baseQuery, column, startDateStr, endDateStr);
             String splitId = splitKey + "_date_" + startDateStr + "_" + endDateStr;
 
-            splits.add(new JdbcSplit(
-                    splitId,
-                    querySql,
-                    url,
-                    username,
-                    password,
-                    batchSize,
-                    queryTimeout
-                    )
-            );
+            splits.add(new JdbcSplit(splitId, querySql));
 
             log.debug("分片 {}: {} 到 {}", i, startDateStr, endDateStr);
 

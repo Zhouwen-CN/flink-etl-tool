@@ -23,14 +23,7 @@ public class FullTableScanSplitter extends ChunkSplitter {
         log.info("使用全表扫描分片模式");
 
         String baseQuery = buildBaseQuery();
-        JdbcSplit split = new JdbcSplit("full_table_scan",
-                baseQuery,
-                url,
-                username,
-                password,
-                batchSize,
-                queryTimeout
-        );
+        JdbcSplit split = new JdbcSplit("full_table_scan", baseQuery);
 
         log.info("生成 1 个分片（全表扫描）");
         return Collections.singletonList(split);

@@ -20,7 +20,7 @@
     ]
   },
   "enabledPlugins": {
-    "superpowers@superpowers-marketplace": true,
+    "superpowers@superpowers-marketplace": false,
     "caveman@caveman": true
   },
   "extraKnownMarketplaces": {

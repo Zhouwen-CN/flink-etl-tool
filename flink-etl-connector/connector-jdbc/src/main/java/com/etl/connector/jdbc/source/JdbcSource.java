@@ -52,7 +52,7 @@ public class JdbcSource extends AbstractSplitSource<JdbcSplit> {
 
     @Override
     public SourceReader<Row, JdbcSplit> createReader(SourceReaderContext readerContext) {
-        return new BaseSourceReader<>(JdbcSplitReader::new, new BaseRecordEmitter<>(readerContext), readerContext);
+        return new BaseSourceReader<>(() -> new JdbcSplitReader(jdbcSourceConfig), new BaseRecordEmitter<>(readerContext), readerContext);
     }
 
     @Override

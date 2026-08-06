@@ -1,5 +1,6 @@
 package com.etl.connector.jdbc.source;
 
+import com.etl.connector.jdbc.source.config.JdbcSourceConfig;
 import com.etl.core.schema.convert.SqlTypeConverter;
 import com.etl.core.schema.convert.TypeConverter;
 import com.etl.core.source.AbstractSplitReader;
@@ -29,10 +30,14 @@ import java.util.Set;
  *   <li>每个分片创建独立的数据库连接</li>
  *   <li>支持分批读取，每批最多 batchSize 条记录</li>
  *   <li>直接返回 Flink Row 类型，无需额外包装</li>
+ *   <li>连接参数、batchSize、queryTimeout 全部从 JdbcSourceConfig 获取，Split 只携带 splitId 和 querySql</li>
  * </ul>
  */
 @Slf4j
 public class JdbcSplitReader extends AbstractSplitReader<Row, JdbcSplit> {
+
+    private final JdbcSourceConfig jdbcSourceConfig;
+
     private final Set<String> finishedSplits = new HashSet<>();
 
     // 当前分片读取状态
@@ -44,6 +49,10 @@ public class JdbcSplitReader extends AbstractSplitReader<Row, JdbcSplit> {
 
     private String[] columnNames;
     private TypeInformation<?>[] flinkTypes;
+
+    public JdbcSplitReader(JdbcSourceConfig jdbcSourceConfig) {
+        this.jdbcSourceConfig = jdbcSourceConfig;
+    }
 
     @Override
     public RecordsWithSplitIds<Row> fetch() throws IOException {
@@ -70,19 +79,18 @@ public class JdbcSplitReader extends AbstractSplitReader<Row, JdbcSplit> {
      */
     private void startNewSplit(JdbcSplit split) throws IOException {
         log.info("开始读取分片: {}", split.splitId());
-        // todo: 驱动 classForName 问题
         try {
-            // 创建连接
+            // 创建连接（凭证来自 JdbcSourceConfig，不走 split 序列化）
             currentConnection = JdbcUtil.getConnection(
-                    split.getUrl(), split.getUsername(), split.getPassword(), null);
+                    jdbcSourceConfig.getUrl(), jdbcSourceConfig.getUsername(), jdbcSourceConfig.getPassword(), jdbcSourceConfig.getDialect().driverClassName());
             currentStatement = currentConnection.createStatement(
                     ResultSet.TYPE_FORWARD_ONLY,
                     ResultSet.CONCUR_READ_ONLY
             );
 
-            // 设置 fetchSize
-            Integer queryTimeout = split.getQueryTimeout();
-            currentStatement.setFetchSize(split.getBatchSize());
+            // 设置 fetchSize 和 queryTimeout（全部来自 JdbcSourceConfig）
+            Integer queryTimeout = jdbcSourceConfig.getQueryTimeout();
+            currentStatement.setFetchSize(jdbcSourceConfig.getBatchSize());
             if (queryTimeout != null) {
                 currentStatement.setQueryTimeout(queryTimeout);
             }
@@ -126,8 +134,10 @@ public class JdbcSplitReader extends AbstractSplitReader<Row, JdbcSplit> {
                 }
             }
 
+            int batchSize = jdbcSourceConfig.getBatchSize();
+
             // 读取一批记录
-            while (hasNextRecord && recordsInBatch < currentSplit.getBatchSize()) {
+            while (hasNextRecord && recordsInBatch < batchSize) {
                 Row row = new Row(columnCount);
                 for (int i = 0; i < columnCount; i++) {
                     Object rawValue = currentResultSet.getObject(i + 1);

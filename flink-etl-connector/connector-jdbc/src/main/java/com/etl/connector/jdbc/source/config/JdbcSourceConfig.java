@@ -25,25 +25,45 @@ import java.util.List;
 public class JdbcSourceConfig implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    /** 数据库连接 URL */
+    /**
+     * 数据库连接 URL
+     */
     private final String url;
-    /** 用户名 */
+    /**
+     * 用户名
+     */
     private final String username;
-    /** 密码 */
+    /**
+     * 密码
+     */
     private final String password;
-    /** 表名 */
+    /**
+     * 表名
+     */
     private final String table;
-    /** 自定义 SQL */
+    /**
+     * 自定义 SQL
+     */
     private final String sql;
-    /** 分片列名（可选），不配置则自动从主键推断 */
+    /**
+     * 分片列名（可选），不配置则自动从主键推断
+     */
     private final String splitKey;
-    /** 分片策略，根据 splitColumn 是否配置决定 */
+    /**
+     * 分片策略，根据 splitColumn 是否配置决定
+     */
     private final SplitStrategy splitStrategy;
-    /** 批大小，默认100 */
+    /**
+     * 批大小，默认100
+     */
     private final Integer batchSize;
-    /** 查询超时 */
+    /**
+     * 查询超时
+     */
     private final Integer queryTimeout;
-    /** 数据库方言 */
+    /**
+     * 数据库方言
+     */
     private final JdbcDialect dialect;
 
     public static JdbcSourceConfig fromSourceConfig(SourceConfig config, int defaultBatchSize) {
@@ -74,15 +94,15 @@ public class JdbcSourceConfig implements Serializable {
         Integer queryTimeout = config.get("queryTimeout", Integer.class);
 
         log.info("创建 JdbcSource: url={}, dialect={}, table={}, sql={}, splitKey={}, splitStrategy={}, batchSize={}, queryTimeout={}",
-                    url,
-                    dialect,
-                    table,
-                    sql,
-                    splitKey,
-                    splitStrategy,
-                    batchSize,
-                    queryTimeout
-                );
+                url,
+                dialect,
+                table,
+                sql,
+                splitKey,
+                splitStrategy,
+                batchSize,
+                queryTimeout
+        );
 
         return JdbcSourceConfig.builder()
                 .url(url)
@@ -149,13 +169,13 @@ public class JdbcSourceConfig implements Serializable {
                     return Pair.of(firstPrimaryKey, strategy);
                 } else {
                     // 主键列类型都不支持，降级为单分片模式
-                    log.warn("表 '{}' 的主键列类型不支持分片，将使用单分片全表扫描模式。", table);
+                    log.warn("表 '{}' 的主键列 '{}' 类型不支持分片，将使用单分片全表扫描模式。", table, firstPrimaryKey);
                     return Pair.of(null, SplitStrategy.FULL_TABLE_SCAN);
                 }
             } catch (NoPrimaryKeyException e) {
-                throw new RuntimeException(
-                        String.format("无法自动推断 splitKey: %s。请显式配置 splitKey 参数或确保表有主键。",
-                                e.getMessage()));
+                // 主键列类型都不支持，降级为单分片模式
+                log.warn("表 '{}' 未能获取主键，将使用单分片全表扫描模式。", table);
+                return Pair.of(null, SplitStrategy.FULL_TABLE_SCAN);
             }
         }
 

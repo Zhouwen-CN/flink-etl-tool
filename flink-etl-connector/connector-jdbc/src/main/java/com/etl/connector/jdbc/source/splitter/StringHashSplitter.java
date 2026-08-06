@@ -36,16 +36,7 @@ public class StringHashSplitter extends ChunkSplitter {
             String querySql = String.format("%s WHERE %s = %d", baseQuery, hashExpression, i);
             String splitId = splitKey + "_hash_" + i;
 
-            splits.add(new JdbcSplit(
-                    splitId,
-                    querySql,
-                    url,
-                    username,
-                    password,
-                    batchSize,
-                    queryTimeout
-                )
-            );
+            splits.add(new JdbcSplit(splitId, querySql));
         }
 
         log.info("生成 {} 个分片（hash mod）", splits.size());

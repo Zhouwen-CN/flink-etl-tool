@@ -22,10 +22,7 @@ public abstract class ChunkSplitter {
     protected final String table;
     protected final String sql;
     protected final String splitKey;
-    protected final JdbcSourceConfig config;
     protected final int parallelism;
-    protected final Integer batchSize;
-    protected final Integer queryTimeout;
 
 
     public ChunkSplitter(JdbcSourceConfig config, int parallelism) {
@@ -36,10 +33,7 @@ public abstract class ChunkSplitter {
         this.table = config.getTable();
         this.sql = config.getSql();
         this.splitKey = config.getSplitKey();
-        this.config = config;
         this.parallelism = parallelism;
-        this.batchSize = config.getBatchSize();
-        this.queryTimeout = config.getQueryTimeout();
     }
 
     public static ChunkSplitter create(SplitStrategy strategy,
