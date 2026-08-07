@@ -543,7 +543,6 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 | `url`      | 是  | -      | 请求 URL                          |
 | `method`   | 否  | `GET`  | HTTP 方法，支持 `GET`、`POST`         |
 | `headers`  | 否  | `{}`   | 请求头，键值对形式                       |
-| `params`   | 否  | `{}`   | 查询参数，键值对形式                      |
 | `body`     | 否  | `null` | 请求体，字符串 或者 JSON对象形式             |
 | `format`   | 否  | `json` | 响应格式：`json`、`xml`               |
 | `jsonPath` | 否  | `null` | `format=json` 时使用的 JSONPath 表达式 |

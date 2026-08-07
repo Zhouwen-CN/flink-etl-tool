@@ -10,12 +10,7 @@
       "type": "http",
       "outputTable": "source_table",
       "config": {
-        "url": "https://api.oick.cn/api/hot",
-        "params":{
-          "apikey": "f1dafbeca1e9eeca5c93ce419cff8ae6",
-          "type": "douyin",
-          "test": "1"
-        },
+        "url": "https://api.oick.cn/api/hot?apikey=f1dafbeca1e9eeca5c93ce419cff8ae6&type=douyin&test=1",
         "format": "json",
         "jsonPath": "$.data",
         "schema": {

@@ -40,10 +40,6 @@ public class HttpSourceConfig implements Serializable {
      */
     private final Map<String, Object> headers;
     /**
-     * 查询参数
-     */
-    private final Map<String, Object> params;
-    /**
      * 请求体（JSON 对象序列化后的字符串）
      */
     private final String body;
@@ -76,9 +72,6 @@ public class HttpSourceConfig implements Serializable {
 
         // 请求头（可选）
         Map<String, Object> headers = config.get("headers", Map.class);
-
-        // 查询参数（可选）
-        Map<String, Object> params = config.get("params", Map.class);
 
         // 请求体（可选）
         String body = null;
@@ -114,7 +107,6 @@ public class HttpSourceConfig implements Serializable {
                 .url(url)
                 .method(method.toUpperCase())
                 .headers(headers)
-                .params(params)
                 .body(body)
                 .format(format)
                 .jsonPath(jsonPath)

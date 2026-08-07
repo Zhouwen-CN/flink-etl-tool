@@ -303,13 +303,6 @@
               },
               "description": "请求头"
             },
-            "params": {
-              "type": "object",
-              "additionalProperties": {
-                "type": "string"
-              },
-              "description": "URL 参数"
-            },
             "body": {
               "oneOf": [
                 {

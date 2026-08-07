@@ -15,7 +15,6 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
@@ -79,19 +78,6 @@ public class HttpSplitReader extends AbstractSplitReader<Row, HttpSplit> {
      */
     private String executeRequest(HttpSourceConfig config) throws IOException {
         String urlString = config.getUrl();
-
-        // 添加查询参数
-        if (config.getParams() != null && !config.getParams().isEmpty()) {
-            StringBuilder urlBuilder = new StringBuilder(urlString);
-            urlBuilder.append("?");
-            for (Map.Entry<String, Object> entry : config.getParams().entrySet()) {
-                urlBuilder.append(entry.getKey())
-                        .append("=")
-                        .append(URLEncoder.encode(String.valueOf(entry.getValue()), StandardCharsets.UTF_8.name()))
-                        .append("&");
-            }
-            urlString = urlBuilder.substring(0, urlBuilder.length() - 1);
-        }
 
         URL url = new URL(urlString);
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
