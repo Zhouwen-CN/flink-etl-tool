@@ -318,7 +318,6 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
 | `url`          |  是   | -    | JDBC 连接 URL，格式：`jdbc:mysql://host:port/database`        |
 | `username`     |  是   | -    | 数据库用户名                                                  |
 | `password`     |  是   | -    | 数据库密码                                                   |
-| `dialect`      |  否   | 自动识别 | 数据库方言，可选值：`mysql`、`postgresql`、`oracle`。不配置则根据 URL 自动识别 |
 | `table`        | 条件必填 | -    | 表名。与 `sql` 二选一，优先                                       |
 | `sql`          | 条件必填 | -    | 自定义查询 SQL。与 `table` 二选一                                 |
 | `splitKey`     |  否   | 自动推断 | 分片列名，支持数值、字符串、日期类型。不配置时自动从主键推断                          |
@@ -405,37 +404,6 @@ Schema 用于定义数据结构，支持简单类型和复杂类型（ARRAY、OB
   ]
 }
 ```
-
-**OceanBase Oracle 模式配置：**
-
-```json
-{
-  "sources": [
-    {
-      "type": "jdbc",
-      "outputTable": "users",
-      "config": {
-        "url": "jdbc:oceanbase://localhost:2883/test",
-        "username": "admin",
-        "password": "password",
-        "table": "USERS",
-        "dialect": "oracle",
-        "splitKey": "ID",
-        "batchSize": 1000
-      }
-    }
-  ]
-}
-```
-
-> **说明：** OceanBase 支持两种兼容模式：
-> - MySQL 模式：URL 格式 `jdbc:oceanbase://host:2883/db`，自动识别为 MySQL 方言，无需显式配置 dialect
-> - Oracle 模式：URL 格式 `jdbc:oceanbase://host:2883/db`，需显式配置 `dialect: "oracle"` 以使用 Oracle 方言
-
-> **注意：**
-> - 未配置 `splitKey` 时，系统会自动从表主键推断分片列
-> - `splitKey` 支持数值类型：TINYINT, SMALLINT, INT, BIGINT, REAL, FLOAT, DOUBLE, DECIMAL, NUMERIC
-> - `dialect` 参数用于显式指定数据库类型，适用于 URL 无法正确识别数据库类型的场景（如 OceanBase）
 
 #### 分片说明
 
@@ -1336,7 +1304,6 @@ address=4, value=-1
 | `url`             |  是   | -        | JDBC 连接 URL                                             |
 | `username`        |  是   | -        | 数据库用户名                                                  |
 | `password`        |  是   | -        | 数据库密码                                                   |
-| `dialect`         |  否   | 自动识别     | 数据库方言，可选值：`mysql`、`postgresql`、`oracle`。不配置则根据 URL 自动识别 |
 | `table`           | 条件必填 | -        | 目标表名。INSERT/UPSERT/CDC 模式必填，CUSTOM 模式忽略                 |
 | `sql`             | 条件必填 | -        | 自定义 SQL，支持具名占位符 `:paramName`。CUSTOM 模式必填，其他模式忽略         |
 | `mode`            |  否   | `upsert` | 写入模式：`insert`、`upsert`、`cdc`、`custom`                   |
@@ -1629,7 +1596,6 @@ JDBC Sink 支持两种批量刷写触发机制：
 ```
 
 > - **说明：** 该配置使用 `email` 字段作为 UPSERT 的匹配条件，即使表有其他主键也不会使用。
-> - `dialect` 参数用于显式指定数据库类型，适用于 URL 无法正确识别数据库类型的场景（如 OceanBase）
 > - 不同数据库的 upsert 语法不同：MySQL 使用 `ON DUPLICATE KEY UPDATE`，PostgreSQL 使用 `ON CONFLICT`，Oracle 使用
     `MERGE INTO`
 

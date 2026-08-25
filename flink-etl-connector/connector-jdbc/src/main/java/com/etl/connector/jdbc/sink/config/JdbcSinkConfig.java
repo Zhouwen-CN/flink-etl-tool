@@ -54,9 +54,8 @@ public class JdbcSinkConfig implements Serializable {
         String username = config.get("username", String.class);
         String password = config.get("password", String.class);
 
-        // 支持显式配置 dialect
-        String dialectName = config.get("dialect", String.class);
-        JdbcDialect dialect = JdbcDialectLoader.get(dialectName, url);
+        // 根据 URL 自动识别 dialect
+        JdbcDialect dialect = JdbcDialectLoader.get(url);
         url = dialect.wrapUrl(url);
 
         String table = config.get("table", String.class);

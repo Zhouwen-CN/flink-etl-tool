@@ -297,8 +297,7 @@ public JdbcSource(SourceConfig config) {
 
     // 1. 解析基础配置参数
     String url = Preconditions.checkNotNull(config.getString("url"), "url is null");
-    String dialectName = config.getString("dialect");
-    JdbcDialect dialect = JdbcDialectLoader.get(dialectName, url);
+    JdbcDialect dialect = JdbcDialectLoader.get(url);
     url = dialect.wrapUrl(url);
 
     String username = config.getString("username");

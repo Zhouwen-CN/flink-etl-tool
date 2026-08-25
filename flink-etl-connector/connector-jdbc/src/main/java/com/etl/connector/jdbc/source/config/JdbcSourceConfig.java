@@ -69,11 +69,8 @@ public class JdbcSourceConfig implements Serializable {
     public static JdbcSourceConfig fromSourceConfig(SourceConfig config, int defaultBatchSize) {
         String url = Preconditions.checkNotNull(config.get("url", String.class), "url is null");
 
-        // 支持显式配置 dialect
-        String dialectName = config.get("dialect", String.class);
-        JdbcDialect dialect = JdbcDialectLoader.get(dialectName, url);
-
-        // 使用 Dialect 包装 URL
+        // 根据 URL 自动识别 dialect
+        JdbcDialect dialect = JdbcDialectLoader.get(url);
         url = dialect.wrapUrl(url);
 
         String username = config.get("username", String.class);

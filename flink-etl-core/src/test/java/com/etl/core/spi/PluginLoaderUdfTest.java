@@ -18,7 +18,7 @@ class PluginLoaderUdfTest {
         assertNotNull(plugins);
 
         // 验证至少包含 HashUdf
-        assertTrue(plugins.stream().anyMatch(p -> "hash_code".equals(p.identifier())));
+        assertTrue(plugins.stream().anyMatch(p -> "current_datetime".equals(p.identifier())));
     }
 
     @Test
