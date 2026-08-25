@@ -10,8 +10,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Oracle/OceanBase 数据库方言
- * 支持 Oracle 和 OceanBase Oracle 模式
+ * Oracle 数据库方言
  */
 @Slf4j
 @AutoService(JdbcDialect.class)

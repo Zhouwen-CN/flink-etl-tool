@@ -33,6 +33,11 @@
             <artifactId>orai18n</artifactId>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>com.oceanbase</groupId>
+            <artifactId>oceanbase-client</artifactId>
+            <scope>provided</scope>
+        </dependency>
 
         <!-- H2 数据库（测试用） -->
         <dependency>
