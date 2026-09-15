@@ -1,3 +1,4 @@
+/*
 package com.etl.connector.doris.sink.v2;
 
 import com.etl.core.schema.convert.RowToJsonConverter;
@@ -15,10 +16,12 @@ import org.apache.flink.types.RowKind;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
+*/
 /**
  * Row 到 Doris JSON 字节的序列化器
  * 适用于 flink-doris-connector-1.15:1.5.2，建议使用这个
- */
+ *//*
+
 @Slf4j
 public class RowToJsonSerializer implements DorisRecordSerializer<Row> {
 
@@ -43,3 +46,4 @@ public class RowToJsonSerializer implements DorisRecordSerializer<Row> {
         return DorisRecord.of(bytes);
     }
 }
+*/

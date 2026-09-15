@@ -53,7 +53,7 @@ public class DorisSinkConfig implements Serializable {
 
         String table = config.get("table", String.class);
         Preconditions.checkArgument(table != null, "table 不能为 null");
-        Preconditions.checkArgument(table.matches("^[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+$"),"table 需要符合 database.table 的格式");
+        Preconditions.checkArgument(table.matches("^[a-zA-Z0-9_-]+\\.[a-zA-Z0-9_-]+$"), "table 需要符合 database.table 的格式");
 
         String username = config.get("username", String.class);
         Preconditions.checkArgument(username != null && !username.trim().isEmpty(), "username 不能为空");
@@ -62,7 +62,7 @@ public class DorisSinkConfig implements Serializable {
         Preconditions.checkArgument(password != null, "password 不能为 null");
 
         String labelPrefix = config.get("labelPrefix", String.class, "doris-sink");
-        Integer batchSize = config.get("batchSize", Integer.class, 50000);
+        Integer batchSize = config.get("batchSize", Integer.class, 1024 * 1024);
         Preconditions.checkArgument(batchSize > 0, "batchSize 需要大于0");
         Long batchIntervalMs = config.get("batchIntervalMs", Long.class, 10000L);
         Preconditions.checkArgument(batchIntervalMs > 0, "batchIntervalMs 需要大于0");

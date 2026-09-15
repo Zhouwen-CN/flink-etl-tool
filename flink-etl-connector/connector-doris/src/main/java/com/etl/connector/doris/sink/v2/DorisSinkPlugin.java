@@ -1,3 +1,4 @@
+/*
 package com.etl.connector.doris.sink.v2;
 
 import com.etl.connector.doris.sink.config.DorisSinkConfig;
@@ -12,11 +13,13 @@ import org.apache.doris.flink.sink.DorisSink;
 import org.apache.flink.api.connector.sink2.Sink;
 import org.apache.flink.types.Row;
 
+*/
 /**
  * Doris Sink 插件
  * 封装官方 flink-doris-connector，通过 Stream Load 写入，at-least-once（batch 模式）
  * 适用于 flink-doris-connector-1.15:1.5.2，建议使用这个
- */
+ *//*
+
 @Slf4j
 @AutoService(SinkPlugin.class)
 public class DorisSinkPlugin implements SinkPlugin {
@@ -45,6 +48,7 @@ public class DorisSinkPlugin implements SinkPlugin {
                 .setBufferFlushIntervalMs(cfg.getBatchIntervalMs())
                 .setIgnoreUpdateBefore(true)
                 .setBatchMode(true)
+                .setDeletable(true)
                 .disable2PC();
 
         log.info("创建 Doris Sink: fenodes={}, table={}, labelPrefix={}, batchSize={}, batchIntervalMs={}",
@@ -58,3 +62,4 @@ public class DorisSinkPlugin implements SinkPlugin {
                 .build();
     }
 }
+*/

@@ -1,4 +1,3 @@
-/*
 package com.etl.connector.doris.sink.v1;
 
 import com.etl.connector.doris.sink.config.DorisSinkConfig;
@@ -16,12 +15,11 @@ import org.apache.flink.types.Row;
 
 import java.util.Properties;
 
-*/
 /**
  * Doris Sink 插件
  * 封装官方 flink-doris-connector，通过 Stream Load 写入，at-least-once（batch 模式）
  * 适用于 flink-doris-connector-1.15:1.4.0
- *//*
+ */
 
 @Slf4j
 @AutoService(SinkPlugin.class)
@@ -53,7 +51,17 @@ public class DorisSinkPlugin implements SinkPlugin {
                 .setStreamLoadProp(properties)
                 .setLabelPrefix(cfg.getLabelPrefix())
                 .setDeletable(true)
-                .disable2PC();
+                .disable2PC()
+                /*
+                    默认：10000
+                    批量模式下定时检查/刷写数据的间隔（毫秒），每 10s 检查一次缓冲区，即使数据没攒满 batchSize 也会刷出去， 决定数据写入 Doris 的最大延迟
+                 */
+                .setCheckInterval(Math.toIntExact(cfg.getBatchIntervalMs()))
+                /*
+                    默认：1024 * 1024
+                    每个内存缓冲块（`ByteBuffer` ）的大小（字节）
+                 */
+                .setBufferSize(cfg.getBatchSize());
 
         log.info("创建 Doris Sink: fenodes={}, table={}, labelPrefix={}, batchSize={}, batchIntervalMs={}",
                 cfg.getFenodes(), cfg.getTable(), cfg.getLabelPrefix(), cfg.getBatchSize(), cfg.getBatchIntervalMs());
@@ -68,4 +76,3 @@ public class DorisSinkPlugin implements SinkPlugin {
         return SinkV1Adapter.wrap(dorisSink);
     }
 }
-*/

@@ -99,7 +99,6 @@
       }
     },
     "SchemaField": {
-      "description": "Schema 字段定义：简单类型、基础类型数组、嵌套对象或对象数组",
       "oneOf": [
         {
           "$ref": "#/definitions/SchemaSimpleType"
@@ -126,7 +125,6 @@
       ]
     },
     "SchemaDefinition": {
-      "description": "Schema 定义，将数据源映射成表",
       "type": "object",
       "additionalProperties": {
         "$ref": "#/definitions/SchemaField"
@@ -168,11 +166,11 @@
             },
             "table": {
               "type": "string",
-              "description": "和 sql 二选一"
+              "description": "表名，和 sql 配置二选一"
             },
             "sql": {
               "type": "string",
-              "description": "和 表名 二选一"
+              "description": "查询语句，和 table 配置二选一"
             },
             "splitKey": {
               "type": "string",
@@ -378,11 +376,11 @@
                 "type": "string"
               },
               "minItems": 1,
-              "description": "和 topicPattern 二选一"
+              "description": "主题，和 topicPattern 配置二选一"
             },
             "topicPattern": {
               "type": "string",
-              "description": "和 topics 二选一"
+              "description": "主题正则，和 topics 配置二选一"
             },
             "startupMode": {
               "type": "string",
@@ -515,7 +513,7 @@
             },
             "topic": {
               "type": "string",
-              "description": "Topic 名称"
+              "description": "主题名称"
             },
             "clientId": {
               "type": "string",
@@ -566,13 +564,13 @@
               "items": {
                 "type": "object"
               },
-              "description": "生成数据，和 numRows 二选一"
+              "description": "生成数据，和 numRows 配置二选一"
             },
             "numRows": {
               "type": "integer",
               "minimum": 1,
               "default": 10,
-              "description": "生成行数，和 data 二选一"
+              "description": "生成行数，和 data 配置二选一"
             },
             "intervalMs": {
               "type": "integer",
@@ -769,11 +767,11 @@
             },
             "table": {
               "type": "string",
-              "description": "表名，和 sql 二选一"
+              "description": "表名，和 sql 配置二选一"
             },
             "sql": {
               "type": "string",
-              "description": "插入语句，和 table 二选一"
+              "description": "插入语句，和 table 配置二选一"
             },
             "mode": {
               "type": "string",
@@ -792,7 +790,7 @@
                 "type": "string"
               },
               "minItems": 1,
-              "description": "主键"
+              "description": "主键列表，不配置时自动发现"
             },
             "batchSize": {
               "type": "integer",
@@ -838,7 +836,7 @@
             },
             "topic": {
               "type": "string",
-              "description": "topic 名称"
+              "description": "主题名称"
             },
             "keyField": {
               "type": "string",
@@ -898,7 +896,7 @@
             },
             "labelPrefix": {
               "type": "string",
-              "description": "Stream Load 导入使用的 label 前缀"
+              "description": "导入任务 label 前缀"
             },
             "batchSize": {
               "type": "integer",
