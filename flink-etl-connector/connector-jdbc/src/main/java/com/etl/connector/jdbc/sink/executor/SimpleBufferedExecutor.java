@@ -33,7 +33,10 @@ public class SimpleBufferedExecutor implements JdbcBatchStatementExecutor {
     @Override
     public void prepareStatements(Connection connection) throws SQLException {
         this.statement = connection.prepareStatement(sql);
-        this.batch = new ArrayList<>();
+        // 重连后 re-prepare 时保留已有缓冲，供 flush 重试继续使用
+        if (this.batch == null) {
+            this.batch = new ArrayList<>();
+        }
         log.info("SimpleBufferedExecutor 初始化: sql={}", sql);
     }
 
@@ -47,6 +50,8 @@ public class SimpleBufferedExecutor implements JdbcBatchStatementExecutor {
         if (batch.isEmpty()) {
             return;
         }
+        // 清空驱动层批处理队列，防止上次失败后残留导致重试时重复执行
+        statement.clearBatch();
         for (Row record : batch) {
             setParameters(record);
             statement.addBatch();

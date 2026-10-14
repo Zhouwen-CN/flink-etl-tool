@@ -6,8 +6,6 @@ import com.etl.connector.jdbc.sink.executor.JdbcBatchStatementExecutor;
 import com.etl.connector.jdbc.sink.executor.SimpleBufferedExecutor;
 import lombok.extern.slf4j.Slf4j;
 
-import java.sql.Connection;
-
 /**
  * JdbcOutputFormat 构建器
  * 根据写入模式创建对应的 Executor
@@ -16,12 +14,10 @@ import java.sql.Connection;
 public class JdbcOutputFormatBuilder {
 
     private final JdbcSinkConfig config;
-    private final Connection connection;
     private final String[] columns;
 
-    public JdbcOutputFormatBuilder(JdbcSinkConfig config, Connection connection, String[] columns) {
+    public JdbcOutputFormatBuilder(JdbcSinkConfig config, String[] columns) {
         this.config = config;
-        this.connection = connection;
         this.columns = columns;
     }
 
@@ -35,7 +31,15 @@ public class JdbcOutputFormatBuilder {
         long batchIntervalMs = config.getBatchIntervalMs();
         int maxRetries = 3;  // 默认重试 3 次
 
-        return new JdbcOutputFormat(executor, connection, batchSize, batchIntervalMs, maxRetries);
+        return new JdbcOutputFormat(
+                executor,
+                config.getUrl(),
+                config.getUsername(),
+                config.getPassword(),
+                config.getDialect().driverClassName(),
+                batchSize,
+                batchIntervalMs,
+                maxRetries);
     }
 
     /**

@@ -20,13 +20,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class JdbcOutputFormatTest {
 
+    private String url;
     private Connection connection;
     private JdbcOutputFormat outputFormat;
 
     @BeforeEach
     void setUp() throws SQLException {
         // 使用唯一数据库名避免测试间冲突
-        connection = DriverManager.getConnection("jdbc:h2:mem:test" + System.nanoTime() + ";DB_CLOSE_DELAY=-1");
+        url = "jdbc:h2:mem:test" + System.nanoTime() + ";DB_CLOSE_DELAY=-1";
+        connection = DriverManager.getConnection(url);
         connection.setAutoCommit(false);
 
         Statement stmt = connection.createStatement();
@@ -50,10 +52,8 @@ class JdbcOutputFormatTest {
         // 创建 Executor 和 OutputFormat
         String insertSql = "INSERT INTO \"test_table\" (\"id\", \"value\") VALUES (?, ?)";
         SimpleBufferedExecutor executor = new SimpleBufferedExecutor(insertSql, new String[]{"id", "value"});
-        executor.prepareStatements(connection);
-
         // batchSize=10, batchIntervalMs=0
-        outputFormat = new JdbcOutputFormat(executor, connection, 10, 0, 3);
+        outputFormat = new JdbcOutputFormat(executor, url, null, null, "org.h2.Driver", 10, 0, 3);
         outputFormat.open();
 
         // 写入 10 条数据触发 batch_size 刷写
@@ -78,10 +78,8 @@ class JdbcOutputFormatTest {
         // 创建 Executor 和 OutputFormat
         String insertSql = "INSERT INTO \"test_table\" (\"id\", \"value\") VALUES (?, ?)";
         SimpleBufferedExecutor executor = new SimpleBufferedExecutor(insertSql, new String[]{"id", "value"});
-        executor.prepareStatements(connection);
-
         // batchSize=100（远大于写入数量）, batchIntervalMs=0
-        outputFormat = new JdbcOutputFormat(executor, connection, 100, 0, 3);
+        outputFormat = new JdbcOutputFormat(executor, url, null, null, "org.h2.Driver", 100, 0, 3);
         outputFormat.open();
 
         // 写入 5 条数据（未达到 batch_size）
@@ -111,9 +109,7 @@ class JdbcOutputFormatTest {
         // 创建 Executor 和 OutputFormat：batchSize=100, batchIntervalMs=100ms
         String insertSql = "INSERT INTO \"test_table\" (\"id\", \"value\") VALUES (?, ?)";
         SimpleBufferedExecutor executor = new SimpleBufferedExecutor(insertSql, new String[]{"id", "value"});
-        executor.prepareStatements(connection);
-
-        outputFormat = new JdbcOutputFormat(executor, connection, 100, 100, 3);
+        outputFormat = new JdbcOutputFormat(executor, url, null, null, "org.h2.Driver", 100, 100, 3);
         outputFormat.open();
 
         // 写入 1 条数据（未达到 batch_size）

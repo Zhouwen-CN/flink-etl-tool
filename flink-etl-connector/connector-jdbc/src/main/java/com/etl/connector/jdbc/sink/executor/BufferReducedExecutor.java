@@ -64,7 +64,10 @@ public class BufferReducedExecutor implements JdbcBatchStatementExecutor {
     public void prepareStatements(Connection connection) throws SQLException {
         upsertExecutor.prepareStatements(connection);
         deleteExecutor.prepareStatements(connection);
-        this.buffer = new LinkedHashMap<>();
+        // 重连后 re-prepare 时保留归并缓冲，供 flush 重试继续使用
+        if (this.buffer == null) {
+            this.buffer = new LinkedHashMap<>();
+        }
     }
 
     @Override
