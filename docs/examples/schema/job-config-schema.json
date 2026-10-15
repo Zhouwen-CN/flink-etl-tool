@@ -503,7 +503,7 @@
           "type": "object",
           "required": [
             "broker",
-            "topic",
+            "topics",
             "schema"
           ],
           "properties": {
@@ -511,9 +511,13 @@
               "type": "string",
               "description": "MQTT broker 地址"
             },
-            "topic": {
-              "type": "string",
-              "description": "主题名称"
+            "topics": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1,
+              "description": "订阅的 topic 列表，支持同时订阅多个 topic"
             },
             "clientId": {
               "type": "string",

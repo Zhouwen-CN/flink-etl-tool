@@ -19,6 +19,7 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -116,11 +117,14 @@ public class MqttSplitReader extends AbstractSplitReader<Row, MqttSplit> {
             // 连接
             mqttClient.connect(options);
 
-            // 订阅 topic
-            String topic = config.getTopic();
-            mqttClient.subscribe(topic, QOS);
-            log.info("MQTT 客户端已连接: broker={}, clientId={}, topic={}, QoS: {}",
-                    config.getBroker(), config.getClientId(), topic, QOS);
+            // 订阅所有 topics
+            List<String> topics = config.getTopics();
+            String[] topicArray = topics.toArray(new String[0]);
+            int[] qosArray = new int[topics.size()];
+            Arrays.fill(qosArray, QOS);
+            mqttClient.subscribe(topicArray, qosArray);
+            log.info("MQTT 客户端已连接: broker={}, clientId={}, topics={}, QoS: {}",
+                    config.getBroker(), config.getClientId(), topics, QOS);
         } catch (MqttException e) {
             log.error("MQTT 连接失败: {}", e.getMessage(), e);
             throw new RuntimeException("MQTT 连接失败: " + e.getMessage(), e);
@@ -171,7 +175,7 @@ public class MqttSplitReader extends AbstractSplitReader<Row, MqttSplit> {
                 }
 
                 String jsonContent = new String(payload, StandardCharsets.UTF_8);
-                log.debug("收到 MQTT 消息: topic={}, payload={}", topic, jsonContent);
+                log.info("收到 MQTT 消息: topic={}, payload={}", topic, jsonContent);
 
                 JsonNode jsonNode = JsonUtil.readTree(jsonContent);
 

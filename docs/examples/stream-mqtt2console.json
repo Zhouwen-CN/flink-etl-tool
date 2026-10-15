@@ -11,7 +11,9 @@
       "outputTable": "source_table",
       "config": {
         "broker": "tcp://localhost:1883",
-        "topic": "sensor/data",
+        "topics": [
+          "sensor/data"
+        ],
         "clientId": "etl-mqtt-consumer",
         "schema": {
           "craneName": "STRING",

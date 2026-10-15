@@ -26,9 +26,9 @@ public class MqttSource extends AbstractSplitSource<MqttSplit> {
     public MqttSource(SourceConfig config) {
         super(config);
         this.mqttSourceConfig = MqttSourceConfig.fromSourceConfig(config);
-        log.info("创建 MqttSource: broker={}, topic={}, clientId={}",
+        log.info("创建 MqttSource: broker={}, topics={}, clientId={}",
                 mqttSourceConfig.getBroker(),
-                mqttSourceConfig.getTopic(),
+                mqttSourceConfig.getTopics(),
                 mqttSourceConfig.getClientId());
     }
 

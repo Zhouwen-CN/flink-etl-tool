@@ -35,8 +35,8 @@ public class MqttSplitEnumerator extends AbstractSplitEnumerator<MqttSplit> {
 
     @Override
     public void start() {
-        log.info("MqttSplitEnumerator 启动，broker: {}, topic: {}",
-                mqttSourceConfig.getBroker(), mqttSourceConfig.getTopic());
+        log.info("MqttSplitEnumerator 启动，broker: {}, topics: {}",
+                mqttSourceConfig.getBroker(), mqttSourceConfig.getTopics());
 
         MqttSplit split = new MqttSplit("mqtt-split-0", mqttSourceConfig);
         addPendingSplits(Collections.singletonList(split));

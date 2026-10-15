@@ -7,6 +7,7 @@ import lombok.Getter;
 import org.apache.flink.util.Preconditions;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -20,8 +21,10 @@ public class MqttSourceConfig implements Serializable {
 
     /** MQTT broker 地址，如 tcp://localhost:1883 */
     private final String broker;
-    /** 订阅的 topic 名称 */
-    private final String topic;
+    /**
+     * 订阅的 topic 列表，支持同时订阅多个 topic
+     */
+    private final List<String> topics;
     /** 客户端 ID（可选，默认自动生成 UUID） */
     private final String clientId;
     /** 认证用户名（可选） */
@@ -43,9 +46,13 @@ public class MqttSourceConfig implements Serializable {
         Preconditions.checkArgument(broker != null && !broker.isEmpty(),
                 "broker 不能为空");
 
-        String topic = config.get("topic", String.class);
-        Preconditions.checkArgument(topic != null && !topic.isEmpty(),
-                "topic 不能为空");
+        List<String> topics = config.get("topics", List.class);
+        Preconditions.checkArgument(topics != null && !topics.isEmpty(),
+                "topics 不能为空");
+        for (String topic : topics) {
+            Preconditions.checkArgument(topic != null && !topic.trim().isEmpty(),
+                    "topics 中存在空的 topic");
+        }
 
         // clientId（可选，默认自动生成）
         String clientId = config.get("clientId", String.class);
@@ -63,7 +70,7 @@ public class MqttSourceConfig implements Serializable {
 
         return MqttSourceConfig.builder()
                 .broker(broker)
-                .topic(topic)
+                .topics(topics)
                 .clientId(clientId)
                 .username(username)
                 .password(password)

@@ -958,7 +958,7 @@ MySQL 数据库需满足以下条件:
 | 参数         | 必填 | 默认值       | 说明                                      |
 |------------|:--:|-----------|-----------------------------------------|
 | `broker`   | 是  | -         | MQTT broker 地址，如 `tcp://localhost:1883` |
-| `topic`    | 是  | -         | 订阅的 topic 名称                            |
+| `topics`   | 是  | -         | 订阅的 topic 列表，支持同时订阅多个 topic             |
 | `clientId` | 否  | 自动生成 UUID | 客户端 ID，多任务建议手动指定避免冲突                    |
 | `username` | 否  | -         | 认证用户名                                   |
 | `password` | 否  | -         | 认证密码                                    |
@@ -976,7 +976,35 @@ MySQL 数据库需满足以下条件:
       "outputTable": "sensor_data",
       "config": {
         "broker": "tcp://localhost:1883",
-        "topic": "sensor/temperature",
+        "topics": [
+          "sensor/temperature"
+        ],
+        "schema": {
+          "deviceId": "STRING",
+          "value": "DOUBLE",
+          "timestamp": "TIMESTAMP"
+        }
+      }
+    }
+  ]
+}
+```
+
+**多 topic 订阅：**
+
+```json
+{
+  "sources": [
+    {
+      "type": "mqtt",
+      "outputTable": "sensor_data",
+      "config": {
+        "broker": "tcp://localhost:1883",
+        "topics": [
+          "sensor/temperature",
+          "sensor/humidity",
+          "sensor/pressure"
+        ],
         "schema": {
           "deviceId": "STRING",
           "value": "DOUBLE",
@@ -998,7 +1026,9 @@ MySQL 数据库需满足以下条件:
       "outputTable": "mqtt_events",
       "config": {
         "broker": "tcp://broker.example.com:1883",
-        "topic": "events/log",
+        "topics": [
+          "events/log"
+        ],
         "clientId": "etl-consumer-001",
         "username": "admin",
         "password": "secret",
