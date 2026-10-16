@@ -1,6 +1,7 @@
 package com.etl.connector.modbus.source;
 
 import com.etl.connector.modbus.source.config.ModbusSourceConfig;
+import com.etl.connector.modbus.source.config.WordOrder;
 import com.etl.core.source.AbstractSplitReader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.connector.base.source.reader.RecordsBySplits;
@@ -75,18 +76,26 @@ public class ModbusSplitReader extends AbstractSplitReader<Row, ModbusSplit> {
      *
      * @param data       寄存器原始数据
      * @param startAddr  当前批次的起始地址
-     * @param wordSize   每个数据值占用的寄存器数
+     * @param config     来源配置
      * @param builder    记录构建器
      */
-    private void processRegisterData(short[] data, int startAddr, int wordSize, RecordsBySplits.Builder<Row> builder) {
+    private void processRegisterData(short[] data, int startAddr, ModbusSourceConfig config,
+                                     RecordsBySplits.Builder<Row> builder) {
+        int wordSize = config.getWordSize();
+        WordOrder wordOrder = config.getWordOrder();
+        boolean floatValue = config.isFloatValue();
+
         for (int i = 0; i < data.length; i += wordSize) {
             int registerAddress = startAddr + i;
-            int value;
-            if (wordSize == 1) {
-                value = data[i];
+            Object value;
+            if (floatValue) {
+                // 2 个寄存器按 wordOrder 组合为 32bit，解析为 IEEE 754 浮点数
+                value = Float.intBitsToFloat(wordOrder.combine(data[i], data[i + 1]));
+            } else if (wordSize == 1) {
+                value = (int) data[i];
             } else {
-                // 2 个寄存器组合为 32bit：高位寄存器在前（大端）
-                value = (data[i] << 16) | (data[i + 1] & 0xFFFF);
+                // 2 个寄存器按 wordOrder 组合为 32bit 有符号整数
+                value = wordOrder.combine(data[i], data[i + 1]);
             }
             Row row = Row.withPositions(RowKind.INSERT, 2);
             row.setField(0, registerAddress);
@@ -108,7 +117,6 @@ public class ModbusSplitReader extends AbstractSplitReader<Row, ModbusSplit> {
         try {
             int address = currentConfig.getAddress();
             int count = currentConfig.getCount();
-            int wordSize = currentConfig.getWordSize();
 
             int remaining = count;
             int currentAddress = address;
@@ -117,7 +125,7 @@ public class ModbusSplitReader extends AbstractSplitReader<Row, ModbusSplit> {
 
                 short[] data = client.readHoldingRegisters(currentAddress, batchSize);
 
-                processRegisterData(data, currentAddress, wordSize, builder);
+                processRegisterData(data, currentAddress, currentConfig, builder);
 
                 currentAddress += batchSize;
                 remaining -= batchSize;

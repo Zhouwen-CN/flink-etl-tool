@@ -179,6 +179,93 @@ class ModbusSourceConfigTest {
     }
 
     @Test
+    void testDefaultFloatValue() {
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("host", "192.168.1.100:502");
+        configMap.put("address", 0);
+        configMap.put("count", 10);
+
+        ModbusSourceConfig result = ModbusSourceConfig.fromSourceConfig(
+                createSourceConfig(configMap), RuntimeExecutionMode.BATCH);
+
+        assertFalse(result.isFloatValue());
+    }
+
+    @Test
+    void testFloatValueTrueWithWordSize2() {
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("host", "192.168.1.100:502");
+        configMap.put("address", 0);
+        configMap.put("count", 10);
+        configMap.put("wordSize", 2);
+        configMap.put("floatValue", true);
+
+        ModbusSourceConfig result = ModbusSourceConfig.fromSourceConfig(
+                createSourceConfig(configMap), RuntimeExecutionMode.BATCH);
+
+        assertTrue(result.isFloatValue());
+    }
+
+    @Test
+    void testFloatValueTrueWithWordSize1() {
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("host", "192.168.1.100:502");
+        configMap.put("address", 0);
+        configMap.put("count", 10);
+        configMap.put("floatValue", true);
+
+        assertThrows(IllegalArgumentException.class, () ->
+                ModbusSourceConfig.fromSourceConfig(
+                        createSourceConfig(configMap), RuntimeExecutionMode.BATCH));
+    }
+
+    @Test
+    void testDefaultWordOrder() {
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("host", "192.168.1.100:502");
+        configMap.put("address", 0);
+        configMap.put("count", 10);
+        configMap.put("wordSize", 2);
+        configMap.put("floatValue", true);
+
+        ModbusSourceConfig result = ModbusSourceConfig.fromSourceConfig(
+                createSourceConfig(configMap), RuntimeExecutionMode.BATCH);
+
+        assertEquals(WordOrder.ABCD, result.getWordOrder());
+    }
+
+    @Test
+    void testWordOrderCDABIgnoreCase() {
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("host", "192.168.1.100:502");
+        configMap.put("address", 0);
+        configMap.put("count", 10);
+        configMap.put("wordSize", 2);
+        configMap.put("floatValue", true);
+        configMap.put("wordOrder", "cdab");
+
+        ModbusSourceConfig result = ModbusSourceConfig.fromSourceConfig(
+                createSourceConfig(configMap), RuntimeExecutionMode.BATCH);
+
+        assertEquals(WordOrder.CDAB, result.getWordOrder());
+    }
+
+    @Test
+    void testWordOrderInvalid() {
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("host", "192.168.1.100:502");
+        configMap.put("address", 0);
+        configMap.put("count", 10);
+        configMap.put("wordSize", 2);
+        configMap.put("floatValue", true);
+        configMap.put("wordOrder", "BADC");
+
+        assertThrows(IllegalArgumentException.class, () ->
+                ModbusSourceConfig.fromSourceConfig(
+                        createSourceConfig(configMap), RuntimeExecutionMode.BATCH));
+    }
+
+    @Test
     void testWordSizeTwo() {
         Map<String, Object> configMap = new HashMap<>();
         configMap.put("host", "192.168.1.100:502");

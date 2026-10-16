@@ -45,9 +45,10 @@ public class ModbusSource extends AbstractSplitSource<ModbusSplit> {
 
     @Override
     public TypeInformation<Row> getProducedType() {
+        boolean floatValue = modbusConfig.isFloatValue();
         return Types.ROW_NAMED(
                 new String[]{"address", "value"},
-                Types.INT, Types.INT
+                Types.INT, floatValue ? Types.FLOAT : Types.INT
         );
     }
 

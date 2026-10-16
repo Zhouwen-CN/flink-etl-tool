@@ -638,6 +638,20 @@
               ],
               "description": "字宽，几个寄存器组成一个数据值"
             },
+            "floatValue": {
+              "type": "boolean",
+              "default": false,
+              "description": "是否将寄存器值按 IEEE 754 32位浮点数解析，为 true 时要求 wordSize=2"
+            },
+            "wordOrder": {
+              "type": "string",
+              "enum": [
+                "ABCD",
+                "CDAB"
+              ],
+              "default": "ABCD",
+              "description": "字序：ABCD（高字在前）或 CDAB（低字在前）"
+            },
             "intervalMs": {
               "type": "integer",
               "minimum": 0,
