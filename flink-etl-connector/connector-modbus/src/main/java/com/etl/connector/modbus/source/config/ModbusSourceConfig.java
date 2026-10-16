@@ -26,6 +26,14 @@ public class ModbusSourceConfig implements Serializable {
     private final int wordSize;
     private final long intervalMs;
     private final int timeoutMs;
+    /**
+     * 是否将寄存器值按 IEEE 754 32 位浮点数解析，为 true 时要求 wordSize=2
+     */
+    private final boolean floatValue;
+    /**
+     * 字序：ABCD（高字在前，默认）或 CDAB（低字在前），wordSize=2 时生效
+     */
+    private final WordOrder wordOrder;
 
     public static ModbusSourceConfig fromSourceConfig(SourceConfig config, RuntimeExecutionMode runtimeMode) {
         boolean bounded = runtimeMode == RuntimeExecutionMode.BATCH;
@@ -83,8 +91,21 @@ public class ModbusSourceConfig implements Serializable {
         Preconditions.checkArgument(timeoutMs > 0,
                 "配置项 'timeoutMs' 必须 > 0，当前值: %s", timeoutMs);
 
-        log.info("创建 ModbusSource: bounded={}, host={}:{}, deviceId={}, address={}, count={}, wordSize={}, intervalMs={}, timeoutMs={}",
-                bounded, ip, port, deviceId, address, count, wordSize, intervalMs, timeoutMs);
+        // 8. 校验 floatValue（默认 false，为 true 时按 IEEE 754 浮点解析）
+        boolean floatValue = config.get("floatValue", Boolean.class, false);
+        if (floatValue) {
+            Preconditions.checkArgument(wordSize == 2,
+                    "配置项 'floatValue' 为 true 时，'wordSize' 必须为 2（IEEE 754 32位浮点数），当前值: %s", wordSize);
+        }
+
+        // 9. 校验 wordOrder（默认 ABCD，wordSize=2 时生效）
+        String wordOrderValue = config.get("wordOrder", String.class, WordOrder.ABCD.name());
+        WordOrder wordOrder = WordOrder.parse(wordOrderValue);
+        Preconditions.checkArgument(wordOrder != null,
+                "配置项 'wordOrder' 只能为 ABCD 或 CDAB，当前值: %s", wordOrderValue);
+
+        log.info("创建 ModbusSource: bounded={}, host={}:{}, deviceId={}, address={}, count={}, wordSize={}, intervalMs={}, timeoutMs={}, floatValue={}, wordOrder={}",
+                bounded, ip, port, deviceId, address, count, wordSize, intervalMs, timeoutMs, floatValue, wordOrder);
 
         return ModbusSourceConfig.builder()
                 .bounded(bounded)
@@ -96,6 +117,8 @@ public class ModbusSourceConfig implements Serializable {
                 .wordSize(wordSize)
                 .intervalMs(intervalMs)
                 .timeoutMs(timeoutMs)
+                .floatValue(floatValue)
+                .wordOrder(wordOrder)
                 .build();
     }
 }
