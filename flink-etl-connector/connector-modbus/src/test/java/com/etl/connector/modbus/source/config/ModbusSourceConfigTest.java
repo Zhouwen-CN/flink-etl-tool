@@ -4,11 +4,14 @@ import com.etl.core.config.SourceConfig;
 import org.apache.flink.api.common.RuntimeExecutionMode;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -328,5 +331,163 @@ class ModbusSourceConfigTest {
         assertThrows(IllegalArgumentException.class, () ->
                 ModbusSourceConfig.fromSourceConfig(
                         createSourceConfig(configMap), RuntimeExecutionMode.BATCH));
+    }
+
+    // ==================== points（间隔读取）模式 ====================
+
+    @Test
+    void testPointsMode() {
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("host", "192.168.1.100:502");
+        configMap.put("deviceId", 1);
+        configMap.put("wordSize", 2);
+        configMap.put("points", Arrays.asList(0, 8, 16, 58));
+
+        ModbusSourceConfig result = ModbusSourceConfig.fromSourceConfig(
+                createSourceConfig(configMap), RuntimeExecutionMode.BATCH);
+
+        assertTrue(result.isPointsMode());
+        assertEquals(Arrays.asList(0, 8, 16, 58), result.getPoints());
+        assertEquals(2, result.getWordSize());
+    }
+
+    @Test
+    void testPointsModeFromStringRejected() {
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("host", "192.168.1.100:502");
+        configMap.put("points", "0,8,16,58");
+
+        assertThrows(IllegalArgumentException.class, () ->
+                ModbusSourceConfig.fromSourceConfig(
+                        createSourceConfig(configMap), RuntimeExecutionMode.BATCH));
+    }
+
+    @Test
+    void testPointsModeDeduplicate() {
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("host", "192.168.1.100:502");
+        configMap.put("points", Arrays.asList(0, 8, 0, 16, 8));
+
+        ModbusSourceConfig result = ModbusSourceConfig.fromSourceConfig(
+                createSourceConfig(configMap), RuntimeExecutionMode.BATCH);
+
+        assertEquals(Arrays.asList(0, 8, 16), result.getPoints());
+    }
+
+    @Test
+    void testPointsModeEmptyArray() {
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("host", "192.168.1.100:502");
+        configMap.put("points", new ArrayList<>());
+
+        assertThrows(IllegalArgumentException.class, () ->
+                ModbusSourceConfig.fromSourceConfig(
+                        createSourceConfig(configMap), RuntimeExecutionMode.BATCH));
+    }
+
+    @Test
+    void testPointsModeStringValueRejected() {
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("host", "192.168.1.100:502");
+        configMap.put("points", "");
+
+        assertThrows(IllegalArgumentException.class, () ->
+                ModbusSourceConfig.fromSourceConfig(
+                        createSourceConfig(configMap), RuntimeExecutionMode.BATCH));
+    }
+
+    @Test
+    void testPointsModeNegativeElement() {
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("host", "192.168.1.100:502");
+        configMap.put("points", Arrays.asList(0, -1));
+
+        assertThrows(IllegalArgumentException.class, () ->
+                ModbusSourceConfig.fromSourceConfig(
+                        createSourceConfig(configMap), RuntimeExecutionMode.BATCH));
+    }
+
+    @Test
+    void testPointsModeOverflow() {
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("host", "192.168.1.100:502");
+        configMap.put("wordSize", 2);
+        configMap.put("points", Arrays.asList(65535));
+
+        assertThrows(IllegalArgumentException.class, () ->
+                ModbusSourceConfig.fromSourceConfig(
+                        createSourceConfig(configMap), RuntimeExecutionMode.BATCH));
+    }
+
+    @Test
+    void testPointsModeNonNumericElement() {
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("host", "192.168.1.100:502");
+        configMap.put("points", Arrays.asList(0, "abc"));
+
+        assertThrows(IllegalArgumentException.class, () ->
+                ModbusSourceConfig.fromSourceConfig(
+                        createSourceConfig(configMap), RuntimeExecutionMode.BATCH));
+    }
+
+    @Test
+    void testPointsModeNumericStringElement() {
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("host", "192.168.1.100:502");
+        configMap.put("points", Arrays.asList(0, "8"));
+
+        ModbusSourceConfig result = ModbusSourceConfig.fromSourceConfig(
+                createSourceConfig(configMap), RuntimeExecutionMode.BATCH);
+
+        assertEquals(Arrays.asList(0, 8), result.getPoints());
+    }
+
+    @Test
+    void testPointsModeDecimalElementRejected() {
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("host", "192.168.1.100:502");
+        configMap.put("points", Arrays.asList(0, 8.5));
+
+        assertThrows(IllegalArgumentException.class, () ->
+                ModbusSourceConfig.fromSourceConfig(
+                        createSourceConfig(configMap), RuntimeExecutionMode.BATCH));
+    }
+
+    @Test
+    void testPointsModeMutuallyExclusiveWithAddress() {
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("host", "192.168.1.100:502");
+        configMap.put("points", Arrays.asList(0, 8));
+        configMap.put("address", 0);
+
+        assertThrows(IllegalArgumentException.class, () ->
+                ModbusSourceConfig.fromSourceConfig(
+                        createSourceConfig(configMap), RuntimeExecutionMode.BATCH));
+    }
+
+    @Test
+    void testPointsModeMutuallyExclusiveWithCount() {
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("host", "192.168.1.100:502");
+        configMap.put("points", Arrays.asList(0, 8));
+        configMap.put("count", 10);
+
+        assertThrows(IllegalArgumentException.class, () ->
+                ModbusSourceConfig.fromSourceConfig(
+                        createSourceConfig(configMap), RuntimeExecutionMode.BATCH));
+    }
+
+    @Test
+    void testRangeModeIsNotPointsMode() {
+        Map<String, Object> configMap = new HashMap<>();
+        configMap.put("host", "192.168.1.100:502");
+        configMap.put("address", 0);
+        configMap.put("count", 10);
+
+        ModbusSourceConfig result = ModbusSourceConfig.fromSourceConfig(
+                createSourceConfig(configMap), RuntimeExecutionMode.BATCH);
+
+        assertFalse(result.isPointsMode());
+        assertNull(result.getPoints());
     }
 }

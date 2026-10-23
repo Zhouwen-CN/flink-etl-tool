@@ -1,0 +1,31 @@
+{
+  "$schema": "schema/job-config-schema.json",
+  "job": {
+    "name": "batch-modbus2console-points",
+    "mode": "batch",
+    "parallelism": 1
+  },
+  "sources": [
+    {
+      "type": "modbus",
+      "outputTable": "modbus_data",
+      "config": {
+        "host": "192.168.1.100:502",
+        "deviceId": 1,
+        "wordSize": 2,
+        "points": [
+          0,
+          8,
+          16,
+          58
+        ]
+      }
+    }
+  ],
+  "sinks": [
+    {
+      "type": "console",
+      "inputTable": "modbus_data"
+    }
+  ]
+}

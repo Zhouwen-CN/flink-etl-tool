@@ -29,7 +29,7 @@ java -jar flink-etl-client/target/flink-etl-client-1.0.0-SNAPSHOT.jar --file you
 
 ## 文档
 
-- [CLAUDE.md](CLAUDE.md) - 架构设计、开发指南
+- [CODE_WIKI](CODE_WIKI.md) - 架构设计、开发指南
 - [PLUGINS.md](PLUGINS.md) - 插件配置文档
 
 ## 示例

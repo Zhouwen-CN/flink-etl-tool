@@ -605,9 +605,20 @@
         "config": {
           "type": "object",
           "required": [
-            "host",
-            "address",
-            "count"
+            "host"
+          ],
+          "anyOf": [
+            {
+              "required": [
+                "address",
+                "count"
+              ]
+            },
+            {
+              "required": [
+                "points"
+              ]
+            }
           ],
           "properties": {
             "host": {
@@ -623,12 +634,25 @@
             "address": {
               "type": "integer",
               "minimum": 0,
-              "description": "寄存器起始地址"
+              "description": "寄存器起始地址（连续读取模式，与 count 配合使用，与 points 互斥）"
             },
             "count": {
               "type": "integer",
               "minimum": 1,
-              "description": "读取寄存器数量"
+              "description": "读取寄存器数量（连续读取模式，与 address 配合使用，必须能被 wordSize 整除，与 points 互斥）"
+            },
+            "points": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                ]
+              },
+              "description": "间隔读取的寄存器起始地址列表（0-based），每个点位读取 wordSize 个寄存器。与 address/count 互斥"
             },
             "wordSize": {
               "type": "integer",

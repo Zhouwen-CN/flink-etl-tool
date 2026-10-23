@@ -1,5 +1,6 @@
 package com.etl.connector.modbus.source;
 
+import com.etl.connector.modbus.source.exception.ModbusProtocolException;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.Closeable;
@@ -133,8 +134,11 @@ public class ModbusTcpClient implements Closeable {
         // 3. 异常响应判断
         if ((functionCode & EXCEPTION_FLAG) != 0) {
             int exceptionCode = pdu[1] & 0xFF;
-            throw new IOException("Modbus 异常响应: 功能码=0x" +
-                    Integer.toHexString(functionCode) + ", 异常码=" + exceptionCode);
+            // 协议层异常：设备通信正常但拒绝了该请求（如异常码 02 地址非法），
+            // 与连接层故障区分开，调用方可据此跳过该点位继续读取
+            throw new ModbusProtocolException(exceptionCode,
+                    "Modbus 异常响应: 功能码=0x" + Integer.toHexString(functionCode)
+                            + ", 异常码=" + exceptionCode);
         }
 
         // 4. 正常响应：pdu[1] = byteCount, 后续为寄存器数据
