@@ -63,7 +63,7 @@ public class JdbcSinkConfig implements Serializable {
         String modeStr = config.get("mode", String.class, "UPSERT");
         WriteMode mode = WriteMode.valueOf(modeStr.toUpperCase());
 
-        List<String> keyFields = config.get("keyFields", List.class);
+        List<String> keyFields = config.getList("keyFields", String.class);
 
         // 根据写入模式进行校验和配置
         validateAndConfigureMode(mode, table, sql, keyFields);

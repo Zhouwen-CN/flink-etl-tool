@@ -71,7 +71,7 @@ public class KafkaSourceConfig implements Serializable {
         }
 
         // 校验 topics 和 topicPattern 至少配置一个
-        List<String> topics = config.get("topics", List.class);
+        List<String> topics = config.getList("topics", String.class);
         String topicPattern = config.get("topicPattern", String.class);
         if ((topics == null || topics.isEmpty()) && topicPattern == null) {
             throw new IllegalArgumentException("topics 和 topicPattern 至少需要配置一个");
@@ -120,13 +120,13 @@ public class KafkaSourceConfig implements Serializable {
      */
     private static Properties parseKafkaProperties(SourceConfig config) {
         Properties properties = new Properties();
-        Map<String, Object> map = config.get("properties", Map.class);
+        Map<String, String> map = config.getMap("properties", String.class);
         if (map == null) {
             return properties;
         }
         map.forEach((key, value) -> {
             if (key != null && value != null) {
-                properties.setProperty(key, value.toString());
+                properties.setProperty(key, value);
             }
         });
         return properties;

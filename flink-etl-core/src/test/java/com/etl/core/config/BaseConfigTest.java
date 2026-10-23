@@ -39,6 +39,25 @@ class BaseConfigTest {
         map.put("badInt", "not-a-number");
         map.put("notList", "x");
         map.put("notMap", "x");
+        map.put("intListKey", Arrays.asList(1, 2, 3));
+        map.put("intStrListKey", Arrays.asList("1", "2"));
+        map.put("decimalListKey", Arrays.asList(1, 2.5));
+        map.put("badListKey", Arrays.asList(1, "abc"));
+        map.put("nullElemListKey", Arrays.asList(1, null));
+        map.put("intMapKey", new LinkedHashMap<String, Object>() {{
+            put("k1", 1);
+            put("k2", 2);
+        }});
+        map.put("intStrMapKey", new LinkedHashMap<String, Object>() {{
+            put("k1", "100");
+        }});
+        map.put("badMapKey", new LinkedHashMap<String, Object>() {{
+            put("k1", "abc");
+        }});
+        map.put("nullValMapKey", new LinkedHashMap<String, Object>() {{
+            put("k1", "v");
+            put("k2", null);
+        }});
         conf = new TestConfig(map);
     }
 
@@ -144,39 +163,113 @@ class BaseConfigTest {
         assertTrue(conf.get("boolKey", Boolean.class, false));
     }
 
-    // ---------- List ----------
+    // ---------- 集合类型不再由 get 支持 ----------
     @Test
-    void getList_returnsStringList() {
-        List<String> list = conf.get("listKey", List.class);
-        assertEquals(Arrays.asList("a", "1", "true"), list);
+    void get_listTypeRejected() {
+        assertThrows(IllegalArgumentException.class, () -> conf.get("listKey", List.class));
     }
 
     @Test
-    void getList_missingReturnsNull() {
-        assertNull(conf.get("missing", List.class));
+    void get_mapTypeRejected() {
+        assertThrows(IllegalArgumentException.class, () -> conf.get("mapKey", Map.class));
+    }
+
+    // ---------- getList ----------
+    @Test
+    void getList_returnsTypedList() {
+        List<Integer> list = conf.getList("intListKey", Integer.class);
+        assertEquals(Arrays.asList(1, 2, 3), list);
     }
 
     @Test
-    void getList_notListThrows() {
-        assertThrows(IllegalArgumentException.class, () -> conf.get("notList", List.class));
+    void getList_parsesStringElements() {
+        List<Integer> list = conf.getList("intStrListKey", Integer.class);
+        assertEquals(Arrays.asList(1, 2), list);
     }
 
-    // ---------- Map ----------
     @Test
-    void getMap_returnsMap() {
-        Map<String, Object> map = conf.get("mapKey", Map.class);
+    void getList_rejectsFractionalElement() {
+        assertThrows(IllegalArgumentException.class, () -> conf.getList("decimalListKey", Integer.class));
+    }
+
+    @Test
+    void getList_rejectsNonNumericElement() {
+        assertThrows(IllegalArgumentException.class, () -> conf.getList("badListKey", Integer.class));
+    }
+
+    @Test
+    void getList_rejectsNullElement() {
+        assertThrows(IllegalArgumentException.class, () -> conf.getList("nullElemListKey", Integer.class));
+    }
+
+    @Test
+    void getList_typed_missingReturnsNull() {
+        assertNull(conf.getList("missing", Integer.class));
+    }
+
+    @Test
+    void getList_typed_notListThrows() {
+        assertThrows(IllegalArgumentException.class, () -> conf.getList("notList", Integer.class));
+    }
+
+    @Test
+    void getList_ofStrings() {
+        assertEquals(Arrays.asList("a", "1", "true"), conf.getList("listKey", String.class));
+    }
+
+    @Test
+    void getList_rejectsUnsupportedItemType() {
+        assertThrows(IllegalArgumentException.class, () -> conf.getList("listKey", Date.class));
+    }
+
+    // ---------- getMap ----------
+    @Test
+    void getMap_returnsTypedMap() {
+        Map<String, Integer> map = conf.getMap("intMapKey", Integer.class);
+        assertEquals(2, map.size());
+        assertEquals(Integer.valueOf(1), map.get("k1"));
+        assertEquals(Integer.valueOf(2), map.get("k2"));
+    }
+
+    @Test
+    void getMap_parsesStringValues() {
+        Map<String, Integer> map = conf.getMap("intStrMapKey", Integer.class);
+        assertEquals(Integer.valueOf(100), map.get("k1"));
+    }
+
+    @Test
+    void getMap_rejectsBadValue() {
+        assertThrows(IllegalArgumentException.class, () -> conf.getMap("badMapKey", Integer.class));
+    }
+
+    @Test
+    void getMap_keepsNullValue() {
+        Map<String, Object> map = conf.getMap("nullValMapKey", Object.class);
+        assertEquals(2, map.size());
+        assertEquals("v", map.get("k1"));
+        assertNull(map.get("k2"));
+    }
+
+    @Test
+    void getMap_typed_missingReturnsNull() {
+        assertNull(conf.getMap("missing", Integer.class));
+    }
+
+    @Test
+    void getMap_typed_notMapThrows() {
+        assertThrows(IllegalArgumentException.class, () -> conf.getMap("notMap", Integer.class));
+    }
+
+    @Test
+    void getMap_ofStrings() {
+        Map<String, String> map = conf.getMap("mapKey", String.class);
         assertEquals("v1", map.get("k1"));
-        assertEquals(2, map.get("k2"));
+        assertEquals("2", map.get("k2"));
     }
 
     @Test
-    void getMap_missingReturnsNull() {
-        assertNull(conf.get("missing", Map.class));
-    }
-
-    @Test
-    void getMap_notMapThrows() {
-        assertThrows(IllegalArgumentException.class, () -> conf.get("notMap", Map.class));
+    void getMap_rejectsUnsupportedValueType() {
+        assertThrows(IllegalArgumentException.class, () -> conf.getMap("mapKey", Date.class));
     }
 
     // ---------- 不支持的类型 ----------

@@ -36,7 +36,7 @@ public class SourceConfig extends BaseConfig {
         if (cachedSchema != null) {
             return cachedSchema;
         }
-        Map<String,Object> schemaConfig = get("schema", Map.class);
+        Map<String, Object> schemaConfig = getMap("schema", Object.class);
         if (schemaConfig == null) {
             return null;
         }

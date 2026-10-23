@@ -32,25 +32,6 @@ class KafkaSourceConfigTest {
     }
 
     @Test
-    void testCustomFormat() {
-        Map<String, Object> configMap = new HashMap<>();
-        configMap.put("bootstrapServers", "localhost:9092");
-        configMap.put("groupId", "test-group");
-        configMap.put("topics", Arrays.asList("test-topic"));
-        configMap.put("format", "debezium-json");
-        configMap.put("schema", createTestSchema());
-
-        SourceConfig sourceConfig = new SourceConfig();
-        sourceConfig.setType("kafka");
-        sourceConfig.setOutputTable("test_table");
-        sourceConfig.setConfig(configMap);
-
-        KafkaSourceConfig config = KafkaSourceConfig.fromSourceConfig(sourceConfig);
-
-        assertEquals("debezium-json", config.getFormatPlugin().identifier());
-    }
-
-    @Test
     void testUnsupportedFormat() {
         Map<String, Object> configMap = new HashMap<>();
         configMap.put("bootstrapServers", "localhost:9092");

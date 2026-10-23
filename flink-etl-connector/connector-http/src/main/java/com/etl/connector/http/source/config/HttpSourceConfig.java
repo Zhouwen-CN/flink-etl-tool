@@ -38,7 +38,7 @@ public class HttpSourceConfig implements Serializable {
     /**
      * 请求头
      */
-    private final Map<String, Object> headers;
+    private final Map<String, String> headers;
     /**
      * 请求体（JSON 对象序列化后的字符串）
      */
@@ -71,7 +71,7 @@ public class HttpSourceConfig implements Serializable {
                 "method must be GET or POST");
 
         // 请求头（可选）
-        Map<String, Object> headers = config.get("headers", Map.class);
+        Map<String, String> headers = config.getMap("headers", String.class);
 
         // 请求体（可选）
         String body = null;

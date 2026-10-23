@@ -96,8 +96,8 @@ public class HttpSplitReader extends AbstractSplitReader<Row, HttpSplit> {
                 connection.setRequestProperty("Content-Type", "application/json");
             }
             if (config.getHeaders() != null) {
-                for (Map.Entry<String, Object> entry : config.getHeaders().entrySet()) {
-                    connection.setRequestProperty(entry.getKey(), String.valueOf(entry.getValue()));
+                for (Map.Entry<String, String> entry : config.getHeaders().entrySet()) {
+                    connection.setRequestProperty(entry.getKey(), entry.getValue());
                 }
             }
 

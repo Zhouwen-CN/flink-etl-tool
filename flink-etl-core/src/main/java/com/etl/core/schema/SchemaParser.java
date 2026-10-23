@@ -8,7 +8,6 @@ import org.apache.flink.api.common.typeinfo.Types;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -32,12 +31,7 @@ public class SchemaParser {
         List<String> names = new ArrayList<>();
         List<TypeInformation<?>> types = new ArrayList<>();
 
-        // 保持字段顺序
-        Map<String, Object> orderedConfig = schemaConfig instanceof LinkedHashMap
-                ? schemaConfig
-                : new LinkedHashMap<>(schemaConfig);
-
-        for (Map.Entry<String, Object> entry : orderedConfig.entrySet()) {
+        for (Map.Entry<String, Object> entry : schemaConfig.entrySet()) {
             String fieldName = entry.getKey();
             Object typeObj = entry.getValue();
 

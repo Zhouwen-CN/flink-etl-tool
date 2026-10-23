@@ -46,7 +46,7 @@ public class MqttSourceConfig implements Serializable {
         Preconditions.checkArgument(broker != null && !broker.isEmpty(),
                 "broker 不能为空");
 
-        List<String> topics = config.get("topics", List.class);
+        List<String> topics = config.getList("topics", String.class);
         Preconditions.checkArgument(topics != null && !topics.isEmpty(),
                 "topics 不能为空");
         for (String topic : topics) {

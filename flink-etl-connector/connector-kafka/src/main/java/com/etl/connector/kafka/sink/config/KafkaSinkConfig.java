@@ -67,13 +67,13 @@ public class KafkaSinkConfig implements Serializable {
      */
     private static Properties parseKafkaProperties(SinkConfig config) {
         Properties properties = new Properties();
-        Map<String, Object> map = config.get("properties", Map.class);
+        Map<String, String> map = config.getMap("properties", String.class);
         if (map == null) {
             return properties;
         }
         map.forEach((key, value) -> {
             if (key != null && value != null) {
-                properties.setProperty(key, value.toString());
+                properties.setProperty(key, value);
             }
         });
         return properties;
